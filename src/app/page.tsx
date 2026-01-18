@@ -1,115 +1,79 @@
-import Image from "next/image";
-import Link from "next/link";
 import { supabaseServer } from "@/lib/supabaseServer";
+import SearchHeader from "@/components/SearchHeader";
+import CurateResults from "@/components/CurateResults";
+import ExploreResults from "@/components/ExploreResults";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+type Mode = "curate" | "explore";
 
-type Asset = {
-  id: string;
-  title: string | null;
-  slug: string | null;
-  image_path: string | null;
-};
-
-async function signedUrl(path: string | null) {
-  if (!path) return null;
-
-  if (path.startsWith("http://") || path.startsWith("https://")) return path;
-
-  const supabase = await supabaseServer();
-  const { data } = await supabase.storage
-    .from("assets")
-    .createSignedUrl(path, 60 * 60);
-
-  return data?.signedUrl ?? null;
+function normalizeMode(m?: string): Mode {
+  return m === "explore" ? "explore" : "curate";
 }
-
 
 export default async function LibraryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams?: Promise<{ q?: string; mode?: string }>;
 }) {
-  const sp = await searchParams;
+  const sp = (await searchParams) ?? {};
   const q = (sp.q ?? "").trim();
+  const mode = normalizeMode(sp.mode);
 
   const supabase = await supabaseServer();
 
-  let query = supabase
-    .from("assets")
-    .select("id,title,slug,image_path")
-    .order("created_at", { ascending: false })
-    .limit(48);
+  // --- Parse query terms ---
+  const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
 
-  if (q) {
-    query = query.ilike("title", `%${q}%`);
-  }
+  const KNOWN_DOMAINS = [
+    "menswear",
+    "womenswear",
+    "interiors",
+    "home",
+    "activewear",
+  ];
 
-  const { data, error } = await query;
-
-  if (error) {
-    return (
-      <main style={{ padding: 24 }}>
-        <pre>Error loading assets: {error.message}</pre>
-      </main>
-    );
-  }
-
-  const assets = (data ?? []) as Asset[];
-
-  const signed = await Promise.all(
-    assets.map(async (a) => ({
-      ...a,
-      signed_url: await signedUrl(a.image_path),
-    }))
+  const domainFromQuery = KNOWN_DOMAINS.find((d) =>
+    terms.includes(d)
   );
 
+  // --- Base query ---
+  let query = supabase
+    .from("assets")
+    .select("*")
+    .eq("status", "ready");
+
+  // --- Domain is REQUIRED if explicitly stated ---
+  if (domainFromQuery) {
+    query = query.ilike("domain", `%${domainFromQuery}%`);
+  }
+
+  // --- Flexible term matching (ANY term, ANY field) ---
+  if (terms.length > 0) {
+    const orConditions = terms
+      .map(
+        (t) =>
+          `title.ilike.%${t}%,direction.ilike.%${t}%,color_notes.ilike.%${t}%,print_pattern_notes.ilike.%${t}%`
+      )
+      .join(",");
+
+    query = query.or(orConditions);
+  }
+
+  // --- Result count ---
+  const limit = mode === "explore" ? 24 : 9;
+
+  const { data: assets = [] } = await query
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
   return (
-    <main className="mx-auto max-w-6xl px-6 py-8">
-      <div className="flex items-end justify-between gap-6">
-        <div>
-          <h1 className="text-xl tracking-tight">Library</h1>
-          <p className="mt-1 text-sm text-zinc-600">Search the CI core.</p>
-        </div>
+    <main className="mx-auto max-w-6xl px-4 py-6">
+      <SearchHeader q={q} mode={mode} />
 
-        <form action="/" className="flex items-center gap-2">
-          <input
-            name="q"
-            defaultValue={q}
-            placeholder="Search (e.g., stripe)"
-            className="w-64 rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-400"
-          />
-          <button className="rounded-lg border border-zinc-200 px-3 py-2 text-sm hover:border-zinc-300">
-            Search
-          </button>
-        </form>
-      </div>
-
-      <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {signed.map((a) => (
-          <Link key={a.id} href={`/asset/${a.id}`} className="group">
-            <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
-              <div className="relative aspect-[4/3] bg-zinc-50">
-                {a.signed_url ? (
-                  <Image
-                    src={a.signed_url}
-                    alt={a.title ?? "Asset"}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 1024px) 50vw, 33vw"
-                  />
-                ) : null}
-              </div>
-              <div className="p-3">
-                <div className="text-sm font-medium text-zinc-800 line-clamp-1">
-                  {a.title ?? "Untitled"}
-                </div>
-              </div>
-            </div>
-          </Link>
-        ))}
-      </div>
+      {mode === "curate" ? (
+        <CurateResults q={q} assets={assets} />
+      ) : (
+        <ExploreResults assets={assets} />
+      )}
     </main>
   );
 }
