@@ -1,5 +1,7 @@
-import Image from "next/image";
+mkdir -p app/search
+cat > app/search/page.tsx << 'EOF'
 import Link from "next/link";
+import Image from "next/image";
 import { supabaseServer } from "@/lib/supabaseServer";
 
 export const dynamic = "force-dynamic";
@@ -8,25 +10,22 @@ export const revalidate = 0;
 type Asset = {
   id: string;
   title: string | null;
-  slug: string | null;
-  image_path: string | null;
+  image_path: string;
+  source_url: string | null;
+  category: string | null;
+  motif: string | null;
+  color: string | null;
+  season: string | null;
 };
 
-async function signedUrl(path: string | null) {
-  if (!path) return null;
-
+async function signedUrl(path: string) {
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
-
   const supabase = await supabaseServer();
-  const { data } = await supabase.storage
-    .from("assets")
-    .createSignedUrl(path, 60 * 60);
-
+  const { data } = await supabase.storage.from("assets").createSignedUrl(path, 60 * 60);
   return data?.signedUrl ?? null;
 }
 
-
-export default async function LibraryPage({
+export default async function SearchPage({
   searchParams,
 }: {
   searchParams: Promise<{ q?: string }>;
@@ -38,42 +37,33 @@ export default async function LibraryPage({
 
   let query = supabase
     .from("assets")
-    .select("id,title,slug,image_path")
-    .order("created_at", { ascending: false })
-    .limit(48);
+    .select("id,title,image_path,source_url,category,motif,color,season")
+    .limit(60);
 
   if (q) {
-    query = query.ilike("title", `%${q}%`);
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
-    return (
-      <main style={{ padding: 24 }}>
-        <pre>Error loading assets: {error.message}</pre>
-      </main>
+    query = query.or(
+      `title.ilike.%${q}%,category.ilike.%${q}%,motif.ilike.%${q}%,color.ilike.%${q}%`
     );
   }
 
+  const { data } = await query;
   const assets = (data ?? []) as Asset[];
 
   const signed = await Promise.all(
-    assets.map(async (a) => ({
-      ...a,
-      signed_url: await signedUrl(a.image_path),
-    }))
+    assets.map(async (a) => ({ ...a, signed_url: await signedUrl(a.image_path) }))
   );
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-8">
       <div className="flex items-end justify-between gap-6">
         <div>
-          <h1 className="text-xl tracking-tight">Library</h1>
-          <p className="mt-1 text-sm text-zinc-600">Search the CI core.</p>
+          <h1 className="text-xl tracking-tight">Search</h1>
+          <p className="mt-1 text-sm text-zinc-600">
+            {q ? <>Results for <span className="font-medium text-zinc-800">“{q}”</span></> : "All assets"}
+          </p>
         </div>
 
-        <form action="/" className="flex items-center gap-2">
+        <form action="/search" className="flex items-center gap-2">
           <input
             name="q"
             defaultValue={q}
@@ -105,6 +95,9 @@ export default async function LibraryPage({
                 <div className="text-sm font-medium text-zinc-800 line-clamp-1">
                   {a.title ?? "Untitled"}
                 </div>
+                <div className="mt-1 text-xs text-zinc-500 line-clamp-1">
+                  {[a.category, a.motif, a.color, a.season].filter(Boolean).join(" • ")}
+                </div>
               </div>
             </div>
           </Link>
@@ -113,3 +106,4 @@ export default async function LibraryPage({
     </main>
   );
 }
+EOF
