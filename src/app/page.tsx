@@ -1,52 +1,68 @@
 import { supabaseServer } from "@/lib/supabaseServer";
 import SearchHeader from "@/components/SearchHeader";
 import CurateResults from "@/components/CurateResults";
-import ExploreResults from "@/components/ExploreResults";
 
-type Mode = "curate" | "explore";
+function tokenize(q: string) {
+  return q
+    .toLowerCase()
+    .replace(/[’']/g, "'")
+    .replace(/[^a-z0-9\s']/g, " ")
+    .split(/\s+/)
+    .filter(Boolean);
+}
 
-function normalizeMode(m?: string): Mode {
-  return m === "explore" ? "explore" : "curate";
+function detectDomain(terms: string[]) {
+  const s = new Set(terms);
+
+  const mens =
+    s.has("menswear") ||
+    s.has("mens") ||
+    s.has("men") ||
+    s.has("men's") ||
+    (s.has("mens") && s.has("wear"));
+
+  const womens =
+    s.has("womenswear") ||
+    s.has("womens") ||
+    s.has("women") ||
+    s.has("women's") ||
+    (s.has("womens") && s.has("wear"));
+
+  if (mens) return "menswear";
+  if (womens) return "womenswear";
+  return null;
 }
 
 export default async function LibraryPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ q?: string; mode?: string }>;
+  searchParams?: Promise<{ q?: string }>;
 }) {
   const sp = (await searchParams) ?? {};
   const q = (sp.q ?? "").trim();
-  const mode = normalizeMode(sp.mode);
 
   const supabase = await supabaseServer();
 
-  // --- Parse query terms ---
-  const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
+  const terms = tokenize(q);
+  const domain = detectDomain(terms);
 
-  const KNOWN_DOMAINS = [
-    "menswear",
-    "womenswear",
-    "interiors",
-    "home",
-    "activewear",
-  ];
+  let query = supabase.from("assets").select("*").eq("status", "ready");
 
-  const domainFromQuery = KNOWN_DOMAINS.find((d) =>
-    terms.includes(d)
-  );
+  // ✅ DOMAIN ELIGIBILITY (INCLUSIVE):
+// If user explicitly says menswear → include assets eligible for menswear
+// Do NOT exclude crossover assets (many are menswear + womenswear)
+if (domain === "menswear") {
+  query = query.ilike("domain", "%menswear%");
+}
 
-  // --- Base query ---
-  let query = supabase
-    .from("assets")
-    .select("*")
-    .eq("status", "ready");
+// If user explicitly says womenswear → include assets eligible for womenswear
+// Do NOT exclude crossover assets
+if (domain === "womenswear") {
+  query = query.ilike("domain", "%womenswear%");
+}
 
-  // --- Domain is REQUIRED if explicitly stated ---
-  if (domainFromQuery) {
-    query = query.ilike("domain", `%${domainFromQuery}%`);
-  }
 
-  // --- Flexible term matching (ANY term, ANY field) ---
+  // ✅ Broad recall across all controlled fields
   if (terms.length > 0) {
     const orConditions = terms
       .map(
@@ -58,22 +74,13 @@ export default async function LibraryPage({
     query = query.or(orConditions);
   }
 
-  // --- Result count ---
-  const limit = mode === "explore" ? 24 : 9;
-
-  const { data: assets = [] } = await query
-    .order("created_at", { ascending: false })
-    .limit(limit);
+  const { data: assets = [], error } = await query.limit(9);
+  if (error) console.error("Supabase error:", error.message);
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
-      <SearchHeader q={q} mode={mode} />
-
-      {mode === "curate" ? (
-        <CurateResults q={q} assets={assets} />
-      ) : (
-        <ExploreResults assets={assets} />
-      )}
+      <SearchHeader q={q} mode={"curate"} />
+      <CurateResults q={q} assets={assets} />
     </main>
   );
 }
