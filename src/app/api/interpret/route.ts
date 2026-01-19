@@ -86,7 +86,9 @@ export async function POST(req: Request) {
        PROMPT (Pattern Curator CI)
     ----------------------------- */
     const systemPrompt = `
-You are Pattern Curator Creative Intelligence (CI).
+You are Pattern Curator Curatorial Intelligence (CI).
+- For BOARD mode only, generate a short board_title (2 words max, Pattern Curator voice).
+- For SINGLE ASSET mode, do NOT generate a title.
 
 Rules:
 - Interpretation only. No forecasting. No trend-report language.
@@ -179,15 +181,27 @@ Instructions:
       );
     }
 
-    return NextResponse.json({
-      curatorial_summary: String(parsed?.curatorial_summary ?? "").trim(),
-      why_it_matters: Array.isArray(parsed?.why_it_matters)
-        ? parsed.why_it_matters.map(String).slice(0, 5)
-        : [],
-      context_pulse: Array.isArray(parsed?.context_pulse)
-        ? parsed.context_pulse.map(String).slice(0, 5)
-        : [],
-    });
+    const base = {
+  curatorial_summary: String(parsed?.curatorial_summary ?? "").trim(),
+  why_it_matters: Array.isArray(parsed?.why_it_matters)
+    ? parsed.why_it_matters.map(String).slice(0, 5)
+    : [],
+  context_pulse: Array.isArray(parsed?.context_pulse)
+    ? parsed.context_pulse.map(String).slice(0, 5)
+    : [],
+};
+
+// ✅ Board mode ONLY: restore board_title
+if (mode === "board") {
+  return NextResponse.json({
+    board_title: String(parsed?.board_title ?? "").trim(),
+    ...base,
+  });
+}
+
+// ✅ Asset mode: NO title
+return NextResponse.json(base);
+
   } catch (err: any) {
     console.error("Interpret API error:", err);
     return NextResponse.json(
