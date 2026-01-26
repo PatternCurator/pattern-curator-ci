@@ -48,21 +48,14 @@ export default async function LibraryPage({
 
   let query = supabase.from("assets").select("*").eq("status", "ready");
 
-  // ✅ DOMAIN ELIGIBILITY (INCLUSIVE):
-// If user explicitly says menswear → include assets eligible for menswear
-// Do NOT exclude crossover assets (many are menswear + womenswear)
-if (domain === "menswear") {
-  query = query.ilike("domain", "%menswear%");
-}
+  if (domain === "menswear") {
+    query = query.ilike("domain", "%menswear%");
+  }
 
-// If user explicitly says womenswear → include assets eligible for womenswear
-// Do NOT exclude crossover assets
-if (domain === "womenswear") {
-  query = query.ilike("domain", "%womenswear%");
-}
+  if (domain === "womenswear") {
+    query = query.ilike("domain", "%womenswear%");
+  }
 
-
-  // ✅ Broad recall across all controlled fields
   if (terms.length > 0) {
     const orConditions = terms
       .map(
@@ -79,8 +72,21 @@ if (domain === "womenswear") {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
-      <SearchHeader q={q} mode={"curate"} />
-      <CurateResults q={q} assets={assets} />
+      <div className="space-y-6">
+        <SearchHeader q={q} mode={"curate"} />
+
+        {!q ? (
+          <div className="max-w-3xl pt-1 text-xs leading-relaxed text-zinc-500">
+            <p className="mt-2">
+              Curatorial Intelligence™ retrieves and prioritizes images in response
+              to your prompt—while preserving Pattern Curator’s editorial sensibility
+              and the integrity of a curated library. Curated intelligence meant to inspire.
+            </p>
+          </div>
+        ) : null}
+
+        <CurateResults q={q} assets={assets} />
+      </div>
     </main>
   );
 }

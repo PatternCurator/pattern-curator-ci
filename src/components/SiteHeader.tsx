@@ -8,10 +8,10 @@ export default function SiteHeader() {
           {/* Brand lockup */}
           <Link href="/" className="block leading-tight">
             <div
-              className="text-[15px] italic"
+              className="text-[20px] italic"
               style={{
                 fontFamily: "var(--font-libre), Libre Baskerville, serif",
-                color: "#6b7280", // medium gray
+                color: "#8a8a8aff", //  gray
               }}
             >
               Pattern Curator
@@ -28,17 +28,30 @@ export default function SiteHeader() {
             </div>
           </Link>
 
-          {/* Top nav */}
-<nav className="flex items-center gap-3 text-sm">
-  <Link
-    href="/"
-    className="rounded-full px-3 py-2 hover:bg-black/5"
-    title="Curate"
-  >
-    Curate
-  </Link>
-</nav>
-
+          {/* Navigation */}
+          <nav
+            className="flex items-center gap-4"
+            style={{
+              fontFamily: "Arial, Helvetica, sans-serif",
+              color: "#111827",
+              letterSpacing: "0.02em",
+            }}
+          >
+            <Link
+              href="/search"
+              className="text-[12px] hover:opacity-80"
+              style={{ color: "#111827" }}
+            >
+              Curate
+            </Link>
+            <Link
+              href="/trend"
+              className="text-[12px] hover:opacity-80"
+              style={{ color: "#111827" }}
+            >
+              Trend
+            </Link>
+          </nav>
         </div>
       </div>
     </header>
