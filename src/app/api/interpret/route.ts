@@ -19,43 +19,26 @@ function parseDomainOptions(domainRaw: string | null | undefined): string[] {
 export async function POST(req: Request) {
   try {
     if (!process.env.OPENAI_API_KEY) {
-      return NextResponse.json(
-        { error: "Missing OPENAI_API_KEY" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Missing OPENAI_API_KEY" }, { status: 500 });
     }
 
     const body = await req.json();
 
-    const mode: "board" | "asset" =
-      body?.mode === "asset" ? "asset" : "board";
+    const mode: "board" | "asset" = body?.mode === "asset" ? "asset" : "board";
 
-    /* ----------------------------
-       BOARD MODE (existing behavior)
-    ----------------------------- */
     const q: string = (body?.q ?? "").toString();
     const assets = Array.isArray(body?.assets) ? body.assets : [];
 
-    /* ----------------------------
-       SINGLE ASSET MODE
-    ----------------------------- */
-    const asset =
-      body?.asset && typeof body.asset === "object" ? body.asset : null;
+    const asset = body?.asset && typeof body.asset === "object" ? body.asset : null;
 
     if (mode === "board") {
       if (!q || assets.length === 0) {
-        return NextResponse.json(
-          { error: "Missing query or assets" },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: "Missing query or assets" }, { status: 400 });
       }
     }
 
     if (mode === "asset" && !asset) {
-      return NextResponse.json(
-        { error: "Missing asset" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing asset" }, { status: 400 });
     }
 
     const compactAssets = assets.slice(0, 9).map((a: any) => ({
@@ -77,18 +60,10 @@ export async function POST(req: Request) {
           }
         : null;
 
-    const domainOptions =
-      mode === "asset"
-        ? parseDomainOptions(compactAsset?.domain ?? null)
-        : [];
+    const domainOptions = mode === "asset" ? parseDomainOptions(compactAsset?.domain ?? null) : [];
 
-    /* ----------------------------
-       PROMPT (Pattern Curator CI)
-    ----------------------------- */
     const systemPrompt = `
 You are Pattern Curator Curatorial Intelligence (CI).
-- For BOARD mode only, generate a short board_title (2 words max, Pattern Curator voice).
-- For SINGLE ASSET mode, do NOT generate a title.
 
 Rules:
 - Interpretation only. No forecasting. No trend-report language.
@@ -103,15 +78,22 @@ Return this exact JSON shape:
 {
   "curatorial_summary": "3–4 sentences max.",
   "why_it_matters": ["bullet 1", "bullet 2", "bullet 3"],
-  "context_pulse": ["bullet 1", "bullet 2", "bullet 3"]
+  "context_pulse": ["bullet 1", "bullet 2", "bullet 3"],
+  "why_by_domain": { "domain": "One sentence." }
 }
 
 Constraints:
 - Bullets max ~12 words.
+- why_by_domain:
+  - ONLY include keys for the provided domain options (verbatim).
+  - One sentence per domain (<= 22 words).
+  - No bullets inside values.
 - For SINGLE ASSET mode:
   - Interpret ONLY the single asset.
   - In the curatorial_summary, include ONE subtle line suggesting where this asset can be curated.
   - Use ONLY the provided domain options verbatim.
+- For CURATED BOARD mode:
+  - You may omit why_by_domain or return it as {}.
 `.trim();
 
     const userPrompt =
@@ -128,6 +110,7 @@ ${JSON.stringify(domainOptions, null, 2)}
 Instructions:
 - Write grounded interpretation of this asset only.
 - Include one line in the summary suggesting curation across the domain options.
+- Then create why_by_domain with one sentence per provided domain option.
 `.trim()
         : `
 MODE: CURATED BOARD
@@ -155,14 +138,10 @@ Instructions:
       ],
     });
 
-    const content =
-      completion?.choices?.[0]?.message?.content ?? null;
+    const content = completion?.choices?.[0]?.message?.content ?? null;
 
     if (!content) {
-      return NextResponse.json(
-        { error: "No content returned from model" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "No content returned from model" }, { status: 500 });
     }
 
     const cleaned = content
@@ -171,42 +150,26 @@ Instructions:
       .replace(/```$/i, "")
       .trim();
 
-    let parsed;
+    let parsed: any;
     try {
       parsed = JSON.parse(cleaned);
     } catch {
-      return NextResponse.json(
-        { error: "Invalid JSON from model", raw: cleaned },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Invalid JSON from model", raw: cleaned }, { status: 500 });
     }
 
     const base = {
-  curatorial_summary: String(parsed?.curatorial_summary ?? "").trim(),
-  why_it_matters: Array.isArray(parsed?.why_it_matters)
-    ? parsed.why_it_matters.map(String).slice(0, 5)
-    : [],
-  context_pulse: Array.isArray(parsed?.context_pulse)
-    ? parsed.context_pulse.map(String).slice(0, 5)
-    : [],
-};
+      curatorial_summary: String(parsed?.curatorial_summary ?? "").trim(),
+      why_it_matters: Array.isArray(parsed?.why_it_matters) ? parsed.why_it_matters.map(String).slice(0, 5) : [],
+      context_pulse: Array.isArray(parsed?.context_pulse) ? parsed.context_pulse.map(String).slice(0, 5) : [],
+      why_by_domain:
+        parsed?.why_by_domain && typeof parsed.why_by_domain === "object" && !Array.isArray(parsed.why_by_domain)
+          ? parsed.why_by_domain
+          : {},
+    };
 
-// ✅ Board mode ONLY: restore board_title
-if (mode === "board") {
-  return NextResponse.json({
-    board_title: String(parsed?.board_title ?? "").trim(),
-    ...base,
-  });
-}
-
-// ✅ Asset mode: NO title
-return NextResponse.json(base);
-
+    return NextResponse.json(base);
   } catch (err: any) {
     console.error("Interpret API error:", err);
-    return NextResponse.json(
-      { error: "Server error", detail: err?.message ?? String(err) },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Server error", detail: err?.message ?? String(err) }, { status: 500 });
   }
 }

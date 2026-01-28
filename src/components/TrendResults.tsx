@@ -7,6 +7,7 @@ export type Board = {
   slug: string;
   cover_image_path: string | null;
   source_site: string | null;
+  report_type?: string | null;
 };
 
 function publicCoverUrl(path: string | null) {
@@ -14,9 +15,14 @@ function publicCoverUrl(path: string | null) {
   const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
   if (!base) return null;
 
-  const clean = path.replace(/^\/+/, "");
+  const clean = path.trim().replace(/^\/+/, "");
   const encoded = clean.split("/").map(encodeURIComponent).join("/");
   return `${base}/storage/v1/object/public/boards_covers/${encoded}`;
+}
+
+function formatType(t?: string | null) {
+  if (!t) return "";
+  return t.toUpperCase().replace("+", " + ");
 }
 
 export default function TrendResults({ boards }: { boards: Board[] }) {
@@ -48,10 +54,16 @@ export default function TrendResults({ boards }: { boards: Board[] }) {
                 </div>
               </div>
 
-              <div className="mt-1.5">
-                <div className="text-sm leading-snug">
-                  {b.title ?? "Untitled"}
-                </div>
+              <div className="mt-1.5 space-y-0.5">
+                <div className="text-sm leading-snug">{b.title ?? "Untitled"}</div>
+                {b.report_type ? (
+                  <div
+                    className="text-[11px] italic"
+                    style={{ fontFamily: "Arial, Helvetica, sans-serif", color: "#707376ff" }}
+                  >
+                    {formatType(b.report_type)}
+                  </div>
+                ) : null}
               </div>
             </Link>
           );

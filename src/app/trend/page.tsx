@@ -11,36 +11,47 @@ function tokenize(q: string) {
     .filter(Boolean);
 }
 
+function uniq(list: string[]) {
+  return Array.from(new Set(list));
+}
+
 export default async function TrendPage({
   searchParams,
 }: {
   searchParams?: Promise<{
     q?: string;
+    type?: string;
     season?: string;
-    domain?: string;
-    color?: string;
-    print_pattern?: string;
   }>;
 }) {
   const sp = (await searchParams) ?? {};
   const q = (sp.q ?? "").trim();
+  const type = (sp.type ?? "").trim();
   const season = (sp.season ?? "").trim();
-  const domain = (sp.domain ?? "").trim();
-  const color = (sp.color ?? "").trim();
-  const printPattern = (sp.print_pattern ?? "").trim();
 
   const supabase = await supabaseServer();
 
+  // Used to power season pills (still all pills, no dropdown)
+  const { data: seasonRows = [] } = await supabase
+    .from("boards")
+    .select("season")
+    .eq("status", "ready")
+    .limit(200);
+
+  const seasonOptions = uniq(
+    (seasonRows as any[])
+      .map((r) => (r?.season ?? "").toString().trim())
+      .filter(Boolean)
+  ).slice(0, 24);
+
   let query = supabase
     .from("boards")
-    .select("id,title,slug,cover_image_path,source_site,season,domain,color_notes,print_pattern_notes,direction")
+    .select("id,title,slug,cover_image_path,source_site,season,domain,report_type,color_notes,print_pattern_notes,direction")
     .eq("status", "ready");
 
-  // Filter pills
+  // Pill filters
+  if (type) query = query.eq("report_type", type);
   if (season) query = query.ilike("season", `%${season}%`);
-  if (domain) query = query.ilike("domain", `%${domain}%`);
-  if (color) query = query.ilike("color_notes", `%${color}%`);
-  if (printPattern) query = query.ilike("print_pattern_notes", `%${printPattern}%`);
 
   // Free-text query across CI fields
   const terms = tokenize(q);
@@ -48,24 +59,18 @@ export default async function TrendPage({
     const orConditions = terms
       .map(
         (t) =>
-          `domain.ilike.%${t}%,season.ilike.%${t}%,direction.ilike.%${t}%,color_notes.ilike.%${t}%,print_pattern_notes.ilike.%${t}%`
+          `title.ilike.%${t}%,domain.ilike.%${t}%,season.ilike.%${t}%,direction.ilike.%${t}%,color_notes.ilike.%${t}%,print_pattern_notes.ilike.%${t}%`
       )
       .join(",");
     query = query.or(orConditions);
   }
 
-  const { data: boards = [], error } = await query.limit(24);
+  const { data: boards = [], error } = await query.order("created_at", { ascending: false }).limit(60);
   if (error) console.error("Supabase error:", error.message);
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6 space-y-6">
-      <TrendHeader
-        q={q}
-        season={season}
-        domain={domain}
-        color={color}
-        printPattern={printPattern}
-      />
+      <TrendHeader q={q} type={type} season={season} seasonOptions={seasonOptions} />
       <TrendResults boards={boards as any} />
     </main>
   );
