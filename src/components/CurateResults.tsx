@@ -23,12 +23,12 @@ function publicAssetUrl(path: string | null) {
   const encoded = clean.split("/").map(encodeURIComponent).join("/");
   return `${base}/storage/v1/object/public/assets/${encoded}`;
 }
+
 function twoWordTitle(title: string | null | undefined) {
   const t = (title ?? "").trim();
   if (!t) return "Untitled";
   return t.split(/\s+/).slice(0, 2).join(" ");
 }
-
 
 export default function CurateResults({ q, assets }: { q: string; assets: Asset[] }) {
   if (!assets || assets.length === 0) return null;
@@ -39,7 +39,7 @@ export default function CurateResults({ q, assets }: { q: string; assets: Asset[
       {q ? <CurateInterpretation q={q} assets={assets} /> : null}
 
       <div className="grid grid-cols-3 gap-4">
-        {assets.slice(0, 9).map((a) => {
+        {assets.map((a) => {
           const src = publicAssetUrl(a.image_path);
 
           return (

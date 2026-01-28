@@ -33,13 +33,25 @@ function detectDomain(terms: string[]) {
   return null;
 }
 
+function clampInt(v: unknown, fallback: number) {
+  const n = typeof v === "string" ? parseInt(v, 10) : NaN;
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(1, n);
+}
+
 export default async function LibraryPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ q?: string }>;
+  searchParams?: Promise<{ q?: string; n?: string }>;
 }) {
   const sp = (await searchParams) ?? {};
   const q = (sp.q ?? "").trim();
+
+  const DEFAULT_N = 9;
+  const STEP = 39;
+
+  // Only apply progressive loading on the cover (no query)
+  const n = !q ? clampInt(sp.n, DEFAULT_N) : DEFAULT_N;
 
   const supabase = await supabaseServer();
 
@@ -67,8 +79,17 @@ export default async function LibraryPage({
     query = query.or(orConditions);
   }
 
-  const { data: assets = [], error } = await query.limit(9);
+  // Newest first
+  query = query.order("created_at", { ascending: false });
+
+  const limit = !q ? n : DEFAULT_N;
+
+  // Ask for 1 extra row so we can reliably determine if more exist
+  const { data: assets = [], error } = await query.limit(limit + 1);
   if (error) console.error("Supabase error:", error.message);
+
+  const showMore = !q && assets.length > limit;
+  const nextN = limit + STEP;
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
@@ -85,7 +106,27 @@ export default async function LibraryPage({
           </div>
         ) : null}
 
-        <CurateResults q={q} assets={assets} />
+        <CurateResults q={q} assets={assets.slice(0, limit)} />
+
+        {/* MORE pill only on cover page */}
+        {showMore ? (
+          <div className="pt-6 flex justify-center">
+            <a
+              href={`/?n=${nextN}`}
+              className="h-12 px-10 rounded-full flex items-center justify-center text-lg font-bold italic"
+              style={{
+                fontFamily: "Arial, Helvetica, sans-serif",
+                color: "#707376ff",
+                background: "#f4f4f4",
+                border: "1px solid #B8B9B6",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+              }}
+            >
+              MORE
+            </a>
+          </div>
+        ) : null}
       </div>
     </main>
   );
