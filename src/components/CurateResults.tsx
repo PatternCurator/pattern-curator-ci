@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import CurateInterpretation from "./CurateInterpretation";
+import CurateInterpretationClient from "./CurateInterpretationClient";
 
 export type Asset = {
   id: string;
@@ -16,6 +16,7 @@ export type Asset = {
 
 function publicAssetUrl(path: string | null) {
   if (!path) return null;
+
   const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
   if (!base) return null;
 
@@ -30,13 +31,19 @@ function twoWordTitle(title: string | null | undefined) {
   return t.split(/\s+/).slice(0, 2).join(" ");
 }
 
-export default function CurateResults({ q, assets }: { q: string; assets: Asset[] }) {
+export default function CurateResults({
+  q,
+  assets,
+}: {
+  q: string;
+  assets: Asset[];
+}) {
   if (!assets || assets.length === 0) return null;
 
   return (
     <section className="space-y-6">
-      {/* Curate auto-runs interpretation when q + results exist */}
-      {q ? <CurateInterpretation q={q} assets={assets} /> : null}
+      {/* keep behavior: only show interpretation when q exists */}
+      {q ? <CurateInterpretationClient q={q} assets={assets} /> : null}
 
       <div className="grid grid-cols-3 gap-4">
         {assets.map((a) => {
@@ -60,6 +67,7 @@ export default function CurateResults({ q, assets }: { q: string; assets: Asset[
 
               <div className="mt-2">
                 <div className="text-sm leading-snug">{twoWordTitle(a.title)}</div>
+
                 {a.source_site && a.source_url ? (
                   <a
                     href={a.source_url}
