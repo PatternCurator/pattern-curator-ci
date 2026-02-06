@@ -51,8 +51,7 @@ export default function TrendHeader({
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <h1 className="text-xl font-semibold tracking-tight">Trend</h1>
-        <p className="max-w-4xl text-sm text-zinc-600">
+        <p className="max-w-3xl pt-1 text-xs leading-relaxed text-zinc-500">
           Pattern Curator Trend Service is evolving into a visual intelligence system that identifies, edits,
           and interprets the visual signals shaping possibilities for upcoming seasons.
         </p>
@@ -60,12 +59,21 @@ export default function TrendHeader({
 
       {/* Search bar */}
       <form action="/trend" className="space-y-3">
-        <input
-          name="q"
-          defaultValue={q}
-          placeholder="Search direction, color notes, print + pattern notes"
-          className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none"
-        />
+        <div className="flex gap-2">
+  <input
+    name="q"
+    defaultValue={q}
+    placeholder="Search direction, color notes, print + pattern notes"
+    className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none"
+  />
+  <button
+    type="submit"
+    className="shrink-0 h-[46px] rounded-full px-6 text-[11px] flex items-center justify-center"
+    style={pillStyle(false)}
+  >
+    SEARCH
+  </button>
+</div>
 
         {/* 6 pills across */}
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">

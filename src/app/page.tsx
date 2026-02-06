@@ -94,19 +94,20 @@ export default async function LibraryPage({
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
       <div className="space-y-6">
-        <SearchHeader q={q} mode={"curate"} />
+  {!q ? (
+    <div className="max-w-3xl pt-1 text-xs leading-relaxed text-zinc-500">
+      <p className="mt-2">
+        Curatorial Intelligence™ retrieves and prioritizes images in response to
+        your prompt—while preserving Pattern Curator’s editorial sensibility and
+        the integrity of a curated library. Curated intelligence meant to inspire.
+      </p>
+    </div>
+  ) : null}
 
-        {!q ? (
-          <div className="max-w-3xl pt-1 text-xs leading-relaxed text-zinc-500">
-            <p className="mt-2">
-              Curatorial Intelligence™ retrieves and prioritizes images in response
-              to your prompt—while preserving Pattern Curator’s editorial sensibility
-              and the integrity of a curated library. Curated intelligence meant to inspire.
-            </p>
-          </div>
-        ) : null}
+  <SearchHeader q={q} mode={"curate"} />
 
-        <CurateResults q={q} assets={assets.slice(0, limit)} />
+  <CurateResults q={q} assets={assets.slice(0, limit)} />
+
 
         {/* MORE pill only on cover page */}
         {showMore ? (
