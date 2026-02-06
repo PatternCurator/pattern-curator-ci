@@ -1,5 +1,5 @@
 import { supabaseServer } from "@/lib/supabaseServer";
-import SearchHeader from "@/components/SearchHeader";
+import { SearchHeader } from "@/components/SearchHeader";
 import CurateResults from "@/components/CurateResults";
 
 function tokenize(q: string) {
@@ -47,8 +47,11 @@ export default async function LibraryPage({
   if (error) console.error("Supabase error:", error.message);
 
   // ✅ Ranking: Domain > Direction > Color > Print
-  const ranked = raw
-    .map((a: any) => {
+  const safeRaw = raw ?? [];
+
+const ranked = safeRaw
+  .map((a: any) => {
+
       let score = 0;
 
       for (const t of terms) {

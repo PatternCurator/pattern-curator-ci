@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 
-export default function SearchHeader({ q }: { q: string }) {
+type SearchHeaderProps = {
+  q: string;
+  mode?: "curate" | "trend"; // add other modes if you have them
+};
+
+export function SearchHeader({ q, mode = "curate" }: SearchHeaderProps) {
   const [val, setVal] = useState(q);
 
   return (

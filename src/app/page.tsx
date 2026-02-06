@@ -1,5 +1,5 @@
 import { supabaseServer } from "@/lib/supabaseServer";
-import SearchHeader from "@/components/SearchHeader";
+import { SearchHeader } from "@/components/SearchHeader";
 import CurateResults from "@/components/CurateResults";
 
 function tokenize(q: string) {
@@ -88,7 +88,9 @@ export default async function LibraryPage({
   const { data: assets = [], error } = await query.limit(limit + 1);
   if (error) console.error("Supabase error:", error.message);
 
-  const showMore = !q && assets.length > limit;
+  const safeAssets = assets ?? [];
+  const showMore = !q && safeAssets.length > limit;
+
   const nextN = limit + STEP;
 
   return (
@@ -106,7 +108,7 @@ export default async function LibraryPage({
 
   <SearchHeader q={q} mode={"curate"} />
 
-  <CurateResults q={q} assets={assets.slice(0, limit)} />
+  <CurateResults q={q} assets={safeAssets.slice(0, limit)} />
 
 
         {/* MORE pill only on cover page */}
