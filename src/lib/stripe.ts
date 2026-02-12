@@ -1,9 +1,13 @@
+import "server-only";
 import Stripe from "stripe";
 
-const key = process.env.STRIPE_SECRET_KEY;
+// Deploy-first mode: do NOT throw if STRIPE_SECRET_KEY is missing.
+// Routes can return a friendly 503 until you add keys later.
+export function getStripeOrNull() {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) return null;
 
-if (!key) throw new Error("Missing STRIPE_SECRET_KEY");
-
-export const stripe = new Stripe(key);
-
-
+  return new Stripe(key, {
+    apiVersion: "2024-06-20" as any,
+  });
+}

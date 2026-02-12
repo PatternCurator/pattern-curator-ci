@@ -18,13 +18,9 @@ export async function POST(req: Request) {
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-  if (!stripeSecretKey) {
-    console.error("Missing env: STRIPE_SECRET_KEY");
-    return NextResponse.json({ error: "Stripe not configured" }, { status: 500 });
-  }
-  if (!webhookSecret) {
-    console.error("Missing env: STRIPE_WEBHOOK_SECRET");
-    return NextResponse.json({ error: "Webhook not configured" }, { status: 500 });
+  // ✅ Deploy-first: Stripe not configured yet
+  if (!stripeSecretKey || !webhookSecret) {
+    return NextResponse.json({ error: "Stripe is not configured yet" }, { status: 503 });
   }
 
   const stripe = new Stripe(stripeSecretKey, { apiVersion: "2024-06-20" as any });
@@ -57,6 +53,7 @@ export async function POST(req: Request) {
           "";
 
         const email_normalized = normalizeEmail(emailRaw);
+
         const subscriptionId =
           typeof session.subscription === "string" ? session.subscription : null;
 
@@ -103,20 +100,17 @@ export async function POST(req: Request) {
         const subId = sub.id;
         const customerId = typeof sub.customer === "string" ? sub.customer : null;
 
-        // Stripe status (active, canceled, past_due, etc.)
         const status = sub.status;
         const normalizedStatus =
           event.type === "customer.subscription.deleted" ? "inactive" : status;
 
         const cancelAtPeriodEnd = !!sub.cancel_at_period_end;
 
-        // TS-safe period end extraction
         const itemPeriodEndSec =
           (sub.items?.data?.[0] as any)?.current_period_end ?? (sub as any)?.current_period_end ?? null;
 
         const currentPeriodEnd = toIsoFromUnixSeconds(itemPeriodEndSec);
 
-        // Stripe price id (best-effort)
         const stripePriceId =
           (sub.items?.data?.[0] as any)?.price?.id ??
           (sub.items?.data?.[0] as any)?.plan?.id ??

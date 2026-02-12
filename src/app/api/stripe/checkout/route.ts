@@ -1,6 +1,6 @@
 // src/app/api/stripe/checkout/route.ts
 import { NextResponse } from "next/server";
-import { stripe } from "@/lib/stripe";
+import { getStripeOrNull } from "@/lib/stripe";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
@@ -32,11 +32,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
     }
 
+    // ✅ Deploy-first: Stripe may not be configured yet
+    const stripe = getStripeOrNull();
+    if (!stripe) {
+      return NextResponse.json(
+        { error: "Stripe is not configured yet" },
+        { status: 503 }
+      );
+    }
+
     const appUrl =
       process.env.NEXT_PUBLIC_APP_URL ||
       (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
-    // Optional: ensure a billing row exists pre-checkout (so you can show "pending" if desired)
+    // Optional: mark billing as pending before redirecting to Stripe
     const supabaseAdmin = getSupabaseAdmin();
     const now = new Date().toISOString();
 
