@@ -1,118 +1,93 @@
+// src/app/api/usage/route.ts
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { isValidEmail, normalizeEmail } from "@/lib/email";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-const FREE_LIMIT = 5;
+function normalizeEmail(email: string) {
+  return email.trim().toLowerCase();
+}
 
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({}));
 
-    const email = typeof body?.email === "string" ? body.email : "";
-    const action = typeof body?.action === "string" ? body.action : "search";
-    const q = typeof body?.q === "string" ? body.q : null;
-
+    const email = typeof body.email === "string" ? body.email : "";
     const email_normalized = normalizeEmail(email);
 
-    if (!email_normalized || !isValidEmail(email_normalized)) {
-      return NextResponse.json({ error: "Valid email is required" }, { status: 400 });
+    const action = typeof body.action === "string" ? body.action : "search";
+    const count = typeof body.count === "number" && body.count > 0 ? body.count : 1;
+
+    if (!email_normalized) {
+      return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
-    // Ensure lead exists (ci_leads.email_normalized may be GENERATED → write to email)
+    const supabaseAdmin = getSupabaseAdmin();
+
+    // keep lead updated
     const { error: leadErr } = await supabaseAdmin
       .from("ci_leads")
-      .upsert({ email: email_normalized }, { onConflict: "email_normalized" });
+      .upsert({ email, email_normalized }, { onConflict: "email_normalized" });
 
-    if (leadErr) {
-      console.error("ci_leads upsert error:", leadErr);
-      return NextResponse.json({ error: "Could not save lead" }, { status: 500 });
-    }
+    if (leadErr) console.error("❌ ci_leads upsert error:", leadErr);
 
-    // Check billing status by email_normalized
+    // billing lookup (optional for gating)
     const { data: billing, error: billingErr } = await supabaseAdmin
       .from("ci_billing")
-      .select("status")
+      .select("*")
       .eq("email_normalized", email_normalized)
       .maybeSingle();
 
-    if (billingErr) {
-      console.error("ci_billing read error:", billingErr);
-      // don't block usage if billing read fails; treat as free
-    }
+    if (billingErr) console.error("❌ ci_billing select error:", billingErr);
 
-    const isPaid = billing?.status === "active";
+    // insert usage
+    const now = new Date().toISOString();
 
-    // Paid users bypass limit (optionally still log usage)
-    if (isPaid) {
-      await supabaseAdmin.from("ci_usage").insert({
+    if (count === 1) {
+      const { error } = await supabaseAdmin.from("ci_usage").insert({
+        email,
         email_normalized,
         action,
-        q,
-        meta: { paid: true },
+        created_at: now,
       });
 
-      return NextResponse.json({
-        ok: true,
-        paid: true,
-        free_searches: { limit: FREE_LIMIT, used: 0, remaining: FREE_LIMIT },
-      });
+      if (error) {
+        console.error("❌ ci_usage insert error:", error);
+        return NextResponse.json({ error: "Usage insert failed" }, { status: 500 });
+      }
+    } else {
+      const rows = Array.from({ length: count }, () => ({
+        email,
+        email_normalized,
+        action,
+        created_at: now,
+      }));
+
+      const { error } = await supabaseAdmin.from("ci_usage").insert(rows);
+
+      if (error) {
+        console.error("❌ ci_usage bulk insert error:", error);
+        return NextResponse.json({ error: "Usage insert failed" }, { status: 500 });
+      }
     }
 
-    // Free users: count distinct searches by q (or just count searches)
-    // If you decrement based on URL q uniqueness, keep q required for "search"
-    if (action === "search" && (!q || q.trim().length === 0)) {
-      return NextResponse.json({ error: "Missing q" }, { status: 400 });
-    }
-
-    // Log the event first (you can also log after computing; either is fine)
-    const { error: usageInsertErr } = await supabaseAdmin.from("ci_usage").insert({
-      email_normalized,
-      action,
-      q,
-      meta: { paid: false },
-    });
-
-    if (usageInsertErr) {
-      console.error("ci_usage insert error:", usageInsertErr);
-      return NextResponse.json({ error: "Usage log failed" }, { status: 500 });
-    }
-
-    // Count used free searches.
-    // If you want “decrement based on URL q”, count DISTINCT q for action=search.
-    const { data: usedRows, error: usedErr } = await supabaseAdmin
+    // count usage
+    const { count: usedCount, error: usedErr } = await supabaseAdmin
       .from("ci_usage")
-      .select("q")
-      .eq("email_normalized", email_normalized)
-      .eq("action", "search")
-      .not("q", "is", null);
+      .select("*", { count: "exact", head: true })
+      .eq("email_normalized", email_normalized);
 
-    if (usedErr) {
-      console.error("ci_usage read error:", usedErr);
-      return NextResponse.json({ error: "Usage read failed" }, { status: 500 });
-    }
-
-    const distinctQs = new Set((usedRows ?? []).map((r: any) => String(r.q)));
-    const used = distinctQs.size;
-
-    const remaining = Math.max(0, FREE_LIMIT - used);
-    const blocked = remaining <= 0;
+    if (usedErr) console.error("❌ ci_usage count error:", usedErr);
 
     return NextResponse.json({
       ok: true,
-      paid: false,
-      blocked,
-      free_searches: { limit: FREE_LIMIT, used, remaining },
+      email_normalized,
+      used: usedCount ?? null,
+      billing: billing ?? null,
     });
-  } catch (e: any) {
-    console.error("usage route error:", e?.message);
-    return NextResponse.json({ error: "Could not process usage" }, { status: 500 });
+  } catch (err: any) {
+    console.error("❌ api/usage error:", err?.message || err);
+    return NextResponse.json({ error: "Usage route failed" }, { status: 500 });
   }
 }

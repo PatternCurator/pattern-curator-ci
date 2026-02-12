@@ -1,180 +1,157 @@
-import Stripe from "stripe";
+// src/app/api/stripe/webhook/route.ts
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { isValidEmail, normalizeEmail } from "@/lib/email";
+import Stripe from "stripe";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+function normalizeEmail(email: string) {
+  return email.trim().toLowerCase();
+}
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-function requireEnv(name: string) {
-  const v = process.env[name];
-  if (!v) throw new Error(`Missing ${name}`);
-  return v;
+function toIsoFromUnixSeconds(sec: unknown) {
+  return typeof sec === "number" ? new Date(sec * 1000).toISOString() : null;
 }
 
 export async function POST(req: Request) {
-  // 1) Read signature + raw body first (must be exact bytes Stripe signed)
-  const signature = req.headers.get("stripe-signature");
-  if (!signature) {
-    return NextResponse.json({ error: "Missing stripe-signature" }, { status: 400 });
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  if (!stripeSecretKey) {
+    console.error("Missing env: STRIPE_SECRET_KEY");
+    return NextResponse.json({ error: "Stripe not configured" }, { status: 500 });
+  }
+  if (!webhookSecret) {
+    console.error("Missing env: STRIPE_WEBHOOK_SECRET");
+    return NextResponse.json({ error: "Webhook not configured" }, { status: 500 });
   }
 
-  const rawBody = Buffer.from(await req.arrayBuffer());
+  const stripe = new Stripe(stripeSecretKey, { apiVersion: "2024-06-20" as any });
 
-  // 2) Ensure env present (after reading body)
-  try {
-    requireEnv("STRIPE_SECRET_KEY");
-    requireEnv("STRIPE_WEBHOOK_SECRET");
-    requireEnv("NEXT_PUBLIC_SUPABASE_URL");
-    requireEnv("SUPABASE_SERVICE_ROLE_KEY");
-  } catch (e: any) {
-    console.error(e?.message);
-    return NextResponse.json({ error: e?.message ?? "Missing env" }, { status: 500 });
-  }
-
-  // Safe debug (does not print full secret)
-  console.log(
-    "WEBHOOK_SECRET prefix:",
-    (process.env.STRIPE_WEBHOOK_SECRET || "").slice(0, 12)
-  );
-
-  // 3) Verify Stripe signature
   let event: Stripe.Event;
+
   try {
-    event = await stripe.webhooks.constructEventAsync(
-      rawBody,
-      signature,
-      process.env.STRIPE_WEBHOOK_SECRET!
-    );
+    const signature = req.headers.get("stripe-signature");
+    if (!signature) return NextResponse.json({ error: "Missing stripe-signature" }, { status: 400 });
+
+    const rawBody = await req.text();
+    event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
   } catch (err: any) {
-    console.error("❌ Webhook signature verify failed:", err?.message);
+    console.error("❌ webhook signature verify failed:", err?.message || err);
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
-  // 4) Handle events
   try {
+    const supabaseAdmin = getSupabaseAdmin();
+    const now = new Date().toISOString();
+
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
 
-        // Prefer metadata (you set this in /api/stripe/checkout)
-        const metaEmail = (session.metadata?.email_normalized ?? "")
-          .trim()
-          .toLowerCase();
-
-        // Fallbacks if metadata is missing
-        const rawEmail =
-          metaEmail ||
-          session.customer_details?.email?.trim().toLowerCase() ||
-          session.customer_email?.trim().toLowerCase() ||
+        const emailRaw =
+          session.customer_details?.email ||
+          session.customer_email ||
+          session.metadata?.email ||
           "";
 
-        const email_normalized = normalizeEmail(rawEmail);
-
-        if (!email_normalized || !isValidEmail(email_normalized)) {
-          console.warn("⚠️ Missing/invalid email on checkout.session.completed:", rawEmail);
-          break;
-        }
-
-        // SubscriptionId is usually present, but not always in fixtures
-        let subscriptionId =
+        const email_normalized = normalizeEmail(emailRaw);
+        const subscriptionId =
           typeof session.subscription === "string" ? session.subscription : null;
 
-        // If missing, retrieve expanded session (robust fix)
-        if (!subscriptionId) {
-          const full = await stripe.checkout.sessions.retrieve(session.id, {
-            expand: ["subscription"],
-          });
+        const customerId = typeof session.customer === "string" ? session.customer : null;
 
-          const subId =
-            typeof full.subscription === "string"
-              ? full.subscription
-              : (full.subscription as Stripe.Subscription | null)?.id ?? null;
+        const priceId =
+          (typeof session.metadata?.stripe_price_id === "string" && session.metadata.stripe_price_id) ||
+          null;
 
-          subscriptionId = subId;
-        }
+        if (!email_normalized) break;
 
-        if (!subscriptionId) {
-          console.warn("⚠️ Still missing subscriptionId after retrieve:", session.id);
-          break;
-        }
-
-        // Retrieve subscription for price + period end
-        // (TS in your environment doesn’t recognize current_period_end, so access safely.)
-        const sub = (await stripe.subscriptions.retrieve(subscriptionId)) as any;
-
-        const stripe_customer_id =
-          typeof sub?.customer === "string" ? (sub.customer as string) : null;
-
-        const stripe_price_id = sub?.items?.data?.[0]?.price?.id ?? null;
-
-        const cpe = sub?.current_period_end;
-        const current_period_end =
-          typeof cpe === "number" ? new Date(cpe * 1000).toISOString() : null;
-
-        const cancel_at_period_end = !!sub?.cancel_at_period_end;
-
-        const payload = {
-          email_normalized,
-          stripe_customer_id,
-          stripe_subscription_id: subscriptionId,
-          stripe_price_id,
-          status: "active",
-          current_period_end,
-          cancel_at_period_end,
-          meta: {
-            checkout_session_id: session.id,
-            mode: session.mode,
-            payment_status: session.payment_status,
-            source: "checkout.session.completed",
+        const { error } = await supabaseAdmin.from("ci_billing").upsert(
+          {
+            email: emailRaw || email_normalized,
+            email_normalized,
+            status: "active",
+            stripe_customer_id: customerId,
+            stripe_subscription_id: subscriptionId,
+            stripe_price_id: priceId,
+            cancel_at_period_end: false,
+            current_period_end: null,
+            updated_at: now,
+            meta: {
+              source: "checkout.session.completed",
+              plan: session.metadata?.plan ?? null,
+              session_id: session.id,
+            },
           },
-        };
-
-        const { error } = await supabaseAdmin
-          .from("ci_billing")
-          .upsert(payload, { onConflict: "email_normalized" });
+          { onConflict: "email_normalized" }
+        );
 
         if (error) {
           console.error("❌ ci_billing upsert error:", error);
           return NextResponse.json({ error: "ci_billing upsert failed" }, { status: 500 });
         }
 
-        console.log("✅ ci_billing activated:", email_normalized);
         break;
       }
 
+      case "customer.subscription.updated":
       case "customer.subscription.deleted": {
         const sub = event.data.object as Stripe.Subscription;
+
+        const subId = sub.id;
+        const customerId = typeof sub.customer === "string" ? sub.customer : null;
+
+        // Stripe status (active, canceled, past_due, etc.)
+        const status = sub.status;
+        const normalizedStatus =
+          event.type === "customer.subscription.deleted" ? "inactive" : status;
+
+        const cancelAtPeriodEnd = !!sub.cancel_at_period_end;
+
+        // TS-safe period end extraction
+        const itemPeriodEndSec =
+          (sub.items?.data?.[0] as any)?.current_period_end ?? (sub as any)?.current_period_end ?? null;
+
+        const currentPeriodEnd = toIsoFromUnixSeconds(itemPeriodEndSec);
+
+        // Stripe price id (best-effort)
+        const stripePriceId =
+          (sub.items?.data?.[0] as any)?.price?.id ??
+          (sub.items?.data?.[0] as any)?.plan?.id ??
+          null;
 
         const { error } = await supabaseAdmin
           .from("ci_billing")
           .update({
-            status: "inactive",
-            cancel_at_period_end: true,
-            current_period_end: new Date().toISOString(),
+            status: normalizedStatus,
+            stripe_customer_id: customerId,
+            stripe_subscription_id: subId,
+            stripe_price_id: stripePriceId,
+            cancel_at_period_end: cancelAtPeriodEnd,
+            current_period_end: currentPeriodEnd,
+            updated_at: now,
+            meta: {
+              source: event.type,
+              stripe_status: status,
+            },
           })
-          .eq("stripe_subscription_id", sub.id);
+          .eq("stripe_subscription_id", subId);
 
         if (error) {
-          console.error("❌ ci_billing deactivate error:", error);
-          return NextResponse.json({ error: "ci_billing deactivate failed" }, { status: 500 });
+          console.error("❌ ci_billing update error:", error);
+          return NextResponse.json({ error: "ci_billing update failed" }, { status: 500 });
         }
+
         break;
       }
 
       default:
-        // ignore other events
         break;
     }
   } catch (err: any) {
-    console.error("❌ webhook handler error:", err?.message);
+    console.error("❌ webhook handler error:", err?.message || err);
     return NextResponse.json({ error: "Webhook handler failed" }, { status: 500 });
   }
 
