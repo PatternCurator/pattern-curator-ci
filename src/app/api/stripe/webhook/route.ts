@@ -62,109 +62,67 @@ export async function POST(req: Request) {
   try {
     switch (event.type) {
       case "checkout.session.completed": {
-  const session = event.data.object as Stripe.Checkout.Session;
+        const session = event.data.object as Stripe.Checkout.Session;
 
-  // Prefer metadata (you set this in /api/stripe/checkout)
-  const metaEmail =
-    (session.metadata?.email_normalized ?? "").trim().toLowerCase();
+        // Prefer metadata (you set this in /api/stripe/checkout)
+        const metaEmail = (session.metadata?.email_normalized ?? "")
+          .trim()
+          .toLowerCase();
 
-  // Fallbacks if metadata is missing
-  const rawEmail =
-    metaEmail ||
-    session.customer_details?.email?.trim().toLowerCase() ||
-    session.customer_email?.trim().toLowerCase() ||
-    "";
+        // Fallbacks if metadata is missing
+        const rawEmail =
+          metaEmail ||
+          session.customer_details?.email?.trim().toLowerCase() ||
+          session.customer_email?.trim().toLowerCase() ||
+          "";
 
-  const email_normalized = normalizeEmail(rawEmail);
+        const email_normalized = normalizeEmail(rawEmail);
 
-  if (!email_normalized || !isValidEmail(email_normalized)) {
-    console.warn("⚠️ Missing/invalid email on checkout.session.completed:", rawEmail);
-    break;
-  }
+        if (!email_normalized || !isValidEmail(email_normalized)) {
+          console.warn("⚠️ Missing/invalid email on checkout.session.completed:", rawEmail);
+          break;
+        }
 
-  // SubscriptionId is usually present, but not always in fixtures
-  let subscriptionId =
-    typeof session.subscription === "string" ? session.subscription : null;
+        // SubscriptionId is usually present, but not always in fixtures
+        let subscriptionId =
+          typeof session.subscription === "string" ? session.subscription : null;
 
-  // If missing, retrieve expanded session (robust fix)
-  if (!subscriptionId) {
-    const full = await stripe.checkout.sessions.retrieve(session.id, {
-      expand: ["subscription"],
-    });
+        // If missing, retrieve expanded session (robust fix)
+        if (!subscriptionId) {
+          const full = await stripe.checkout.sessions.retrieve(session.id, {
+            expand: ["subscription"],
+          });
 
-    const sub =
-      typeof full.subscription === "string"
-        ? full.subscription
-        : (full.subscription as Stripe.Subscription | null)?.id ?? null;
+          const subId =
+            typeof full.subscription === "string"
+              ? full.subscription
+              : (full.subscription as Stripe.Subscription | null)?.id ?? null;
 
-    subscriptionId = sub;
-  }
+          subscriptionId = subId;
+        }
 
-  if (!subscriptionId) {
-    console.warn("⚠️ Still missing subscriptionId after retrieve:", session.id);
-    break;
-  }
+        if (!subscriptionId) {
+          console.warn("⚠️ Still missing subscriptionId after retrieve:", session.id);
+          break;
+        }
 
-  // Retrieve subscription for price + period end
-  const sub = await stripe.subscriptions.retrieve(subscriptionId);
-
-  const stripe_customer_id =
-    typeof sub.customer === "string" ? sub.customer : null;
-
-  const stripe_price_id = sub.items.data?.[0]?.price?.id ?? null;
-
-  const current_period_end = sub.current_period_end
-    ? new Date(sub.current_period_end * 1000).toISOString()
-    : null;
-
-  const cancel_at_period_end = !!sub.cancel_at_period_end;
-
-  const payload = {
-    email_normalized,
-    stripe_customer_id,
-    stripe_subscription_id: subscriptionId,
-    stripe_price_id,
-    status: "active",
-    current_period_end,
-    cancel_at_period_end,
-    meta: {
-      checkout_session_id: session.id,
-      mode: session.mode,
-      payment_status: session.payment_status,
-      source: "checkout.session.completed",
-    },
-  };
-
-  const { error } = await supabaseAdmin
-    .from("ci_billing")
-    .upsert(payload, { onConflict: "email_normalized" });
-
-  if (error) {
-    console.error("❌ ci_billing upsert error:", error);
-    return NextResponse.json({ error: "ci_billing upsert failed" }, { status: 500 });
-  }
-
-  console.log("✅ ci_billing activated:", email_normalized);
-  break;
-}
-
-
-        // Retrieve subscription so we can store price + period end
-        const sub = await stripe.subscriptions.retrieve(subscriptionId);
+        // Retrieve subscription for price + period end
+        // (TS in your environment doesn’t recognize current_period_end, so access safely.)
+        const sub = (await stripe.subscriptions.retrieve(subscriptionId)) as any;
 
         const stripe_customer_id =
-          (typeof sub.customer === "string" ? sub.customer : customerId) ?? null;
+          typeof sub?.customer === "string" ? (sub.customer as string) : null;
 
-        const stripe_price_id = sub.items.data?.[0]?.price?.id ?? null;
+        const stripe_price_id = sub?.items?.data?.[0]?.price?.id ?? null;
 
-        const current_period_end = sub.current_period_end
-          ? new Date(sub.current_period_end * 1000).toISOString()
-          : null;
+        const cpe = sub?.current_period_end;
+        const current_period_end =
+          typeof cpe === "number" ? new Date(cpe * 1000).toISOString() : null;
 
-        const cancel_at_period_end = !!sub.cancel_at_period_end;
+        const cancel_at_period_end = !!sub?.cancel_at_period_end;
 
         const payload = {
-          email_normalized, // <-- you said ci_billing uses this now
+          email_normalized,
           stripe_customer_id,
           stripe_subscription_id: subscriptionId,
           stripe_price_id,
@@ -175,20 +133,20 @@ export async function POST(req: Request) {
             checkout_session_id: session.id,
             mode: session.mode,
             payment_status: session.payment_status,
+            source: "checkout.session.completed",
           },
         };
 
-        const { data, error } = await supabaseAdmin
+        const { error } = await supabaseAdmin
           .from("ci_billing")
-          .upsert(payload, { onConflict: "email_normalized" })
-          .select();
+          .upsert(payload, { onConflict: "email_normalized" });
 
         if (error) {
           console.error("❌ ci_billing upsert error:", error);
           return NextResponse.json({ error: "ci_billing upsert failed" }, { status: 500 });
         }
 
-        console.log("✅ ci_billing activated:", email_normalized, data?.[0]?.status);
+        console.log("✅ ci_billing activated:", email_normalized);
         break;
       }
 
