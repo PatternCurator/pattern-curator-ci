@@ -1,68 +1,41 @@
 import { NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { createClient } from "@supabase/supabase-js";
+import { isValidEmail, normalizeEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-const FREE_SEARCHES = 5;
-
-function normalizeEmail(email: string) {
-  return email.trim().toLowerCase();
-}
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({}));
-    const email = typeof body.email === "string" ? body.email : "";
-    const source = typeof body.source === "string" ? body.source : null;
+    const email = typeof body?.email === "string" ? body.email : "";
 
-    const emailNorm = normalizeEmail(email);
+    const email_normalized = normalizeEmail(email);
 
-    if (!emailNorm || !emailNorm.includes("@")) {
+    if (!email_normalized || !isValidEmail(email_normalized)) {
       return NextResponse.json({ error: "Valid email is required" }, { status: 400 });
     }
 
-    const { data: lead, error: leadErr } = await supabaseAdmin
+    // IMPORTANT:
+    // If ci_leads.email_normalized is generated, you must NOT insert into it.
+    // Insert into `email` and use onConflict on email_normalized.
+    const { error } = await supabaseAdmin
       .from("ci_leads")
-      .upsert(
-        { email: emailNorm, source: source ?? undefined },
-        { onConflict: "email_normalized" }
-      )
-      .select("id, email, email_normalized, created_at")
-      .single();
+      .upsert({ email: email_normalized }, { onConflict: "email_normalized" });
 
-    if (leadErr) {
-      console.error("ci_leads upsert error:", leadErr);
-      return NextResponse.json({ error: "Could not save email" }, { status: 500 });
+    if (error) {
+      console.error("ci_leads upsert error:", error);
+      return NextResponse.json({ error: "Lead save failed" }, { status: 500 });
     }
 
-    const { count, error: countErr } = await supabaseAdmin
-      .from("ci_usage")
-      .select("*", { count: "exact", head: true })
-      .eq("email_normalized", lead.email_normalized)
-      .eq("action", "search");
-
-    if (countErr) {
-      console.error("ci_usage count error:", countErr);
-      return NextResponse.json({ error: "Could not read usage" }, { status: 500 });
-    }
-
-    const used = count ?? 0;
-    const remaining = Math.max(0, FREE_SEARCHES - used);
-
-    return NextResponse.json({
-      lead: {
-        id: lead.id,
-        email: lead.email,
-        created_at: lead.created_at,
-      },
-      free_searches: {
-        limit: FREE_SEARCHES,
-        used,
-        remaining,
-      },
-    });
-  } catch (e) {
-    console.error(e);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    return NextResponse.json({ ok: true });
+  } catch (e: any) {
+    console.error(e?.message);
+    return NextResponse.json({ error: "Lead save failed" }, { status: 500 });
   }
 }

@@ -1,3 +1,4 @@
+import EmailGate from "@/components/EmailGate";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { SearchHeader } from "@/components/SearchHeader";
 import CurateResults from "@/components/CurateResults";
@@ -90,47 +91,47 @@ export default async function LibraryPage({
 
   const safeAssets = assets ?? [];
   const showMore = !q && safeAssets.length > limit;
-
   const nextN = limit + STEP;
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-6">
-      <div className="space-y-6">
-  {!q ? (
-    <div className="max-w-3xl pt-1 text-xs leading-relaxed text-zinc-500">
-      <p className="mt-2">
-        Curatorial Intelligence™ retrieves and prioritizes images in response to
-        your prompt—while preserving Pattern Curator’s editorial sensibility and
-        the integrity of a curated library. Curated intelligence meant to inspire.
-      </p>
-    </div>
-  ) : null}
+    <EmailGate source="ci-home">
+      <main className="mx-auto max-w-6xl px-4 py-6">
+        <div className="space-y-6">
+          {!q ? (
+            <div className="max-w-3xl pt-1 text-xs leading-relaxed text-zinc-500">
+              <p className="mt-2">
+                Curatorial Intelligence™ retrieves and prioritizes images in response to
+                your prompt—while preserving Pattern Curator’s editorial sensibility and
+                the integrity of a curated library. Curated intelligence meant to inspire.
+              </p>
+            </div>
+          ) : null}
 
-  <SearchHeader q={q} mode={"curate"} />
+          <SearchHeader q={q} mode={"curate"} />
 
-  <CurateResults q={q} assets={safeAssets.slice(0, limit)} />
+          <CurateResults q={q} assets={safeAssets.slice(0, limit)} />
 
-
-        {/* MORE pill only on cover page */}
-        {showMore ? (
-          <div className="pt-6 flex justify-center">
-            <a
-              href={`/?n=${nextN}`}
-              className="h-12 px-10 rounded-full flex items-center justify-center text-lg font-bold italic"
-              style={{
-                fontFamily: "Arial, Helvetica, sans-serif",
-                color: "#707376ff",
-                background: "#f4f4f4",
-                border: "1px solid #B8B9B6",
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-              }}
-            >
-              MORE
-            </a>
-          </div>
-        ) : null}
-      </div>
-    </main>
+          {/* MORE pill only on cover page */}
+          {showMore ? (
+            <div className="pt-6 flex justify-center">
+              <a
+                href={`/?n=${nextN}`}
+                className="h-12 px-10 rounded-full flex items-center justify-center text-lg font-bold italic"
+                style={{
+                  fontFamily: "Arial, Helvetica, sans-serif",
+                  color: "#707376ff",
+                  background: "#f4f4f4",
+                  border: "1px solid #B8B9B6",
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                }}
+              >
+                MORE
+              </a>
+            </div>
+          ) : null}
+        </div>
+      </main>
+    </EmailGate>
   );
 }
