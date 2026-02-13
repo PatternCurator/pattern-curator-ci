@@ -22,23 +22,21 @@ export function SearchHeader({ q, mode = "curate" }: SearchHeaderProps) {
             className="h-11 w-full rounded-xl border border-black/10 bg-white px-4 text-sm outline-none"
           />
 
-          {/* Curate-only submit */}
           <button
-  type="submit"
-  className="shrink-0 h-[46px] rounded-full px-6 text-[11px] flex items-center justify-center"
-  style={{
-    fontFamily: "Arial, Helvetica, sans-serif",
-    fontStyle: "italic",
-    textTransform: "uppercase",
-    letterSpacing: "0.06em",
-    border: "1px solid #B8B9B6",
-    color: "#707376ff",
-    background: "#f4f4f4",
-  }}
->
-  CURATE
-</button>
-
+            type="submit"
+            className="shrink-0 h-[46px] rounded-full px-6 text-[11px] flex items-center justify-center"
+            style={{
+              fontFamily: "Arial, Helvetica, sans-serif",
+              fontStyle: "italic",
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+              border: "1px solid #B8B9B6",
+              color: "#707376ff",
+              background: "#f4f4f4",
+            }}
+          >
+            CURATE
+          </button>
         </div>
       </form>
     </div>

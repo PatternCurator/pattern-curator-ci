@@ -115,16 +115,39 @@ export default function AboutPage() {
             className="text-[12px] font-bold tracking-wide uppercase"
             style={{ color: BRAND_GREY }}
           >
-            Beta note
+            Subscription Information
           </h2>
 
           <p
             className="max-w-3xl text-xs leading-relaxed"
             style={{ color: BRAND_GREY }}
           >
-            This is a Beta release. You may see small changes as performance and
-            features are refined. If something feels off, please share what happened
-            and what you expected.
+            After your free search allowance of 5 free searches, you will need a paid 
+            subscription for full access to all of the content. Once you sign up, for 
+            either monthly at $85 per month, or yearly at $850 per month - you will be 
+            automatically charge for the next time frame. If you want to cancel, we require
+            30 days notice, in writing by email; in which we will cancel as per your request.
+            No refunds are offered, which is why we are offering a free search allowance.
+          </p>
+        </section>
+
+        <section className="space-y-3">
+          <h2
+            className="text-[12px] font-bold tracking-wide uppercase"
+            style={{ color: BRAND_GREY }}
+          >
+            What you are paying for
+          </h2>
+
+          <p
+            className="max-w-3xl text-xs leading-relaxed"
+            style={{ color: BRAND_GREY }}
+          >
+            Your subscription includes full access to the site: Pattern Curator filtered library,
+            moodboards, trend reports shown as inspiration pages and color stories with the the assistance
+            of AI to add more intelligence to the curated visuals. We do not claim any ownership of 
+            images curated from the internet. You are paying for the system and methodlogy that has been
+            trademarked by Pattern Curator as Curatorial Intelligence.
           </p>
         </section>
 

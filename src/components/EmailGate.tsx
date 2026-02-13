@@ -3,13 +3,21 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
-type LeadResponse = {
-  lead: { id: string; email: string; created_at: string };
-  free_searches: { limit: number; used: number; remaining: number };
-};
-
 const STORAGE_KEY = "pc_ci_email";
 const LAST_Q_KEY = "pc_ci_last_q";
+
+function normalizeEmail(email: string) {
+  return email.trim().toLowerCase();
+}
+
+// Works with BOTH response shapes:
+// - old: { free_searches: { remaining } }
+// - new: { remaining }
+function extractRemaining(data: any): number | null {
+  if (typeof data?.free_searches?.remaining === "number") return data.free_searches.remaining;
+  if (typeof data?.remaining === "number") return data.remaining;
+  return null;
+}
 
 export default function EmailGate({
   source = "ci",
@@ -21,7 +29,6 @@ export default function EmailGate({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // current query (this is what will consume searches)
   const q = useMemo(() => (searchParams?.get("q") ?? "").trim(), [searchParams]);
 
   const [email, setEmail] = useState<string>("");
@@ -35,26 +42,25 @@ export default function EmailGate({
   const [checkoutStatus, setCheckoutStatus] = useState<"idle" | "loading" | "error">("idle");
   const [checkoutError, setCheckoutError] = useState<string>("");
 
-  // Restore email + refresh remaining searches
+  const hasEmail = Boolean(email);
+  const limitReached = hasEmail && remaining === 0;
+
+  function handleLogout() {
+    window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem(LAST_Q_KEY);
+    setEmail("");
+    setInput("");
+    setRemaining(null);
+    setStatus("idle");
+    setError("");
+    setCheckoutStatus("idle");
+    setCheckoutError("");
+  }
+
+  // Restore saved email
   useEffect(() => {
-    const saved =
-      typeof window !== "undefined"
-        ? window.localStorage.getItem(STORAGE_KEY)
-        : null;
-
-    if (saved) {
-      setEmail(saved);
-
-      // best-effort refresh remaining
-      void fetch("/api/lead", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: saved, source }),
-      })
-        .then((r) => r.json())
-        .then((data: LeadResponse) => setRemaining(data?.free_searches?.remaining ?? null))
-        .catch(() => {});
-    }
+    const saved = window.localStorage.getItem(STORAGE_KEY);
+    if (saved) setEmail(saved);
   }, [source]);
 
   async function onSubmit(e: React.FormEvent) {
@@ -62,7 +68,7 @@ export default function EmailGate({
     setStatus("saving");
     setError("");
 
-    const clean = input.trim().toLowerCase();
+    const clean = normalizeEmail(input);
     if (!clean || !clean.includes("@")) {
       setStatus("error");
       setError("Please enter a valid email.");
@@ -70,24 +76,36 @@ export default function EmailGate({
     }
 
     try {
+      // Save lead (best-effort)
       const res = await fetch("/api/lead", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: clean, source }),
       });
 
-      const data = (await res.json()) as Partial<LeadResponse> & { error?: string };
+      const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
         setStatus("error");
-        setError(data.error || "Could not save email.");
+        setError(data?.error || "Could not save email.");
         return;
       }
 
       window.localStorage.setItem(STORAGE_KEY, clean);
       setEmail(clean);
-      setRemaining(data.free_searches?.remaining ?? null);
       setStatus("idle");
+
+      // ✅ Immediately fetch current remaining by calling /api/usage with a non-search action
+      // so we DO NOT consume a search, but we can get the counter.
+      const u = await fetch("/api/usage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: clean, action: "status", count: 1 }),
+      });
+
+      const udata = await u.json().catch(() => ({}));
+      const rem = extractRemaining(udata);
+      if (typeof rem === "number") setRemaining(rem);
     } catch {
       setStatus("error");
       setError("Network error. Please try again.");
@@ -126,12 +144,11 @@ export default function EmailGate({
     }
   }
 
-  // ✅ Consume a free search when q changes (server-side truth) and update counter
+  // Consume a free search when q changes and update counter
   useEffect(() => {
     if (!email) return;
     if (!q) return;
 
-    // prevent double-counting the same q (e.g., refresh)
     const last = window.localStorage.getItem(LAST_Q_KEY);
     if (last === q) return;
 
@@ -143,6 +160,7 @@ export default function EmailGate({
           body: JSON.stringify({
             email,
             action: "search",
+            count: 1,
             q,
             meta: { pathname },
           }),
@@ -150,44 +168,41 @@ export default function EmailGate({
 
         const data = await res.json().catch(() => ({}));
 
-        if (res.ok) {
-          setRemaining(data?.free_searches?.remaining ?? null);
-          window.localStorage.setItem(LAST_Q_KEY, q);
-          return;
-        }
+        const rem = extractRemaining(data);
+        if (typeof rem === "number") setRemaining(rem);
 
-        // 402 => limit reached
-        if (res.status === 402) {
-          setRemaining(data?.free_searches?.remaining ?? 0);
-          window.localStorage.setItem(LAST_Q_KEY, q);
-          return;
-        }
+        window.localStorage.setItem(LAST_Q_KEY, q);
 
-        // other errors: don't block UI; just log
-        // (counter might be stale, but avoids breaking the app)
-        console.error("Usage logging failed:", data);
+        // If you hit 402, set to 0 so the modal triggers
+        if (res.status === 402) setRemaining(0);
+
+        // Log only unexpected failures
+        if (!res.ok && res.status !== 402) {
+          console.error("Usage logging failed:", data);
+        }
       } catch (err) {
         console.error("Usage logging error:", err);
       }
     })();
   }, [email, q, pathname]);
 
-  const hasEmail = Boolean(email);
-  const limitReached = hasEmail && remaining === 0;
-
   return (
     <div className="relative">
-      {/* Always render background content (covers visible) */}
+      {/* Always render background content */}
       <div className={hasEmail && !limitReached ? "" : "pointer-events-none select-none"}>
-        <div className={hasEmail && !limitReached ? "" : "blur-[1.5px] opacity-60"}>
-          {children}
-        </div>
+        <div className={hasEmail && !limitReached ? "" : "blur-[1.5px] opacity-60"}>{children}</div>
       </div>
 
-      {/* Top status strip once email is set */}
+      {/* Top status strip */}
       {hasEmail ? (
         <div className="fixed top-0 left-0 right-0 z-40 px-4 py-2 text-xs text-neutral-600 flex items-center justify-between border-b border-neutral-200 bg-white/80 backdrop-blur">
-          <span>{email}</span>
+          <div className="flex items-center gap-4">
+            <span>{email}</span>
+            <button type="button" onClick={handleLogout} className="underline hover:opacity-70">
+              Log out
+            </button>
+          </div>
+
           {typeof remaining === "number" ? <span>{remaining} free searches left</span> : <span />}
         </div>
       ) : null}
@@ -195,10 +210,8 @@ export default function EmailGate({
       {/* Email gate OR subscription-required modal */}
       {!hasEmail || limitReached ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-6">
-          {/* Dim / blur layer */}
           <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
 
-          {/* Floating modal */}
           <div className="relative w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-6 shadow-xl">
             {!hasEmail ? (
               <>

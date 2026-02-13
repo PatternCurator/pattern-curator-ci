@@ -1,4 +1,3 @@
-// src/app/api/lead/route.ts
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -12,18 +11,19 @@ function normalizeEmail(email: string) {
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({}));
-    const email = typeof body?.email === "string" ? body.email : "";
-    const email_normalized = normalizeEmail(email);
+    const emailRaw = typeof body?.email === "string" ? body.email : "";
+    const email = normalizeEmail(emailRaw);
 
-    if (!email_normalized) {
+    if (!email || !email.includes("@")) {
       return NextResponse.json({ error: "Valid email is required" }, { status: 400 });
     }
 
     const supabaseAdmin = getSupabaseAdmin();
 
+    // IMPORTANT: email_normalized is GENERATED in DB; do NOT set it.
     const { error } = await supabaseAdmin
       .from("ci_leads")
-      .upsert({ email, email_normalized }, { onConflict: "email_normalized" });
+      .upsert({ email }, { onConflict: "email_normalized" });
 
     if (error) {
       console.error("❌ ci_leads upsert error:", error);

@@ -1,10 +1,12 @@
 import Link from "next/link";
+import HeaderAuth from "@/components/HeaderAuth";
 
 export default function SiteHeader() {
   return (
-    <header className="w-full border-b border-black/5 bg-white">
-      <div className="mx-auto max-w-6xl px-6 py-4">
+    <header className="relative z-10 mt-4 w-full border-b border-black/5 bg-white">
+      <div className="mx-auto max-w-6xl px-6 pt-6 pb-4">
         <div className="flex items-center justify-between gap-6">
+          
           {/* Brand lockup */}
           <Link href="/" className="block leading-tight">
             <div
@@ -28,9 +30,10 @@ export default function SiteHeader() {
             </div>
           </Link>
 
-          {/* Navigation */}
-          <nav
-  className="flex items-center gap-6 whitespace-nowrap"
+          {/* Navigation + Auth */}
+          <div className="flex items-center gap-8">
+            <nav
+              className="flex items-center gap-6 whitespace-nowrap"
               style={{
                 fontFamily: "Arial, Helvetica, sans-serif",
                 color: "#8a8a8aff",
@@ -40,22 +43,30 @@ export default function SiteHeader() {
                 textTransform: "uppercase",
               }}
             >
+              <Link
+                href="/"
+                className="text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
+              >
+                Curate
+              </Link>
 
-            <Link href="/" className="text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
->
-              Curate
-            </Link>
+              <Link
+                href="/trend"
+                className="text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
+              >
+                Inspiration
+              </Link>
 
-            <Link href="/trend" className="text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
->
-              Inspiration
-            </Link>
+              <Link
+                href="/about"
+                className="text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
+              >
+                About
+              </Link>
+            </nav>
 
-            <Link href="/about" className="text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
->
-              About
-            </Link>
-          </nav>
+            <HeaderAuth />
+          </div>
         </div>
       </div>
     </header>

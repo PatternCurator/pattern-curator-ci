@@ -32,20 +32,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
     }
 
-    // ✅ Deploy-first: Stripe may not be configured yet
+    // ✅ Deploy-first: no Stripe key required to build/deploy
     const stripe = getStripeOrNull();
     if (!stripe) {
-      return NextResponse.json(
-        { error: "Stripe is not configured yet" },
-        { status: 503 }
-      );
+      return NextResponse.json({ error: "Stripe is not configured yet" }, { status: 503 });
     }
 
     const appUrl =
       process.env.NEXT_PUBLIC_APP_URL ||
       (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
-    // Optional: mark billing as pending before redirecting to Stripe
     const supabaseAdmin = getSupabaseAdmin();
     const now = new Date().toISOString();
 
@@ -68,11 +64,7 @@ export async function POST(req: Request) {
       allow_promotion_codes: true,
       success_url: `${appUrl}/account?checkout=success`,
       cancel_url: `${appUrl}/pricing?checkout=cancel`,
-      metadata: {
-        email: email_normalized,
-        plan,
-        stripe_price_id: priceId,
-      },
+      metadata: { email: email_normalized, plan, stripe_price_id: priceId },
     });
 
     return NextResponse.json({ url: session.url });
