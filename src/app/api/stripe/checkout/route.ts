@@ -62,8 +62,8 @@ export async function POST(req: Request) {
       customer_email: email_normalized,
       line_items: [{ price: priceId, quantity: 1 }],
       allow_promotion_codes: true,
-      success_url: `${appUrl}/account?checkout=success`,
-      cancel_url: `${appUrl}/pricing?checkout=cancel`,
+      success_url: `${appUrl}/?checkout=success`,
+      cancel_url: `${appUrl}/`,
       metadata: { email: email_normalized, plan, stripe_price_id: priceId },
     });
 

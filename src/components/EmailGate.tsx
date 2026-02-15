@@ -95,8 +95,7 @@ export default function EmailGate({
       setEmail(clean);
       setStatus("idle");
 
-      // ✅ Immediately fetch current remaining by calling /api/usage with a non-search action
-      // so we DO NOT consume a search, but we can get the counter.
+      // Immediately fetch remaining without consuming a search
       const u = await fetch("/api/usage", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -190,7 +189,9 @@ export default function EmailGate({
     <div className="relative">
       {/* Always render background content */}
       <div className={hasEmail && !limitReached ? "" : "pointer-events-none select-none"}>
-        <div className={hasEmail && !limitReached ? "" : "blur-[1.5px] opacity-60"}>{children}</div>
+        <div className={hasEmail && !limitReached ? "" : "blur-[1.5px] opacity-60"}>
+          {children}
+        </div>
       </div>
 
       {/* Top status strip */}
@@ -198,7 +199,11 @@ export default function EmailGate({
         <div className="fixed top-0 left-0 right-0 z-40 px-4 py-2 text-xs text-neutral-600 flex items-center justify-between border-b border-neutral-200 bg-white/80 backdrop-blur">
           <div className="flex items-center gap-4">
             <span>{email}</span>
-            <button type="button" onClick={handleLogout} className="underline hover:opacity-70">
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="underline hover:opacity-70"
+            >
               Log out
             </button>
           </div>
@@ -220,7 +225,9 @@ export default function EmailGate({
                 <p className="mt-2 text-sm text-neutral-600">
                   Get 5 free searches. No password.
                   <br />
-                  <span className="italic text-neutral-500">Full access available by subscription.</span>
+                  <span className="italic text-neutral-500">
+                    Full access available by subscription.
+                  </span>
                 </p>
 
                 <form onSubmit={onSubmit} className="mt-5 space-y-3">
@@ -290,8 +297,11 @@ export default function EmailGate({
                     {checkoutStatus === "loading" ? "Redirecting…" : "Subscribe to continue"}
                   </button>
 
-                  {checkoutStatus === "error" ? <p className="text-sm text-red-600">{checkoutError}</p> : null}
+                  {checkoutStatus === "error" ? (
+                    <p className="text-sm text-red-600">{checkoutError}</p>
+                  ) : null}
 
+                  {/* ✅ Pricing line you want */}
                   <p className="text-xs text-neutral-500 text-center">
                     {plan === "monthly" ? "$85/month" : "$850/year"}
                   </p>
