@@ -240,7 +240,12 @@ export default function EmailGate({
                     autoComplete="email"
                   />
 
+                  <p className="text-xs text-neutral-500 text-center">
+                  Already subscribed? Use the same email to unlock unlimited searches.
+                  </p>
+
                   {status === "error" ? <p className="text-sm text-red-600">{error}</p> : null}
+
 
                   <button
                     type="submit"
