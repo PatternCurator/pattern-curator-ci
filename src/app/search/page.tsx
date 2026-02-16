@@ -49,9 +49,8 @@ export default async function LibraryPage({
   // ✅ Ranking: Domain > Direction > Color > Print
   const safeRaw = raw ?? [];
 
-const ranked = safeRaw
-  .map((a: any) => {
-
+  const ranked = safeRaw
+    .map((a: any) => {
       let score = 0;
 
       for (const t of terms) {
@@ -67,10 +66,10 @@ const ranked = safeRaw
 
   const assets = ranked.slice(0, 9);
 
-    return (
+  return (
     <main className="mx-auto max-w-6xl px-4 py-6">
       <div
-        className="text-[18px] italic bold uppercase tracking-widest"
+        className="text-[18px] font-bold italic uppercase tracking-widest"
         style={{
           fontFamily: "Arial, Helvetica, sans-serif",
           color: "#8a8a8aff",
@@ -86,3 +85,4 @@ const ranked = safeRaw
       <CurateResults q={q} assets={assets} />
     </main>
   );
+}
