@@ -67,10 +67,22 @@ const ranked = safeRaw
 
   const assets = ranked.slice(0, 9);
 
-  return (
+    return (
     <main className="mx-auto max-w-6xl px-4 py-6">
-      <SearchHeader q={q} mode={"curate"} />
+      <div
+        className="text-[18px] italic bold uppercase tracking-widest"
+        style={{
+          fontFamily: "Arial, Helvetica, sans-serif",
+          color: "#8a8a8aff",
+        }}
+      >
+        LIBRARY
+      </div>
+
+      <div className="pt-2">
+        <SearchHeader q={q} mode={"curate"} />
+      </div>
+
       <CurateResults q={q} assets={assets} />
     </main>
   );
-}

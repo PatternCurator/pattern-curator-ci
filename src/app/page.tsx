@@ -97,6 +97,17 @@ export default async function LibraryPage({
     <EmailGate source="ci-home">
       <main className="mx-auto max-w-6xl px-4 py-6">
         <div className="space-y-6">
+
+        {/* ✅ NEW: LIBRARY title (always shown) */}
+        <div
+          className="text-[18px] font-bold italic uppercase tracking-widest"
+          style={{
+            fontFamily: "Arial, Helvetica, sans-serif",
+            color: "#8a8a8aff",
+          }}
+        >
+          LIBRARY
+        </div>
           {!q ? (
             <div className="max-w-3xl pt-1 text-xs leading-relaxed text-zinc-500">
               <p className="mt-2">

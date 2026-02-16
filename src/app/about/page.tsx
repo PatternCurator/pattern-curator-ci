@@ -7,15 +7,15 @@ export default function AboutPage() {
     <main className="mx-auto max-w-6xl px-4 py-6">
       <div className="space-y-8">
         <header className="space-y-2">
-          <h1
-            className="text-[18px] italic"
+          <div
+            className="text-[18px] font-bold italic uppercase tracking-widest"
             style={{
-              fontFamily: "var(--font-libre), Libre Baskerville, serif",
-              color: BRAND_GREY,
-            }}
-          >
-            About and Methodology
-          </h1>
+            fontFamily: "Arial, Helvetica, sans-serif",
+            color: BRAND_GREY,
+          }}
+        >
+         ABOUT AND METHODOLOGY
+      </div>
 
           <p
             className="max-w-3xl pt-1 text-xs leading-relaxed"

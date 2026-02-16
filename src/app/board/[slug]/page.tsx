@@ -30,8 +30,9 @@ export default async function BoardPage({
   const { data, error } = await supabase
     .from("boards")
     .select(
-      "id,title,slug,board_image_path_1,board_image_path_2,source_site,domain,direction,color_notes,print_pattern_notes"
-    )
+      "id,title,slug,board_image_path_1,board_image_path_2,source_site,domain,direction,color_notes,print_pattern_notes,catalog_state"
+  )
+
     .eq("slug", slug)
     .single();
 
@@ -67,14 +68,22 @@ export default async function BoardPage({
 </h1>
 
 
-
         <Link
-          href="/trend"
-          className="inline-flex h-9 items-center rounded-full px-4 text-sm"
-          style={{ border: "1px solid #B8B9B6", color: "#707376ff" }}
-        >
-          Back to Trend
-        </Link>
+  href={data.catalog_state === "archive" ? "/archive" : "/inspiration"}
+  className="inline-flex h-9 items-center rounded-full px-4 text-sm"
+  style={{
+    fontFamily: "Arial, Helvetica, sans-serif",
+    fontStyle: "italic",
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+    border: "1px solid #B8B9B6",
+    color: "#707376ff",
+    background: "#f4f4f4",
+  }}
+>
+  {data.catalog_state === "archive" ? "Back to Archive" : "Back to Inspiration"}
+</Link>
+
       </div>
 
       {/* ✅ Balanced layout: AI + images share the same width */}

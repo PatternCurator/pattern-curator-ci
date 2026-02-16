@@ -47,14 +47,21 @@ export default function SiteHeader() {
                 href="/"
                 className="text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
               >
-                Curate
+                Library
               </Link>
 
               <Link
-                href="/trend"
+                href="/inspiration/"
                 className="text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
               >
                 Inspiration
+              </Link>
+
+              <Link
+                href="/archive/"
+                className="text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
+              >
+               Archive
               </Link>
 
               <Link
