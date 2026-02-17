@@ -30,14 +30,16 @@ export default async function BoardPage({
   const { data, error } = await supabase
     .from("boards")
     .select(
-      "id,title,slug,board_image_path_1,board_image_path_2,source_site,domain,direction,color_notes,print_pattern_notes,catalog_state"
-  )
+      "id,title,slug,board_image_path_1,board_image_path_2,source_site,domain,direction,color_notes,print_pattern_notes,catalog_state,report_type"
+    )
+
 
     .eq("slug", slug)
     .single();
 
   if (error || !data) return notFound();
-
+  const isMood = data.report_type === "mood";
+  const aspectClass = isMood ? "aspect-[13/20.5]" : "aspect-[16/9]";
   const img1 = publicBoardUrl(data.board_image_path_1 ?? null);
   const img2 = publicBoardUrl(data.board_image_path_2 ?? null);
 
@@ -96,7 +98,7 @@ export default async function BoardPage({
         {img1 ? (
           <a href={img1} target="_blank" rel="noreferrer" className="block">
             <div className="bg-zinc-50">
-              <div className="relative aspect-[16/9] w-full">
+              <div className={`relative ${aspectClass} w-full`}>
                 <Image
                   src={img1}
                   alt="Board image 1"
