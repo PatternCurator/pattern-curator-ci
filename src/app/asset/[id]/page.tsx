@@ -89,7 +89,7 @@ export default async function AssetDetailPage({
 <AssetInterpretation asset={asset} />
 
 <div className="mt-6 flex justify-center">
-  <div className="w-full max-w-md overflow-hidden rounded-2xl border border-zinc-200 bg-white">
+  <div className="w-full max-w-md overflow-hidden rounded-none bg-white">
     <div className="relative aspect-[4/5] bg-zinc-50">
       {url ? (
         <Image

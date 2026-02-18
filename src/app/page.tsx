@@ -2,6 +2,8 @@ import EmailGate from "@/components/EmailGate";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { SearchHeader } from "@/components/SearchHeader";
 import CurateResults from "@/components/CurateResults";
+import InfiniteScrollN from "@/components/InfiniteScrollN";
+
 
 function tokenize(q: string) {
   return q
@@ -43,7 +45,7 @@ function clampInt(v: unknown, fallback: number) {
 export default async function LibraryPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ q?: string; n?: string }>;
+  searchParams?: Promise<{ q?: string; n?: string; view?: string }>;
 }) {
   const sp = (await searchParams) ?? {};
   const q = (sp.q ?? "").trim();
@@ -123,24 +125,8 @@ export default async function LibraryPage({
           <CurateResults q={q} assets={safeAssets.slice(0, limit)} />
 
           {/* MORE pill only on cover page */}
-          {showMore ? (
-            <div className="pt-6 flex justify-center">
-              <a
-                href={`/?n=${nextN}`}
-                className="h-12 px-10 rounded-full flex items-center justify-center text-lg font-bold italic"
-                style={{
-                  fontFamily: "Arial, Helvetica, sans-serif",
-                  color: "#707376ff",
-                  background: "#f4f4f4",
-                  border: "1px solid #B8B9B6",
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                }}
-              >
-                MORE
-              </a>
-            </div>
-          ) : null}
+          {showMore ? <InfiniteScrollN nextN={nextN} hasMore={showMore} /> : null}
+
         </div>
       </main>
     </EmailGate>

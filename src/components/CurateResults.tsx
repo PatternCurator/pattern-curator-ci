@@ -234,53 +234,49 @@ export default function CurateResults({
   if (!assets || assets.length === 0) return null;
 
   // Curate down to 9 (this is the only behavior change)
-  const curated = q ? curateNine(q, assets, 9) : assets.slice(0, 9);
+  const curated = q ? curateNine(q, assets, 9) : assets;
+
 
   return (
     <section className="space-y-6">
       {/* Use curated set for interpretation so story + grid match */}
       {q ? <CurateInterpretationClient q={q} assets={curated} /> : null}
 
-      <div className="grid grid-cols-3 gap-4">
-        {curated.map((a) => {
-          const src = publicAssetUrl(a.image_path);
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+  {curated.map((a) => {
+    const src = publicAssetUrl(a.image_path);
+    const hoverLabel = (a.source_site ?? "").trim(); // <-- ONLY source_site
 
-          return (
-            <div key={a.id}>
-              <Link href={`/asset/${a.id}`} className="block">
-                <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-zinc-100">
-                  {src ? (
-                    <Image
-                      src={src}
-                      alt={a.title || ""}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 1024px) 33vw, 20vw"
-                    />
-                  ) : null}
+    return (
+      <div key={a.id}>
+        <Link href={`/asset/${a.id}`} className="block">
+          <div className="group relative aspect-[4/5] w-full overflow-hidden rounded-none bg-zinc-100">
+            {src ? (
+              <Image
+                src={src}
+                alt={a.title || ""}
+                fill
+                className="object-cover"
+                sizes="(max-width: 1024px) 33vw, 20vw"
+              />
+            ) : null}
+
+            {/* hover-only source_site overlay */}
+            {hoverLabel ? (
+              <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
+                <div className="absolute left-2 bottom-2 max-w-[90%] truncate text-[11px] leading-none text-white/90">
+                  {hoverLabel}
                 </div>
-              </Link>
-
-              <div className="mt-2">
-                <div className="text-sm leading-snug">
-                  {twoWordTitle(a.title)}
-                </div>
-
-                {a.source_site && a.source_url ? (
-                  <a
-                    href={a.source_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-1 block truncate text-xs opacity-70 hover:opacity-100"
-                  >
-                    {a.source_site}
-                  </a>
-                ) : null}
               </div>
-            </div>
-          );
-        })}
+            ) : null}
+          </div>
+        </Link>
       </div>
+    );
+  })}
+</div>
+
     </section>
   );
 }
