@@ -8,19 +8,6 @@ type Interpretation = {
   context_pulse: string[];
 };
 
-function domainLine(domain: string | null | undefined) {
-  if (!domain) return null;
-
-  const parts = domain
-    .split(/[,;|]/g)
-    .map((s) => s.trim())
-    .filter(Boolean);
-
-  if (parts.length === 0) return null;
-
-  return parts.join(" • ");
-}
-
 export default function AssetInterpretation({
   asset,
   showMeta = true,
@@ -28,12 +15,13 @@ export default function AssetInterpretation({
   asset: any;
   showMeta?: boolean;
 }) {
-
   const [loading, setLoading] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [data, setData] = useState<Interpretation | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // IMPORTANT: domain stays in the payload (AI still uses it),
+  // but we do NOT render it in the UI.
   const payload = useMemo(
     () => ({
       mode: "asset",
@@ -83,64 +71,73 @@ export default function AssetInterpretation({
     };
   }, [payload]);
 
-  const domainTopLine = domainLine(asset?.domain);
-
   return (
     <div className="mt-6 rounded-2xl border border-black/5 bg-white p-4">
-        {/* toggle (top-right) */}
-    <div className="flex justify-end">
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="text-xs text-zinc-500 hover:text-zinc-700"
-      >
-        {collapsed ? "Show interpretation" : "Hide interpretation"}
-      </button>
-    </div>
-
-     {!collapsed && (
-  <>
-    {/* prompt-style line (no verb) */}
-    {showMeta && domainTopLine ? (
-  <div className="mb-2 text-xs text-zinc-500 italic">
-    {domainTopLine}
-  </div>
-) : null}
-
-
-    {data ? (
-      <div className="space-y-3">
-        <div className="text-sm leading-relaxed text-zinc-700">
-          {data.curatorial_summary}
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-              Why This Matters
-            </div>
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-zinc-700">
-              {data.why_it_matters.map((b, i) => (
-                <li key={i}>{b}</li>
-              ))}
-            </ul>
+      {/* top row: label (left) + toggle (right) */}
+      <div className="flex items-center justify-between gap-4">
+        {showMeta ? (
+          <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+            Curatorial Intelligence Notes
           </div>
+        ) : (
+          <div />
+        )}
 
-          <div>
-            <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-              Context Pulse
-            </div>
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-zinc-700">
-              {data.context_pulse.map((b, i) => (
-                <li key={i}>{b}</li>
-              ))}
-            </ul>
-          </div>
-        </div>
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="text-xs text-zinc-500 hover:text-zinc-700"
+        >
+          {collapsed ? "Show interpretation" : "Hide interpretation"}
+        </button>
       </div>
-    ) : null}
-  </>
-)}
 
+      {!collapsed ? (
+        <div className="mt-3">
+          {loading ? (
+            <div className="text-sm text-zinc-500">Generating notes…</div>
+          ) : null}
+
+          {error ? (
+            <div className="mt-2 text-sm text-red-600">{error}</div>
+          ) : null}
+
+          {data ? (
+            <div className="space-y-3">
+              <div className="text-sm leading-relaxed text-zinc-700">
+                {data.curatorial_summary}
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                    Why This Matters
+                  </div>
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-zinc-700">
+                    {data.why_it_matters.map((b, i) => (
+                      <li key={i}>{b}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                    Context Pulse
+                  </div>
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-zinc-700">
+                    {data.context_pulse.map((b, i) => (
+                      <li key={i}>{b}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {!loading && !error && !data ? (
+            <div className="text-sm text-zinc-500">No interpretation available.</div>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

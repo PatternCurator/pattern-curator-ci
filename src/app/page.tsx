@@ -120,9 +120,7 @@ export default async function LibraryPage({
             }}
           >
             LIBRARY
-            <div className="text-[10px] text-zinc-400">
-  deploy: {process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "no-sha"}
-</div>
+            
           </div>
 
           {!q ? (
