@@ -42,6 +42,13 @@ export default async function BoardPage({
   const aspectClass = isMood ? "aspect-[13/20.5]" : "aspect-[16/9]";
   const img1 = publicBoardUrl(data.board_image_path_1 ?? null);
   const img2 = publicBoardUrl(data.board_image_path_2 ?? null);
+  const pdfHref =
+    img1
+      ? `/api/board/pdf?img1=${encodeURIComponent(img1)}${
+          img2 ? `&img2=${encodeURIComponent(img2)}` : ""
+        }&title=${encodeURIComponent(data.title ?? "Board")}`
+      : null;
+
 
   // Reuse interpretation component by providing the shape it expects
   const interpretationAsset = {
@@ -127,10 +134,25 @@ export default async function BoardPage({
           </a>
         ) : null}
 
-        {/* Sources sentence at bottom */}
-        {data.source_site ? (
-          <p className="pt-2 text-sm text-zinc-500">{data.source_site}</p>
-        ) : null}
+          {/* Sources sentence + optional download at bottom */}
+          <div className="pt-2 space-y-2">
+            {data.source_site ? (
+              <p className="text-sm text-zinc-500">{data.source_site}</p>
+       ) : null}
+
+            {pdfHref ? (
+               <div className="flex justify-end">
+                <a
+                  href={pdfHref}
+                  className="inline-flex items-center px-3 h-8 text-xs uppercase tracking-wider border border-zinc-300 bg-zinc-100 text-zinc-600 rounded-full"
+                  style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+          >
+              Download PDF
+      </a>
+    </div>
+  ) : null}
+</div>
+
       </div>
     </main>
   );
