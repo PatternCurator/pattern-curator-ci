@@ -49,9 +49,9 @@ export default async function LibraryPage({
   const sp = (await searchParams) ?? {};
   const q = (sp.q ?? "").trim();
 
-  const DEFAULT_N = 9;
-  const STEP = 39;
-  const AUTO_CAP = 126; // stop infinite auto-load here
+  const DEFAULT_N = 8;
+  const STEP = 40;
+  const AUTO_CAP = 124; // stop infinite auto-load here
 
   // Only apply progressive loading on the cover (no query)
   const n = !q ? clampInt(sp.n, DEFAULT_N) : DEFAULT_N;
@@ -120,6 +120,9 @@ export default async function LibraryPage({
             }}
           >
             LIBRARY
+            <div className="text-[10px] text-zinc-400">
+  deploy: {process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "no-sha"}
+</div>
           </div>
 
           {!q ? (
@@ -131,11 +134,18 @@ export default async function LibraryPage({
               </p>
             </div>
           ) : null}
+          
 
           <SearchHeader q={q} mode={"curate"} />
 
           {/* IMPORTANT: pass the first `limit` rows only */}
-          <CurateResults q={q} assets={safeAssets.slice(0, limit)} />
+          <CurateResults
+            q={q}
+            assets={safeAssets.slice(0, limit)}
+            columns={4}
+            showMeta
+            rounded
+            />
 
           {/* Infinite scroll until AUTO_CAP */}
           {allowInfinite ? (
@@ -162,5 +172,6 @@ export default async function LibraryPage({
         </div>
       </main>
     </EmailGate>
+    
   );
 }
