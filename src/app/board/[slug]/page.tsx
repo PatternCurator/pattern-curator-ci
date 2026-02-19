@@ -98,7 +98,7 @@ export default async function BoardPage({
       {/* ✅ Balanced layout: AI + images share the same width */}
       <div className="mx-auto w-full max-w-3xl space-y-6">
         {/* AI info (hide market/domain header line) */}
-        <AssetInterpretation asset={interpretationAsset as any} showMeta={false} />
+        <AssetInterpretation asset={interpretationAsset as any} showMeta />
 
         {/* Board JPGs: landscape, sharp corners, no outlines.
             Click opens the image alone in a new tab/window. */}
@@ -141,7 +141,7 @@ export default async function BoardPage({
        ) : null}
 
             {pdfHref ? (
-               <div className="flex justify-end">
+               <div className="flex justify-center">
                 <a
                   href={pdfHref}
                   className="inline-flex items-center px-3 h-8 text-xs uppercase tracking-wider border border-zinc-300 bg-zinc-100 text-zinc-600 rounded-full"
