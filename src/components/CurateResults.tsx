@@ -29,12 +29,6 @@ function publicAssetUrl(path: string | null) {
   return `${base}/storage/v1/object/public/assets/${encoded}`;
 }
 
-function twoWordTitle(title: string | null | undefined) {
-  const t = (title ?? "").trim();
-  if (!t) return "Untitled";
-  return t.split(/\s+/).slice(0, 2).join(" ");
-}
-
 function normalizeText(s: string | null | undefined) {
   return (s ?? "")
     .toLowerCase()
@@ -81,14 +75,14 @@ function countTokenHits(haystack: string, tokens: string[]) {
 }
 
 /**
- * Curate 9 from the candidate pool.
+ * Curate N from the candidate pool.
  * Priority: mood(direction) -> color(color_notes) -> pattern(print_pattern_notes)
  *
  * KEY BETA RULE (fixes "random"):
  * - If query is compound (2+ meaningful tokens), the first 6 must be mood-aligned (direction hits > 0).
- * - Supporting assets (color/pattern-only) can only fill the last 3.
+ * - Supporting assets (color/pattern-only) can only fill the last slots.
  */
-function curateNine(q: string, assets: Asset[], limit = 9) {
+function curateN(q: string, assets: Asset[], limit = 9) {
   if (!q || tokenizeQuery(q).length === 0) return assets.slice(0, limit);
 
   const tokens = tokenizeQuery(q);
@@ -107,11 +101,7 @@ function curateNine(q: string, assets: Asset[], limit = 9) {
     const titleHits = countTokenHits(title, tokens);
 
     // Weighted: mood strongest, then color, then pattern, then title
-    const total =
-      moodHits * 10 + // stronger than before to anchor story
-      colorHits * 3 +
-      patternHits * 2 +
-      titleHits * 1;
+    const total = moodHits * 10 + colorHits * 3 + patternHits * 2 + titleHits * 1;
 
     return {
       a,
@@ -149,7 +139,6 @@ function curateNine(q: string, assets: Asset[], limit = 9) {
 
     for (const s of topWindow) {
       if (!s.directionKey) continue;
-      // weight by moodHits so stronger direction matches dominate
       dirCounts.set(
         s.directionKey,
         (dirCounts.get(s.directionKey) ?? 0) + Math.max(1, s.moodHits)
@@ -186,26 +175,21 @@ function curateNine(q: string, assets: Asset[], limit = 9) {
     }
   };
 
-  // --- HARD CURATION SHAPE ---
-  // For compound queries, lock the first 6 to mood-aligned.
-  // This is what stops "random stripes" from taking over.
   if (isCompound) {
     // 1) Fill up to 6 from primary mood cluster
-    take(primaryMood, 6);
+    take(primaryMood, Math.min(6, limit));
 
     // 2) If primary mood cluster is thin, fill remaining of the 6 from other mood-aligned
-    if (chosen.length < 6) {
-      // take as many as needed to reach 6
+    if (chosen.length < Math.min(6, limit)) {
       for (const s of secondaryMood) {
-        if (chosen.length >= 6) break;
+        if (chosen.length >= Math.min(6, limit)) break;
         if (chosenIds.has(s.a.id)) continue;
         chosen.push(s.a);
         chosenIds.add(s.a.id);
       }
     }
 
-    // 3) Fill remaining (up to 9) with best supporting assets (color/pattern-only)
-    // These act like "supporting cast", not the story lead.
+    // 3) Fill remaining with best supporting assets (color/pattern-only)
     if (chosen.length < limit) take(supporting, 0);
 
     // 4) Fallback: if still short, fill from overall scored
@@ -214,69 +198,106 @@ function curateNine(q: string, assets: Asset[], limit = 9) {
     return chosen.slice(0, limit);
   }
 
-  // For single-token queries, keep it a bit looser but still cohesive
-  // (Mood-first still applies, but we don't hard-require 6 mood matches.)
-  // 1) Bias toward a dominant mood cluster if it exists
+  // Single-token queries: mood-first but looser
   take(primaryMood, Math.min(7, limit));
-  // 2) Fill remaining with best overall
   if (chosen.length < limit) take(scored, 0);
 
   return chosen.slice(0, limit);
 }
 
+function sourceLabel(a: Asset) {
+  const s = (a.source_site ?? "").trim();
+  if (s) return s;
+
+  const u = (a.source_url ?? "").trim();
+  if (!u) return "";
+  try {
+    return new URL(u).hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+}
+
 export default function CurateResults({
   q,
   assets,
+  columns = 3,
+  showMeta = false,
+  rounded = false,
 }: {
   q: string;
   assets: Asset[];
+  columns?: 2 | 3 | 4;
+  showMeta?: boolean;
+  rounded?: boolean;
 }) {
   if (!assets || assets.length === 0) return null;
 
-  // Curate down to 9 (this is the only behavior change)
-  const curated = q ? curateNine(q, assets, 9) : assets;
+  // Keep your behavior: curate down to 9 ONLY when a query exists
+  const curated = q ? curateN(q, assets, 9) : assets;
 
+  const gridCols =
+    columns === 4
+      ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+      : columns === 3
+      ? "grid-cols-2 sm:grid-cols-3"
+      : "grid-cols-2";
+
+  const radiusClass = rounded ? "rounded-md" : "rounded-none";
 
   return (
     <section className="space-y-6">
       {/* Use curated set for interpretation so story + grid match */}
       {q ? <CurateInterpretationClient q={q} assets={curated} /> : null}
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-  {curated.map((a) => {
-    const src = publicAssetUrl(a.image_path);
-    const hoverLabel = (a.source_site ?? "").trim(); // <-- ONLY source_site
+      <div className={`grid ${gridCols} gap-2`}>
+        {curated.map((a) => {
+          const src = publicAssetUrl(a.image_path);
+          const hoverLabel = sourceLabel(a);
 
-    return (
-      <div key={a.id}>
-        <Link href={`/asset/${a.id}`} className="block">
-          <div className="group relative aspect-[4/5] w-full overflow-hidden rounded-none bg-zinc-100">
-            {src ? (
-              <Image
-                src={src}
-                alt={a.title || ""}
-                fill
-                className="object-cover"
-                sizes="(max-width: 1024px) 33vw, 20vw"
-              />
-            ) : null}
+          return (
+            <div key={a.id}>
+              <Link href={`/asset/${a.id}`} className="block">
+                <div
+                  className={`group relative aspect-[4/5] w-full overflow-hidden ${radiusClass} bg-zinc-100`}
+                >
+                  {src ? (
+                    <Image
+                      src={src}
+                      alt={a.title || ""}
+                      fill
+                      className="object-cover"
+                      sizes={
+                        columns === 4
+                          ? "(max-width: 1024px) 33vw, 25vw"
+                          : "(max-width: 1024px) 33vw, 20vw"
+                      }
+                    />
+                  ) : null}
 
-            {/* hover-only source_site overlay */}
-            {hoverLabel ? (
-              <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
-                <div className="absolute left-2 bottom-2 max-w-[90%] truncate text-[11px] leading-none text-white/90">
-                  {hoverLabel}
+                  {/* hover-only source overlay */}
+                  {hoverLabel ? (
+                    <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
+                      <div className="absolute left-2 bottom-2 max-w-[90%] truncate text-[11px] leading-none text-white/90">
+                        {hoverLabel}
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
-              </div>
-            ) : null}
-          </div>
-        </Link>
-      </div>
-    );
-  })}
-</div>
+              </Link>
 
+              {/* Title + source site (search engine feel) */}
+              {showMeta ? (
+                <div className="pt-2 text-xs leading-snug">
+                  {a.title ? <div className="text-zinc-800">{a.title}</div> : null}
+                  {hoverLabel ? <div className="text-zinc-500">{hoverLabel}</div> : null}
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
     </section>
   );
 }
