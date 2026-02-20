@@ -77,7 +77,7 @@ export default async function MoodboardDetailPage({
     </Link>
   </div>
 
-      <div className="mx-auto w-full max-w-3xl space-y-6">
+      <div className="mx-auto w-full max-w-6xl space-y-6">
         {/* Curatorial Intelligence (same as Boards/Assets) */}
         <AssetInterpretation asset={interpretationAsset as any} showMeta />
 

@@ -78,14 +78,14 @@ export default async function ArchivePage({
   return (
     <main className="mx-auto max-w-6xl px-4 py-6 space-y-6">
       <TrendHeader
-  q={q}
-  type={type}
-  season={season}
-  seasonOptions={seasonOptions}
-  mode="archive"
-  titleLabel="ARCHIVE"
-  subtext="Curated inspiration of past seasons from Pattern Curator Trend Service."
-/>
+        q={q}
+        type={type}
+        season={season}
+        seasonOptions={seasonOptions}
+        mode="archive"
+        titleLabel="ARCHIVE"
+        subtext="Curated inspiration of past seasons from Pattern Curator Trend Service."
+      />
       <TrendResults boards={boards as any} />
     </main>
   );

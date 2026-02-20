@@ -28,7 +28,8 @@ export default async function MoodboardsPage({
     .select(
       "id,slug,title,image_path,source_url,source_site,domain,direction,color_notes,print_pattern_notes"
     )
-    .eq("status", "ready");
+    .eq("status", "ready")
+    .eq("catalog_state", "current");
 
   const terms = tokenize(q);
   if (terms.length > 0) {

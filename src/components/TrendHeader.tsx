@@ -10,7 +10,6 @@ const TYPES_BASE = [
 const TYPES_ARCHIVE = [
   { key: "trend", label: "TREND" },
   { key: "concept", label: "CONCEPT" },
-  { key: "mood", label: "MOOD" }, // keep only in archive
   { key: "color", label: "COLOR" },
   { key: "print+pattern", label: "PRINT + PATTERN" },
 ] as const;
