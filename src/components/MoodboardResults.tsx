@@ -20,33 +20,23 @@ function publicMoodboardUrl(path: string | null) {
   return `${base}/storage/v1/object/public/moodboards/${encoded}`;
 }
 
-function sourceLabel(m: Moodboard) {
-  const s = (m.source_site ?? "").trim();
-  if (s) return s;
-
-  const u = (m.source_url ?? "").trim();
-  if (!u) return "";
-  try {
-    return new URL(u).hostname.replace(/^www\./, "");
-  } catch {
-    return "";
-  }
-}
-
-export default function MoodboardResults({ moodboards }: { moodboards: Moodboard[] }) {
+export default function MoodboardResults({
+  moodboards,
+}: {
+  moodboards: Moodboard[];
+}) {
   if (!moodboards || moodboards.length === 0) return null;
 
   return (
     <section className="pt-4">
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-3">
         {moodboards.map((m) => {
           const src = publicMoodboardUrl(m.image_path);
-          const hoverLabel = sourceLabel(m);
 
           return (
             <div key={m.id}>
               <Link href={`/moodboard/${m.id}`} className="block">
-                <div className="group relative aspect-[4/5] w-full overflow-hidden rounded-none bg-zinc-100">
+                <div className="relative aspect-[4/5] w-full overflow-hidden rounded-none bg-zinc-100">
                   {src ? (
                     <Image
                       src={src}
@@ -56,18 +46,21 @@ export default function MoodboardResults({ moodboards }: { moodboards: Moodboard
                       sizes="(max-width: 1024px) 33vw, 20vw"
                     />
                   ) : null}
-
-                  {/* hover-only source overlay (matches your editorial preference) */}
-                  {hoverLabel ? (
-                    <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100">
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
-                      <div className="absolute bottom-2 left-2 max-w-[90%] truncate text-[11px] leading-none text-white/90">
-                        {hoverLabel}
-                      </div>
-                    </div>
-                  ) : null}
                 </div>
               </Link>
+
+              {/* Centered Title */}
+              {m.title ? (
+                <div
+                  className="pt-2 text-center text-sm leading-snug"
+                  style={{
+                    fontFamily:
+                      "var(--font-libre), Libre Baskerville, serif",
+                  }}
+                >
+                  {m.title}
+                </div>
+              ) : null}
             </div>
           );
         })}
