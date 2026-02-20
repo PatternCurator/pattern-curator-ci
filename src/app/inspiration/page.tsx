@@ -36,12 +36,13 @@ export default async function InspirationPage({
 
   // Used to power season pills (limit to CURRENT boards)
   const { data: seasonRows = [] } = await supabase
-  .from("boards")
-  .select("season,season_order")
-  .eq("status", "ready")
-  .eq("catalog_state", "current")
-  .order("season_order", { ascending: false })
-  .limit(200);
+    .from("boards")
+    .select("season,season_order")
+    .eq("status", "ready")
+    .eq("catalog_state", "current")
+    .neq("report_type", "mood") // exclude mood from Inspiration season options
+    .order("season_order", { ascending: false })
+    .limit(200);
 
   const seasonOptions = uniq(
     (seasonRows as any[])
@@ -55,7 +56,8 @@ export default async function InspirationPage({
       "id,title,slug,cover_image_path,source_site,season,season_order,domain,report_type,color_notes,print_pattern_notes,direction"
     )
     .eq("status", "ready")
-    .eq("catalog_state", "current");
+    .eq("catalog_state", "current")
+    .neq("report_type", "mood"); // exclude mood from Inspiration feed
 
   // Pill filters
   if (type) query = query.eq("report_type", type);

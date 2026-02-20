@@ -1,9 +1,16 @@
 import Link from "next/link";
 
-const TYPES = [
+const TYPES_BASE = [
   { key: "trend", label: "TREND" },
   { key: "concept", label: "CONCEPT" },
-  { key: "mood", label: "MOOD" },
+  { key: "color", label: "COLOR" },
+  { key: "print+pattern", label: "PRINT + PATTERN" },
+] as const;
+
+const TYPES_ARCHIVE = [
+  { key: "trend", label: "TREND" },
+  { key: "concept", label: "CONCEPT" },
+  { key: "mood", label: "MOOD" }, // keep only in archive
   { key: "color", label: "COLOR" },
   { key: "print+pattern", label: "PRINT + PATTERN" },
 ] as const;
@@ -109,7 +116,7 @@ export default function TrendHeader({
 
         {/* 6 pills across */}
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-          {TYPES.map((t) => {
+                    {(mode === "archive" ? TYPES_ARCHIVE : TYPES_BASE).map((t) => {
             const active = type === t.key;
             return (
               <Link
