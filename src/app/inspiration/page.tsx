@@ -1,3 +1,6 @@
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 import { supabaseServer } from "@/lib/supabaseServer";
 import TrendHeader from "@/components/TrendHeader";
 import TrendResults from "@/components/TrendResults";
@@ -33,11 +36,12 @@ export default async function InspirationPage({
 
   // Used to power season pills (limit to CURRENT boards)
   const { data: seasonRows = [] } = await supabase
-    .from("boards")
-    .select("season")
-    .eq("status", "ready")
-    .eq("catalog_state", "current")
-    .limit(200);
+  .from("boards")
+  .select("season,season_order")
+  .eq("status", "ready")
+  .eq("catalog_state", "current")
+  .order("season_order", { ascending: false })
+  .limit(200);
 
   const seasonOptions = uniq(
     (seasonRows as any[])
@@ -48,7 +52,7 @@ export default async function InspirationPage({
   let query = supabase
     .from("boards")
     .select(
-      "id,title,slug,cover_image_path,source_site,season,domain,report_type,color_notes,print_pattern_notes,direction"
+      "id,title,slug,cover_image_path,source_site,season,season_order,domain,report_type,color_notes,print_pattern_notes,direction"
     )
     .eq("status", "ready")
     .eq("catalog_state", "current");
@@ -70,6 +74,7 @@ export default async function InspirationPage({
   }
 
   const { data: boards = [], error } = await query
+    .order("season_order", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(60);
 
