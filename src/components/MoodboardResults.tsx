@@ -26,7 +26,8 @@ export default function MoodboardResults({ moodboards }: { moodboards: Moodboard
 
   return (
     <section className="pt-4">
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-3">
+      {/* tighter spacing vs gap-8 */}
+      <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-3">
         {moodboards.map((m) => {
           const src = publicMoodboardUrl(m.image_path);
           const href = `/moodboard/${(m.slug ?? m.id).toString()}`;
@@ -44,24 +45,27 @@ export default function MoodboardResults({ moodboards }: { moodboards: Moodboard
                       sizes="(max-width: 1024px) 33vw, 20vw"
                     />
                   ) : null}
+
+                  {/* Hover title overlay */}
+                  {m.title ? (
+                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 ease-in-out group-hover:opacity-100">
+                       {/* soft glass band */}
+                       <div className="mx-4 w-[calc(100%-2rem)] bg-white/60 backdrop-blur-sm px-4 py-3 text-center">
+                         <div
+                           className="text-[15px] font-bold uppercase"
+                           style={{
+                             fontFamily: "Arial, Helvetica, sans-serif",
+                              letterSpacing: "0.12em",
+                               color: "#5f6368",
+                           }}
+                     >
+                   {m.title}
+                 </div>
+               </div>
+             </div>
+          ) : null}
                 </div>
               </Link>
-
-              {/* keep title below for moodboards page */}
-              {m.title ? (
-                <div
-                  className="pt-2 text-center text-[11px] leading-snug font-bold"
-                  style={{
-                    fontFamily: "Arial, Helvetica, sans-serif",
-                    fontStyle: "italic",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.08em",
-                    color: "#8a8a8aff",
-                  }}
-                >
-                  {m.title}
-                </div>
-              ) : null}
             </div>
           );
         })}
