@@ -13,28 +13,6 @@ function tokenize(q: string) {
     .filter(Boolean);
 }
 
-function detectDomain(terms: string[]) {
-  const s = new Set(terms);
-
-  const mens =
-    s.has("menswear") ||
-    s.has("mens") ||
-    s.has("men") ||
-    s.has("men's") ||
-    (s.has("mens") && s.has("wear"));
-
-  const womens =
-    s.has("womenswear") ||
-    s.has("womens") ||
-    s.has("women") ||
-    s.has("women's") ||
-    (s.has("womens") && s.has("wear"));
-
-  if (mens) return "menswear";
-  if (womens) return "womenswear";
-  return null;
-}
-
 function clampInt(v: unknown, fallback: number) {
   const n = typeof v === "string" ? parseInt(v, 10) : NaN;
   if (!Number.isFinite(n)) return fallback;
@@ -62,17 +40,14 @@ export default async function LibraryPage({
   const supabase = await supabaseServer();
 
   const terms = tokenize(q);
-  const domain = detectDomain(terms);
 
   let query = supabase.from("assets").select("*").eq("status", "ready");
 
-  if (domain === "menswear") {
-    query = query.ilike("domain", "%menswear%");
-  }
-
-  if (domain === "womenswear") {
-    query = query.ilike("domain", "%womenswear%");
-  }
+  // IMPORTANT:
+  // Do NOT auto-filter the domain based on typed terms like "menswear".
+  // Domain is now a controlled facet (women/men/kids/home), and descriptors like
+  // "menswear stripe" live in direction/color_notes/print_pattern_notes.
+  // Auto-filtering domain here can zero out results before Curate scoring runs.
 
   if (terms.length > 0) {
     const orConditions = terms
@@ -120,7 +95,6 @@ export default async function LibraryPage({
             }}
           >
             LIBRARY
-            
           </div>
 
           {!q ? (
@@ -132,7 +106,6 @@ export default async function LibraryPage({
               </p>
             </div>
           ) : null}
-          
 
           <SearchHeader q={q} mode={"curate"} />
 
@@ -143,7 +116,7 @@ export default async function LibraryPage({
             columns={4}
             showMeta
             rounded
-            />
+          />
 
           {/* Infinite scroll until AUTO_CAP */}
           {allowInfinite ? (
@@ -170,6 +143,5 @@ export default async function LibraryPage({
         </div>
       </main>
     </EmailGate>
-    
   );
 }
