@@ -39,7 +39,7 @@ export default async function ArchivePage({
 
   const DEFAULT_N = 60;
   const STEP = 40;
-  const AUTO_CAP = 124; // stop infinite auto-load here
+  const AUTO_CAP = DEFAULT_N; // disable infinite auto-load (MORE only)
 
   // Progressive loading only when there is no query and no pills selected
   const isDefaultFeed = !q && !type && !season;

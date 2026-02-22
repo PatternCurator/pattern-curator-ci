@@ -27,7 +27,7 @@ export default async function MoodboardsPage({
 
   const DEFAULT_N = 120;
   const STEP = 40;
-  const AUTO_CAP = 124; // stop infinite auto-load here (mirrors assets behavior)
+  const AUTO_CAP = DEFAULT_N; // disable infinite auto-load (MORE only)
 
   // Progressive loading only when there is no query
   const isDefaultFeed = !q;
