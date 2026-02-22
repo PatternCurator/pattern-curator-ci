@@ -7,7 +7,7 @@ export default function SiteHeader() {
       <div className="mx-auto max-w-6xl px-6 pt-6 pb-4">
         <div className="flex items-center justify-between gap-6">
           
-          {/* Brand lockup */}
+          {/* Brand Lockup */}
           <Link href="/" className="block leading-tight">
             <div
               className="text-[20px] italic"
@@ -18,6 +18,7 @@ export default function SiteHeader() {
             >
               Pattern Curator
             </div>
+
             <div
               className="text-[12px]"
               style={{
@@ -30,8 +31,10 @@ export default function SiteHeader() {
             </div>
           </Link>
 
-          {/* Navigation + Auth */}
-          <div className="flex items-center gap-8">
+          {/* Right Side: Nav + Auth */}
+          <div className="flex items-center gap-10">
+
+            {/* Navigation */}
             <nav
               className="flex items-center gap-6 whitespace-nowrap"
               style={{
@@ -51,21 +54,21 @@ export default function SiteHeader() {
               </Link>
 
               <Link
-                href="/inspiration/"
+                href="/inspiration"
                 className="text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
               >
                 Inspiration
               </Link>
 
               <Link
-                href="/moodboards/"
+                href="/moodboards"
                 className="text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
               >
                 Moodboards
               </Link>
 
               <Link
-                href="/archive/"
+                href="/archive"
                 className="text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
               >
                 Archive
@@ -79,7 +82,19 @@ export default function SiteHeader() {
               </Link>
             </nav>
 
-            <HeaderAuth />
+            {/* Auth (Always Visible) */}
+            <div
+              style={{
+                fontFamily: "Arial, Helvetica, sans-serif",
+                fontSize: "12px",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: "#8a8a8aff",
+              }}
+            >
+              <HeaderAuth />
+            </div>
+
           </div>
         </div>
       </div>

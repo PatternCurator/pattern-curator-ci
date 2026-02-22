@@ -12,18 +12,21 @@ export default function ApplicationQuery({
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const [preview, setPreview] = useState(false);
 
   async function handleGenerate() {
     if (!query.trim()) return;
 
     setLoading(true);
     setResult(null);
+    setPreview(false);
 
     try {
       const res = await fetch("/api/application-query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          email: localStorage.getItem("pc_ci_email"),
           boardTitle,
           boardNotes,
           query,
@@ -31,9 +34,17 @@ export default function ApplicationQuery({
       });
 
       const data = await res.json();
-      setResult(data.text || "Error generating response.");
-    } catch (err) {
+
+      if (data.preview) {
+        setResult(data.text);
+        setPreview(true);
+      } else {
+        setResult(data.text || "Error generating response.");
+        setPreview(false);
+      }
+    } catch {
       setResult("Error generating response.");
+      setPreview(false);
     } finally {
       setLoading(false);
     }
@@ -42,8 +53,9 @@ export default function ApplicationQuery({
   return (
     <section className="mt-8 border-t border-neutral-200 pt-6">
       <div className="space-y-3">
-        <div className="text-[11px] uppercase tracking-widest font-bold text-neutral-600">
-          Enter product application query
+
+        <div className="text-[11px] uppercase tracking-widest text-neutral-600">
+          Product application query
         </div>
 
         <input
@@ -60,34 +72,78 @@ export default function ApplicationQuery({
           {loading ? "Generating..." : "Generate"}
         </button>
 
+        {/* RESULT BLOCK */}
         {result && (
-          <div className="mt-6 space-y-3 text-sm leading-relaxed text-neutral-600">
-            {result.split("\n").map((line, i) => {
-              const trimmed = line.trim();
+          <div className="mt-6 text-sm leading-relaxed text-neutral-600">
 
-              // Handle markdown headings like ## Heading
-              if (trimmed.startsWith("##")) {
-                const cleanHeading = trimmed.replace(/^##+\s*/, "");
+            {/* Preview Container */}
+            <div className="relative overflow-hidden">
 
-                return (
-                  <div
-                    key={i}
-                    className="font-bold text-neutral-700 pt-4"
-                  >
-                    {cleanHeading}
+              <div className="space-y-3">
+                {result.split("\n").map((line, i) => {
+                  const trimmed = line.trim();
+
+                  if (trimmed.startsWith("##")) {
+                    const cleanHeading = trimmed.replace(/^##+\s*/, "");
+
+                    return (
+                      <div
+                        key={i}
+                        className="font-bold text-neutral-700 pt-4"
+                      >
+                        {cleanHeading}
+                      </div>
+                    );
+                  }
+
+                  if (!trimmed) {
+                    return <div key={i} className="h-2" />;
+                  }
+
+                  return <div key={i}>{line}</div>;
+                })}
+              </div>
+
+              {/* Soft fade only if preview */}
+              {preview && (
+                <>
+                  <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white via-white/80 to-transparent" />
+
+                  <div className="absolute bottom-4 left-0 right-0 text-center text-neutral-500 italic text-sm">
+                    Continue reading…
                   </div>
-                );
-              }
+                </>
+              )}
+            </div>
 
-              // Empty line spacing
-              if (!trimmed) {
-                return <div key={i} className="h-2" />;
-              }
+            {/* Upgrade Section */}
+            {preview && (
+              <div className="pt-10 space-y-4">
+                <div>
+                  To access the full application insight, upgrade to a paid subscription.
+                </div>
 
-              return <div key={i}>{line}</div>;
-            })}
+                <div className="flex gap-4 pt-2">
+                  <a
+                    href="/about"
+                    className="text-neutral-600 underline text-xs uppercase tracking-wide"
+                  >
+                    View subscription details
+                  </a>
+
+                  <a
+                    href="/upgrade"
+                    className="border border-neutral-300 px-4 py-2 text-xs uppercase tracking-wide"
+                  >
+                    Upgrade
+                  </a>
+                </div>
+              </div>
+            )}
+
           </div>
         )}
+
       </div>
     </section>
   );

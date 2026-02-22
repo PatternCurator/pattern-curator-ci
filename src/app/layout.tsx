@@ -2,6 +2,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { Libre_Baskerville } from "next/font/google";
 import SiteHeader from "@/components/SiteHeader";
+import EmailGate from "@/components/EmailGate";
 
 const libre = Libre_Baskerville({
   subsets: ["latin"],
@@ -17,14 +18,14 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en" className={libre.variable}>
-      {/* Arial base */}
       <body style={{ fontFamily: "Arial, Helvetica, sans-serif" }}>
         <SiteHeader />
+        <EmailGate />
         {children}
       </body>
     </html>
