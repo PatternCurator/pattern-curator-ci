@@ -57,18 +57,18 @@ export default function SiteHeader() {
                 Inspiration
               </Link>
 
-                            <Link
-                href="/archive/"
-                className="text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
-              >
-                Archive
-              </Link>
-
               <Link
                 href="/moodboards/"
                 className="text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
               >
                 Moodboards
+              </Link>
+
+              <Link
+                href="/archive/"
+                className="text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
+              >
+                Archive
               </Link>
 
               <Link

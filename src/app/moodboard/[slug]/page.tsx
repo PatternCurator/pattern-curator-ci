@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/supabaseServer";
 import AssetInterpretation from "@/components/AssetInterpretation";
+import ApplicationQuery from "@/components/ApplicationQuery";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -130,6 +131,19 @@ export default async function MoodboardDetailPage({
             </div>
           ) : null}
         </div>
+
+            <ApplicationQuery
+              boardTitle={data.title}
+              boardNotes={
+                [
+                  data.direction,
+                  data.color_notes,
+                  data.print_pattern_notes
+                ]
+                  .filter(Boolean)
+                  .join("\n\n")
+            }
+        />
       </div>
     </main>
   );
