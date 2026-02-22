@@ -1,6 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { Libre_Baskerville } from "next/font/google";
+import { Suspense } from "react";
 import SiteHeader from "@/components/SiteHeader";
 import EmailGate from "@/components/EmailGate";
 
@@ -25,8 +26,13 @@ export default function RootLayout({
     <html lang="en" className={libre.variable}>
       <body style={{ fontFamily: "Arial, Helvetica, sans-serif" }}>
         <SiteHeader />
-        <EmailGate />
-        {children}
+
+        <Suspense fallback={null}>
+          <EmailGate>
+            {children}
+          </EmailGate>
+        </Suspense>
+
       </body>
     </html>
   );
