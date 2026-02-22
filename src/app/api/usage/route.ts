@@ -5,7 +5,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function normalizeEmail(email: string) {
-  return email.trim().toLowerCase();
+  return (email || "").trim().toLowerCase();
 }
 
 function parseAllowlist(raw: string | undefined) {
@@ -24,18 +24,28 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}));
 
     const emailRaw = typeof body.email === "string" ? body.email : "";
-    const email = normalizeEmail(emailRaw);
-    const email_normalized = email;
+    const email_normalized = normalizeEmail(emailRaw);
 
     const action = typeof body.action === "string" ? body.action : "search";
     const count = typeof body.count === "number" && body.count > 0 ? body.count : 1;
 
-    if (!email || !email.includes("@")) {
+    if (!email_normalized || !email_normalized.includes("@")) {
       return NextResponse.json({ error: "Valid email is required" }, { status: 400 });
     }
 
     const FREE_SEARCH_LIMIT = Number(process.env.FREE_SEARCH_LIMIT ?? "5");
-    const adminAllowlist = parseAllowlist(process.env.ADMIN_EMAIL_ALLOWLIST);
+
+    // ✅ IMPORTANT: your route expects ADMIN_EMAIL_ALLOWLIST (exact name)
+    // Example: ADMIN_EMAIL_ALLOWLIST="kristine@patterncurator.com,kristine.r.go@gmail.com"
+    const envAllowlist = parseAllowlist(process.env.ADMIN_EMAIL_ALLOWLIST);
+
+    // ✅ Failsafe fallback (so you can’t get locked out even if env var is missing/misnamed)
+    const fallbackAllowlist = [
+      "kristine@patterncurator.com",
+      "kristine.r.go@gmail.com",
+    ];
+
+    const adminAllowlist = Array.from(new Set([...envAllowlist, ...fallbackAllowlist]));
     const is_admin = adminAllowlist.includes(email_normalized);
 
     const supabaseAdmin = getSupabaseAdmin();
@@ -44,7 +54,7 @@ export async function POST(req: Request) {
     // Keep lead updated (best-effort). NOTE: ci_leads.email_normalized is GENERATED -> do NOT write it.
     const { error: leadErr } = await supabaseAdmin
       .from("ci_leads")
-      .upsert({ email }, { onConflict: "email_normalized" });
+      .upsert({ email: email_normalized }, { onConflict: "email_normalized" });
 
     if (leadErr) console.error("❌ ci_leads upsert error:", leadErr);
 
@@ -59,6 +69,8 @@ export async function POST(req: Request) {
 
     const billing_status = billing?.status ?? null;
     const is_subscriber = isActiveBillingStatus(billing_status);
+
+    // ✅ Admins OR active subscribers are unlimited
     const is_unlimited = is_admin || is_subscriber;
 
     function usageRow(customAction?: string) {
@@ -70,7 +82,6 @@ export async function POST(req: Request) {
     }
 
     async function computeFreeSearches() {
-      // Count searches used
       const { count: usedCount, error: usedErr } = await supabaseAdmin
         .from("ci_usage")
         .select("*", { count: "exact", head: true })
@@ -81,115 +92,134 @@ export async function POST(req: Request) {
 
       const used = usedCount ?? 0;
       const remaining = Math.max(0, FREE_SEARCH_LIMIT - used);
-
       return { used, remaining };
     }
 
-    // ✅ STATUS: do NOT insert anything. Just return current remaining.
-    if (action === "status") {
-      if (is_unlimited) {
-        return NextResponse.json({
-          ok: true,
-          email_normalized,
-          is_admin,
-          is_subscriber,
-          is_unlimited: true,
-          billing_status,
-          free_searches: {
-            limit: FREE_SEARCH_LIMIT,
-            used: null,
-            remaining: null,
-          },
-        });
-      }
-
-      const { used, remaining } = await computeFreeSearches();
-
-      return NextResponse.json({
-        ok: true,
-        email_normalized,
-        is_admin,
-        is_subscriber,
-        is_unlimited: false,
-        billing_status,
-        free_searches: {
-          limit: FREE_SEARCH_LIMIT,
-          used,
-          remaining,
-        },
-      });
-    }
-
-    // (Optional) you can keep logging other non-search actions if you want,
-    // but do not return fake counters.
-    if (action !== "search") {
-      const rows = Array.from({ length: count }, () => usageRow());
-      const { error } = await supabaseAdmin.from("ci_usage").insert(rows);
-      if (error) {
-        console.error("❌ ci_usage insert error:", error);
-        return NextResponse.json({ error: "Usage insert failed" }, { status: 500 });
-      }
-
-      // return real remaining (same as status)
-      if (is_unlimited) {
-        return NextResponse.json({
-          ok: true,
-          email_normalized,
-          is_admin,
-          is_subscriber,
-          is_unlimited: true,
-          billing_status,
-          free_searches: {
-            limit: FREE_SEARCH_LIMIT,
-            used: null,
-            remaining: null,
-          },
-        });
-      }
-
-      const { used, remaining } = await computeFreeSearches();
-
-      return NextResponse.json({
-        ok: true,
-        email_normalized,
-        is_admin,
-        is_subscriber,
-        is_unlimited: false,
-        billing_status,
-        free_searches: {
-          limit: FREE_SEARCH_LIMIT,
-          used,
-          remaining,
-        },
-      });
-    }
-
-    // Unlimited: log but do not enforce
-    if (is_unlimited) {
-      const rows = Array.from({ length: count }, () => usageRow("search"));
-      const { error } = await supabaseAdmin.from("ci_usage").insert(rows);
-
-      if (error) {
-        console.error("❌ ci_usage insert error:", error);
-        return NextResponse.json({ error: "Usage insert failed" }, { status: 500 });
-      }
-
-      return NextResponse.json({
+    // ✅ CRITICAL FIX:
+    // Many clients treat null as 0 → so return a big number for unlimited users.
+    function unlimitedResponse() {
+      const payload: any = {
         ok: true,
         email_normalized,
         is_admin,
         is_subscriber,
         is_unlimited: true,
         billing_status,
+
+        limitReached: false,
+        requires_subscription: false,
+
         free_searches: {
           limit: FREE_SEARCH_LIMIT,
-          used: null,
-          remaining: null,
+          used: 0,
+          remaining: 999999,
+        },
+      };
+
+      // Helpful debug locally (won’t show in production)
+      if (process.env.NODE_ENV !== "production") {
+        payload._debug = {
+          envAllowlist,
+          fallbackAllowlist,
+          finalAllowlist: adminAllowlist,
+          matchedEmail: email_normalized,
+          is_admin,
+        };
+      }
+
+      return NextResponse.json(payload);
+    }
+
+    // ✅ STATUS: do NOT insert anything.
+    if (action === "status") {
+      if (is_unlimited) return unlimitedResponse();
+
+      const { used, remaining } = await computeFreeSearches();
+      const limitReached = remaining <= 0;
+
+      const payload: any = {
+        ok: true,
+        email_normalized,
+        is_admin,
+        is_subscriber,
+        is_unlimited: false,
+        billing_status,
+
+        limitReached,
+        requires_subscription: limitReached,
+
+        free_searches: {
+          limit: FREE_SEARCH_LIMIT,
+          used,
+          remaining,
+        },
+      };
+
+      if (process.env.NODE_ENV !== "production") {
+        payload._debug = {
+          envAllowlist,
+          fallbackAllowlist,
+          finalAllowlist: adminAllowlist,
+          matchedEmail: email_normalized,
+          is_admin,
+        };
+      }
+
+      return NextResponse.json(payload);
+    }
+
+    // Log non-search actions (optional)
+    if (action !== "search") {
+      const rows = Array.from({ length: count }, () => usageRow());
+      const { error } = await supabaseAdmin.from("ci_usage").insert(rows);
+
+      if (error) {
+        console.error("❌ ci_usage insert error:", error);
+        return NextResponse.json({ error: "Usage insert failed" }, { status: 500 });
+      }
+
+      if (is_unlimited) return unlimitedResponse();
+
+      const { used, remaining } = await computeFreeSearches();
+      const limitReached = remaining <= 0;
+
+      return NextResponse.json({
+        ok: true,
+        email_normalized,
+        is_admin,
+        is_subscriber,
+        is_unlimited: false,
+        billing_status,
+
+        limitReached,
+        requires_subscription: limitReached,
+
+        free_searches: {
+          limit: FREE_SEARCH_LIMIT,
+          used,
+          remaining,
         },
       });
     }
 
-    // Enforce limit: count searches used BEFORE inserting
+    // ✅ UNLIMITED USERS: no enforcement
+    if (is_unlimited) {
+      // Recommended: do not insert admin usage (keeps your logs clean)
+      // Keep subscriber logging if you want analytics:
+      if (!is_admin) {
+        const rows = Array.from({ length: count }, () => usageRow("search"));
+        const { error } = await supabaseAdmin.from("ci_usage").insert(rows);
+
+        if (error) {
+          console.error("❌ ci_usage insert error:", error);
+          return NextResponse.json({ error: "Usage insert failed" }, { status: 500 });
+        }
+      }
+
+      return unlimitedResponse();
+    }
+
+    // ✅ FREE USERS: enforce cap
     const { count: usedBefore, error: usedErr } = await supabaseAdmin
       .from("ci_usage")
       .select("*", { count: "exact", head: true })
@@ -209,6 +239,10 @@ export async function POST(req: Request) {
           is_subscriber,
           is_unlimited: false,
           billing_status,
+
+          limitReached: true,
+          requires_subscription: true,
+
           free_searches: {
             limit: FREE_SEARCH_LIMIT,
             used,
@@ -232,6 +266,7 @@ export async function POST(req: Request) {
 
     const usedAfter = used + toInsert;
     const remainingAfter = Math.max(0, FREE_SEARCH_LIMIT - usedAfter);
+    const limitReached = remainingAfter <= 0;
 
     return NextResponse.json({
       ok: true,
@@ -240,6 +275,10 @@ export async function POST(req: Request) {
       is_subscriber,
       is_unlimited: false,
       billing_status,
+
+      limitReached,
+      requires_subscription: limitReached,
+
       free_searches: {
         limit: FREE_SEARCH_LIMIT,
         used: usedAfter,
