@@ -130,7 +130,7 @@ export default async function MoodboardsPage({
       {isDefaultFeed && hasMore ? (
         <div className="pt-6 flex justify-center">
           <a
-            href={`/inspiration?n=${nextAfterCap}`}
+            href={`/moodboards?n=${nextAfterCap}`}
             className="h-10 px-8 rounded-none flex items-center justify-center text-xs font-bold uppercase tracking-[0.2em]"
             style={{
               fontFamily: "Arial, Helvetica, sans-serif",
