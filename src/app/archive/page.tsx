@@ -1,6 +1,7 @@
 import { supabaseServer } from "@/lib/supabaseServer";
 import TrendHeader from "@/components/TrendHeader";
 import TrendResults from "@/components/TrendResults";
+import InfiniteScrollN from "@/components/InfiniteScrollN";
 
 function tokenize(q: string) {
   return q
@@ -15,6 +16,12 @@ function uniq(list: string[]) {
   return Array.from(new Set(list));
 }
 
+function clampInt(v: unknown, fallback: number) {
+  const n = typeof v === "string" ? parseInt(v, 10) : NaN;
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(1, n);
+}
+
 export default async function ArchivePage({
   searchParams,
 }: {
@@ -22,12 +29,23 @@ export default async function ArchivePage({
     q?: string;
     type?: string;
     season?: string;
+    n?: string;
   }>;
 }) {
   const sp = (await searchParams) ?? {};
   const q = (sp.q ?? "").trim();
   const type = (sp.type ?? "").trim();
   const season = (sp.season ?? "").trim();
+
+  const DEFAULT_N = 60;
+  const STEP = 40;
+  const AUTO_CAP = 124; // stop infinite auto-load here
+
+  // Progressive loading only when there is no query and no pills selected
+  const isDefaultFeed = !q && !type && !season;
+
+  const n = isDefaultFeed ? clampInt(sp.n, DEFAULT_N) : DEFAULT_N;
+  const limit = isDefaultFeed ? n : DEFAULT_N;
 
   const supabase = await supabaseServer();
 
@@ -69,11 +87,22 @@ export default async function ArchivePage({
     query = query.or(orConditions);
   }
 
-  const { data: boards = [], error } = await query
-    .order("created_at", { ascending: false })
-    .limit(60);
+  query = query.order("created_at", { ascending: false });
+
+  // Ask for 1 extra row so we can reliably determine if more exist
+  const { data: boards = [], error } = await query.limit(limit + 1);
 
   if (error) console.error("Supabase error:", error.message);
+
+  const safeBoards = boards ?? [];
+
+  const hasMore = isDefaultFeed && safeBoards.length > limit;
+  const autoCapReached = isDefaultFeed && limit >= AUTO_CAP;
+
+  const nextAutoN = Math.min(limit + STEP, AUTO_CAP);
+  const allowInfinite = isDefaultFeed && hasMore && !autoCapReached;
+
+  const nextAfterCap = limit + STEP;
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6 space-y-6">
@@ -86,7 +115,34 @@ export default async function ArchivePage({
         titleLabel="ARCHIVE"
         subtext="Curated inspiration of past seasons from Pattern Curator Trend Service."
       />
-      <TrendResults boards={boards as any} />
+
+      <TrendResults boards={safeBoards.slice(0, limit) as any} />
+
+      {/* Infinite scroll until AUTO_CAP */}
+      {allowInfinite ? (
+        <InfiniteScrollN nextN={nextAutoN} hasMore={allowInfinite} />
+      ) : null}
+
+      {/* After AUTO_CAP, show MORE (only if more exist) */}
+      {isDefaultFeed && hasMore ? (
+        <div className="pt-6 flex justify-center">
+          <a
+            href={`/inspiration?n=${nextAfterCap}`}
+            className="h-10 px-8 rounded-none flex items-center justify-center text-xs font-bold uppercase tracking-[0.2em]"
+            style={{
+              fontFamily: "Arial, Helvetica, sans-serif",
+              color: "#707376ff",
+              background: "#f4f4f4",
+              border: "1px solid #B8B9B6",
+             }}
+           >
+             MORE
+     </a>
+    </div>
+) : null}
     </main>
   );
 }
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
