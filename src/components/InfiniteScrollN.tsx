@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 export default function InfiniteScrollN({
   nextN,
@@ -13,6 +13,7 @@ export default function InfiniteScrollN({
   const ref = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
   const sp = useSearchParams();
+  const pathname = usePathname();
 
   // Prevent repeated navigations while the sentinel stays in view
   const [firedForN, setFiredForN] = useState<number | null>(null);
@@ -36,14 +37,16 @@ export default function InfiniteScrollN({
 
         const params = new URLSearchParams(sp.toString());
         params.set("n", String(nextN));
-        router.replace(`/?${params.toString()}`, { scroll: false });
+
+        // IMPORTANT: preserve current route (not hardcoded "/")
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
       },
       { rootMargin: "900px 0px" }
     );
 
     io.observe(el);
     return () => io.disconnect();
-  }, [hasMore, nextN, router, sp, firedForN]);
+  }, [hasMore, nextN, router, sp, firedForN, pathname]);
 
   return <div ref={ref} className="h-1 w-full" aria-hidden="true" />;
 }
