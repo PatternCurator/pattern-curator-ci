@@ -12,12 +12,15 @@ function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
-// Works with BOTH response shapes:
-// - old: { free_searches: { remaining } }
-// - new: { remaining }
 function extractRemaining(data: any): number | null {
-  if (typeof data?.free_searches?.remaining === "number") return data.free_searches.remaining;
-  if (typeof data?.remaining === "number") return data.remaining;
+  const a = data?.free_searches?.remaining;
+  if (typeof a === "number") return a;
+  if (typeof a === "string" && a.trim() !== "" && !Number.isNaN(Number(a))) return Number(a);
+
+  const b = data?.remaining;
+  if (typeof b === "number") return b;
+  if (typeof b === "string" && b.trim() !== "" && !Number.isNaN(Number(b))) return Number(b);
+
   return null;
 }
 
@@ -32,33 +35,26 @@ export default function EmailGate({
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-
   const supabase = useMemo(() => supabaseBrowser(), []);
 
-  // You are testing: http://localhost:3000/?q=floral
   const q = useMemo(() => (searchParams?.get("q") ?? "").trim(), [searchParams]);
 
-  // ✅ Verified email (from Supabase session)
   const [email, setEmail] = useState<string>("");
-
-  // Email input for verification
   const [input, setInput] = useState<string>("");
-
-  // OTP step + code input
   const [step, setStep] = useState<GateStep>("email");
   const [code, setCode] = useState<string>("");
 
-  // UI status/errors
   const [status, setStatus] = useState<"idle" | "saving" | "error">("idle");
   const [error, setError] = useState<string>("");
 
-  // Remaining free searches
   const [remaining, setRemaining] = useState<number | null>(null);
 
-  // Stripe UI state
   const [plan, setPlan] = useState<"monthly" | "annual">("monthly");
   const [checkoutStatus, setCheckoutStatus] = useState<"idle" | "loading" | "error">("idle");
   const [checkoutError, setCheckoutError] = useState<string>("");
+
+  // ✅ NEW: prevents "Verify your email" flash on navigation/search
+  const [authChecked, setAuthChecked] = useState<boolean>(false);
 
   const hasEmail = Boolean(email);
   const limitReached = hasEmail && remaining === 0;
@@ -68,6 +64,7 @@ export default function EmailGate({
       const u = await fetch("/api/usage", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        cache: "no-store",
         body: JSON.stringify({ email: forEmail, action: "status", count: 1 }),
       });
 
@@ -79,22 +76,73 @@ export default function EmailGate({
     }
   }
 
+  async function hardLogoutAndGoHome() {
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+      window.localStorage.removeItem(PENDING_EMAIL_KEY);
+      window.localStorage.removeItem(LAST_Q_KEY);
+    } catch {}
+
+    setEmail("");
+    setInput("");
+    setStep("email");
+    setCode("");
+    setRemaining(null);
+    setStatus("idle");
+    setError("");
+    setCheckoutStatus("idle");
+    setCheckoutError("");
+
+    try {
+      await supabase.auth.signOut();
+    } catch {}
+
+    window.location.href = "/";
+  }
+
+  function changeEmailOnly() {
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+      window.localStorage.removeItem(PENDING_EMAIL_KEY);
+      window.localStorage.removeItem(LAST_Q_KEY);
+    } catch {}
+
+    setEmail("");
+    setRemaining(null);
+    setStep("email");
+    setCode("");
+    setStatus("idle");
+    setError("");
+  }
+
   // Restore session + restore pending email (for convenience)
   useEffect(() => {
-    (async () => {
-      const { data } = await supabase.auth.getSession();
-      const sessionEmail = data?.session?.user?.email ?? "";
+    let alive = true;
 
-      if (sessionEmail) {
-        const clean = normalizeEmail(sessionEmail);
-        setEmail(clean);
-        window.localStorage.setItem(STORAGE_KEY, clean);
-        await refreshRemaining(clean);
-      } else {
-        const pending = window.localStorage.getItem(PENDING_EMAIL_KEY);
-        const saved = window.localStorage.getItem(STORAGE_KEY);
-        if (pending) setInput(pending);
-        else if (saved) setInput(saved);
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        const sessionEmail = data?.session?.user?.email ?? "";
+
+        if (!alive) return;
+
+        if (sessionEmail) {
+          const clean = normalizeEmail(sessionEmail);
+          setEmail(clean);
+          try {
+            window.localStorage.setItem(STORAGE_KEY, clean);
+          } catch {}
+          await refreshRemaining(clean);
+        } else {
+          try {
+            const pending = window.localStorage.getItem(PENDING_EMAIL_KEY);
+            const saved = window.localStorage.getItem(STORAGE_KEY);
+            if (pending) setInput(pending);
+            else if (saved) setInput(saved);
+          } catch {}
+        }
+      } finally {
+        if (alive) setAuthChecked(true); // ✅ mark checked even if request fails
       }
     })();
 
@@ -103,7 +151,9 @@ export default function EmailGate({
       if (sessionEmail) {
         const clean = normalizeEmail(sessionEmail);
         setEmail(clean);
-        window.localStorage.setItem(STORAGE_KEY, clean);
+        try {
+          window.localStorage.setItem(STORAGE_KEY, clean);
+        } catch {}
         setStep("email");
         setStatus("idle");
         setError("");
@@ -112,33 +162,14 @@ export default function EmailGate({
         setEmail("");
         setRemaining(null);
       }
+      setAuthChecked(true); // ✅ ensures we never flash gate due to transient state
     });
 
-    return () => sub?.subscription?.unsubscribe();
+    return () => {
+      alive = false;
+      sub?.subscription?.unsubscribe();
+    };
   }, [supabase]);
-
-  async function handleLogout() {
-    try {
-      await supabase.auth.signOut();
-    } catch {
-      // ignore
-    }
-
-    window.localStorage.removeItem(STORAGE_KEY);
-    window.localStorage.removeItem(PENDING_EMAIL_KEY);
-    window.localStorage.removeItem(LAST_Q_KEY);
-
-    setEmail("");
-    setInput("");
-    setStep("email");
-    setCode("");
-    setRemaining(null);
-
-    setStatus("idle");
-    setError("");
-    setCheckoutStatus("idle");
-    setCheckoutError("");
-  }
 
   async function sendCode(e: React.FormEvent) {
     e.preventDefault();
@@ -153,15 +184,15 @@ export default function EmailGate({
     }
 
     try {
-      // Save lead (best-effort)
       await fetch("/api/lead", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: clean, source }),
       }).catch(() => null);
 
-      // Store pending email ONLY until verified
-      window.localStorage.setItem(PENDING_EMAIL_KEY, clean);
+      try {
+        window.localStorage.setItem(PENDING_EMAIL_KEY, clean);
+      } catch {}
 
       const { error: otpErr } = await supabase.auth.signInWithOtp({
         email: clean,
@@ -212,11 +243,11 @@ export default function EmailGate({
       const verifiedEmail = data?.user?.email ?? clean;
       const finalEmail = normalizeEmail(verifiedEmail);
 
-      window.localStorage.setItem(STORAGE_KEY, finalEmail);
-      window.localStorage.removeItem(PENDING_EMAIL_KEY);
-
-      // ✅ important: ensure the first search after verify will count
-      window.localStorage.removeItem(LAST_Q_KEY);
+      try {
+        window.localStorage.setItem(STORAGE_KEY, finalEmail);
+        window.localStorage.removeItem(PENDING_EMAIL_KEY);
+        window.localStorage.removeItem(LAST_Q_KEY);
+      } catch {}
 
       setEmail(finalEmail);
       setStep("email");
@@ -262,13 +293,12 @@ export default function EmailGate({
     }
   }
 
-  // ✅ Consume a free search when q changes and update counter (reliable)
+  // Consume a free search when q changes and update counter to 5→4→3→2→1
   useEffect(() => {
     if (!email) return;
     if (!q) return;
 
-    // ✅ prevent double-counting per email + query
-    const key = `${email}::${q}`;
+    const key = `${pathname}::${q}`;
     const last = window.localStorage.getItem(LAST_Q_KEY);
     if (last === key) return;
 
@@ -277,6 +307,7 @@ export default function EmailGate({
         const res = await fetch("/api/usage", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          cache: "no-store",
           body: JSON.stringify({
             email,
             action: "search",
@@ -287,22 +318,19 @@ export default function EmailGate({
         });
 
         const data = await res.json().catch(() => ({}));
-
-        // Fast-path: if remaining is included in search response, use it
         const rem = extractRemaining(data);
         if (typeof rem === "number") setRemaining(rem);
 
-        // Always refresh from status so UI never gets stuck
-        await refreshRemaining(email);
-
         window.localStorage.setItem(LAST_Q_KEY, key);
 
-        // Preserve original paywall trigger behavior
         if (res.status === 402) setRemaining(0);
 
         if (!res.ok && res.status !== 402) {
           console.error("Usage logging failed:", { status: res.status, data });
         }
+
+        // Always sync from server truth
+        await refreshRemaining(email);
       } catch (err) {
         console.error("Usage logging error:", err);
       }
@@ -321,7 +349,7 @@ export default function EmailGate({
         <div className="fixed top-0 left-0 right-0 z-40 px-4 py-2 text-xs text-neutral-600 flex items-center justify-between border-b border-neutral-200 bg-white/80 backdrop-blur">
           <div className="flex items-center gap-4">
             <span>{email}</span>
-            <button type="button" onClick={handleLogout} className="underline hover:opacity-70">
+            <button type="button" onClick={hardLogoutAndGoHome} className="underline hover:opacity-70">
               Log out
             </button>
           </div>
@@ -330,8 +358,8 @@ export default function EmailGate({
         </div>
       ) : null}
 
-      {/* Email gate OR subscription-required modal */}
-      {!hasEmail || limitReached ? (
+      {/* ✅ Gate overlay only AFTER authChecked to prevent flash */}
+      {authChecked && (!hasEmail || limitReached) ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-6">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
 
@@ -418,11 +446,7 @@ export default function EmailGate({
                       <button
                         type="button"
                         onClick={() => {
-                          // resend with current input
-                          // (reuse same handler signature by faking a submit event)
-                          const form = document.createElement("form");
                           sendCode({ preventDefault: () => {} } as any);
-                          form.remove();
                         }}
                         disabled={status === "saving"}
                         className="text-xs underline text-neutral-600 hover:opacity-70 disabled:opacity-50"
@@ -437,7 +461,25 @@ export default function EmailGate({
               <>
                 <h1 className="text-xl font-semibold">Subscription required</h1>
 
-                <p className="mt-2 text-sm text-neutral-600">You’ve used all 5 free searches.</p>
+                <div className="mt-2 flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={hardLogoutAndGoHome}
+                    className="text-xs underline text-neutral-600 hover:opacity-70"
+                  >
+                    Log out
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={changeEmailOnly}
+                    className="text-xs underline text-neutral-600 hover:opacity-70"
+                  >
+                    Change email
+                  </button>
+                </div>
+
+                <p className="mt-4 text-sm text-neutral-600">You’ve used all 5 free searches.</p>
 
                 <p className="mt-3 text-sm text-neutral-600">
                   To continue exploring the Pattern Curator CI library, full access is available by subscription.

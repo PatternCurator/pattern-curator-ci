@@ -41,7 +41,7 @@ export async function POST(req: Request) {
     const supabaseAdmin = getSupabaseAdmin();
     const now = new Date().toISOString();
 
-    // Keep lead updated (IMPORTANT: ci_leads.email_normalized is GENERATED -> do NOT write it)
+    // Keep lead updated (best-effort). NOTE: ci_leads.email_normalized is GENERATED -> do NOT write it.
     const { error: leadErr } = await supabaseAdmin
       .from("ci_leads")
       .upsert({ email }, { onConflict: "email_normalized" });
@@ -69,27 +69,97 @@ export async function POST(req: Request) {
       };
     }
 
-    // Non-search action: log and return
-    if (action !== "search") {
-      const rows = Array.from({ length: count }, () => usageRow());
-      const { error } = await supabaseAdmin.from("ci_usage").insert(rows);
+    async function computeFreeSearches() {
+      // Count searches used
+      const { count: usedCount, error: usedErr } = await supabaseAdmin
+        .from("ci_usage")
+        .select("*", { count: "exact", head: true })
+        .eq("email_normalized", email_normalized)
+        .eq("action", "search");
 
-      if (error) {
-        console.error("❌ ci_usage insert error:", error);
-        return NextResponse.json({ error: "Usage insert failed" }, { status: 500 });
+      if (usedErr) console.error("❌ ci_usage count error:", usedErr);
+
+      const used = usedCount ?? 0;
+      const remaining = Math.max(0, FREE_SEARCH_LIMIT - used);
+
+      return { used, remaining };
+    }
+
+    // ✅ STATUS: do NOT insert anything. Just return current remaining.
+    if (action === "status") {
+      if (is_unlimited) {
+        return NextResponse.json({
+          ok: true,
+          email_normalized,
+          is_admin,
+          is_subscriber,
+          is_unlimited: true,
+          billing_status,
+          free_searches: {
+            limit: FREE_SEARCH_LIMIT,
+            used: null,
+            remaining: null,
+          },
+        });
       }
+
+      const { used, remaining } = await computeFreeSearches();
 
       return NextResponse.json({
         ok: true,
         email_normalized,
         is_admin,
         is_subscriber,
-        is_unlimited,
+        is_unlimited: false,
         billing_status,
         free_searches: {
           limit: FREE_SEARCH_LIMIT,
-          used: 0,
-          remaining: FREE_SEARCH_LIMIT,
+          used,
+          remaining,
+        },
+      });
+    }
+
+    // (Optional) you can keep logging other non-search actions if you want,
+    // but do not return fake counters.
+    if (action !== "search") {
+      const rows = Array.from({ length: count }, () => usageRow());
+      const { error } = await supabaseAdmin.from("ci_usage").insert(rows);
+      if (error) {
+        console.error("❌ ci_usage insert error:", error);
+        return NextResponse.json({ error: "Usage insert failed" }, { status: 500 });
+      }
+
+      // return real remaining (same as status)
+      if (is_unlimited) {
+        return NextResponse.json({
+          ok: true,
+          email_normalized,
+          is_admin,
+          is_subscriber,
+          is_unlimited: true,
+          billing_status,
+          free_searches: {
+            limit: FREE_SEARCH_LIMIT,
+            used: null,
+            remaining: null,
+          },
+        });
+      }
+
+      const { used, remaining } = await computeFreeSearches();
+
+      return NextResponse.json({
+        ok: true,
+        email_normalized,
+        is_admin,
+        is_subscriber,
+        is_unlimited: false,
+        billing_status,
+        free_searches: {
+          limit: FREE_SEARCH_LIMIT,
+          used,
+          remaining,
         },
       });
     }
@@ -119,7 +189,7 @@ export async function POST(req: Request) {
       });
     }
 
-    // Enforce limit: count searches used
+    // Enforce limit: count searches used BEFORE inserting
     const { count: usedBefore, error: usedErr } = await supabaseAdmin
       .from("ci_usage")
       .select("*", { count: "exact", head: true })
