@@ -68,7 +68,12 @@ export async function POST(req: Request) {
 
     const supabaseAdmin = getSupabaseAdmin();
 
-    const adminAllowlist = (process.env.ADMIN_EMAIL_ALLOWLIST ?? "")
+    const adminAllowlist = (
+      process.env.ADMIN_EMAIL_ALLOWLIST ??
+      process.env.CI_ADMIN_EMAILS ?? // fallback (if you used this elsewhere)
+      process.env.ADMIN_EMAILS ??     // optional fallback
+    ""
+  )
       .split(",")
       .map((s) => s.trim().toLowerCase())
       .filter(Boolean);
