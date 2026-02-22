@@ -25,7 +25,7 @@ export async function POST(req: Request) {
 
     const emailRaw = typeof body.email === "string" ? body.email : "";
     const email = normalizeEmail(emailRaw);
-    const email_normalized = email; // we query with this; DB may generate stored column too
+    const email_normalized = email;
 
     const action = typeof body.action === "string" ? body.action : "search";
     const count = typeof body.count === "number" && body.count > 0 ? body.count : 1;
@@ -61,9 +61,6 @@ export async function POST(req: Request) {
     const is_subscriber = isActiveBillingStatus(billing_status);
     const is_unlimited = is_admin || is_subscriber;
 
-    // Helper to build ci_usage row
-    // IMPORTANT: your ci_usage table DOES NOT have 'email' (per your error)
-    // so we write email_normalized + action + created_at.
     function usageRow(customAction?: string) {
       return {
         email_normalized,

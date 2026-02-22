@@ -82,19 +82,6 @@ export default function SiteHeader() {
               </Link>
             </nav>
 
-            {/* Auth (Always Visible) */}
-            <div
-              style={{
-                fontFamily: "Arial, Helvetica, sans-serif",
-                fontSize: "12px",
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                color: "#8a8a8aff",
-              }}
-            >
-              <HeaderAuth />
-            </div>
-
           </div>
         </div>
       </div>
