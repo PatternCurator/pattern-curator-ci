@@ -41,25 +41,16 @@ export async function POST(req: Request) {
     const emailRaw = typeof body.email === "string" ? body.email : "";
     const email = emailRaw.trim().toLowerCase();
 
-    const boardTitle =
-      typeof body.boardTitle === "string" ? body.boardTitle : "";
-    const boardNotes =
-      typeof body.boardNotes === "string" ? body.boardNotes : "";
-    const query =
-      typeof body.query === "string" ? body.query.trim() : "";
+    const boardTitle = typeof body.boardTitle === "string" ? body.boardTitle : "";
+    const boardNotes = typeof body.boardNotes === "string" ? body.boardNotes : "";
+    const query = typeof body.query === "string" ? body.query.trim() : "";
 
     if (!email || !email.includes("@")) {
-      return NextResponse.json(
-        { error: "Valid email required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Valid email required" }, { status: 400 });
     }
 
     if (!query) {
-      return NextResponse.json(
-        { error: "Missing query" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing query" }, { status: 400 });
     }
 
     // ------------------------------
@@ -68,29 +59,40 @@ export async function POST(req: Request) {
 
     const supabaseAdmin = getSupabaseAdmin();
 
-    const adminAllowlist = (
+    const allowlistRaw =
       process.env.ADMIN_EMAIL_ALLOWLIST ??
       process.env.CI_ADMIN_EMAILS ?? // fallback (if you used this elsewhere)
-      process.env.ADMIN_EMAILS ??     // optional fallback
-    ""
-  )
+      process.env.ADMIN_EMAILS ?? // optional fallback
+      "";
+
+    const adminAllowlist = allowlistRaw
       .split(",")
       .map((s) => s.trim().toLowerCase())
       .filter(Boolean);
 
     const is_admin = adminAllowlist.includes(email);
 
-    const { data: billing } = await supabaseAdmin
+    const { data: billing, error: billingErr } = await supabaseAdmin
       .from("ci_billing")
       .select("status")
       .eq("email_normalized", email)
       .maybeSingle();
 
-    const billing_status = billing?.status ?? null;
-    const is_subscriber =
-      billing_status === "active" || billing_status === "trialing";
+    if (billingErr) console.error("❌ ci_billing select error:", billingErr);
 
+    const billing_status = billing?.status ?? null;
+    const is_subscriber = billing_status === "active" || billing_status === "trialing";
     const is_unlocked = is_admin || is_subscriber;
+
+    // ✅ Minimal production diagnostics (check Vercel function logs)
+    console.log("APP_QUERY_ACCESS", {
+      email,
+      allowlistCount: adminAllowlist.length,
+      is_admin,
+      billing_status,
+      is_subscriber,
+      is_unlocked,
+    });
 
     // ------------------------------
     // OPENAI GENERATION
@@ -109,8 +111,7 @@ export async function POST(req: Request) {
       messages: [
         {
           role: "system",
-          content:
-            "You are Pattern Curator CI. Write in a restrained, editorial, strategic tone.",
+          content: "You are Pattern Curator CI. Write in a restrained, editorial, strategic tone.",
         },
         {
           role: "user",
@@ -120,9 +121,7 @@ export async function POST(req: Request) {
       temperature: 0.5,
     });
 
-    const text =
-      completion.choices?.[0]?.message?.content ||
-      "No response generated.";
+    const text = completion.choices?.[0]?.message?.content || "No response generated.";
 
     // ------------------------------
     // PREVIEW LOGIC FOR FREE USERS
@@ -133,14 +132,20 @@ export async function POST(req: Request) {
         /## Direction Translation([\s\S]*?)## Print and Surface Application/i
       );
 
-      const preview = previewMatch
-        ? previewMatch[0].trim()
-        : text.slice(0, 600);
+      const preview = previewMatch ? previewMatch[0].trim() : text.slice(0, 600);
 
       return NextResponse.json({
         text: preview,
         preview: true,
-      });
+        debug_access: {
+          email,
+          allowlistCount: adminAllowlist.length,
+          is_admin,
+          billing_status,
+          is_subscriber,
+          is_unlocked,
+    },
+});
     }
 
     // ------------------------------
@@ -153,9 +158,6 @@ export async function POST(req: Request) {
     });
   } catch (err: any) {
     console.error("APPLICATION QUERY ERROR:", err?.message || err);
-    return NextResponse.json(
-      { error: "Server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
