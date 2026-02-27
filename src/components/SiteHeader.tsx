@@ -8,7 +8,7 @@ export default function SiteHeader() {
         <div className="flex items-center justify-between gap-6">
           
           {/* Brand Lockup */}
-          <Link href="/" className="block leading-tight">
+          <Link href="/ci" className="block leading-tight">
             <div
               className="text-[20px] italic"
               style={{
