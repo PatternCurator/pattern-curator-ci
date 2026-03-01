@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { supabaseServer } from "@/lib/supabaseServer";
 
-export const revalidate = 60 * 60 * 24 * 7; // 7 days
+export const revalidate = 604800; // 7 days
 
 type Signal = {
   id: string;
