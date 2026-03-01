@@ -45,18 +45,18 @@ export default async function CiLandingPage() {
   const supabase = await supabaseServer();
 
   const [
-  { data: signalsData, error: signalsError },
-  { data: featuredData, error: featuredError },
-  { data: recentData, error: recentError },
-] = await Promise.all([
-  supabase.from("ci_home_current_signals").select("*"),
-  supabase.from("ci_home_featured_board").select("*"),
-  supabase.from("ci_home_recent_interpretations").select("*"),
-]);
+    { data: signalsData, error: signalsError },
+    { data: featuredData, error: featuredError },
+    { data: recentData, error: recentError },
+  ] = await Promise.all([
+    supabase.from("ci_home_current_signals").select("*"),
+    supabase.from("ci_home_featured_board").select("*"),
+    supabase.from("ci_home_recent_interpretations").select("*"),
+  ]);
 
-if (signalsError) console.error("ci_home_current_signals error:", signalsError);
-if (featuredError) console.error("ci_home_featured_board error:", featuredError);
-if (recentError) console.error("ci_home_recent_interpretations error:", recentError);
+  if (signalsError) console.error("ci_home_current_signals error:", signalsError);
+  if (featuredError) console.error("ci_home_featured_board error:", featuredError);
+  if (recentError) console.error("ci_home_recent_interpretations error:", recentError);
 
   const signals = (signalsData ?? []) as Signal[];
   const featured = ((featuredData ?? [])[0] ?? null) as Featured | null;
@@ -89,13 +89,13 @@ if (recentError) console.error("ci_home_recent_interpretations error:", recentEr
     ? teaserSignal.direction.trim().toUpperCase()
     : "";
 
-  // Sentence case — same tone as heroSubtitleA
   const weeklyLine =
     "A weekly snapshot of print, color, and surface directions shaping contemporary creative work.";
 
   return (
     <main className="bg-white">
       <div className="mx-auto max-w-6xl px-6 pt-14 pb-16">
+        {/* HERO */}
         <header className="text-center">
           <Link href="/" className="block leading-tight">
             <div
@@ -132,7 +132,9 @@ if (recentError) console.error("ci_home_recent_interpretations error:", recentEr
           </div>
         </header>
 
+        {/* MAIN SURFACE */}
         <section className="mt-14 grid grid-cols-12 gap-10">
+          {/* Left: Current Signals */}
           <div className="col-span-12 lg:col-span-8">
             <div className="border-b border-neutral-200 pb-3">
               <p className="text-[12px] tracking-[0.18em] uppercase text-neutral-900">
@@ -140,7 +142,6 @@ if (recentError) console.error("ci_home_recent_interpretations error:", recentEr
               </p>
             </div>
 
-            {/* Now matches hero subtitle styling exactly */}
             <p className="mt-4 max-w-3xl text-[16px] leading-[1.75] text-neutral-700">
               {weeklyLine}
             </p>
@@ -151,7 +152,9 @@ if (recentError) console.error("ci_home_recent_interpretations error:", recentEr
               </p>
             ) : null}
 
+            {/* Brick layout */}
             <div className="mt-6 grid grid-cols-12 gap-4">
+              {/* Large */}
               <div className="col-span-12 md:col-span-8">
                 {signalImgs[0]?.img ? (
                   <Link href={signalHref(signalImgs[0].id)} className="block">
@@ -171,6 +174,7 @@ if (recentError) console.error("ci_home_recent_interpretations error:", recentEr
                 )}
               </div>
 
+              {/* Two small */}
               <div className="col-span-12 md:col-span-4 grid grid-rows-2 gap-4">
                 {[1, 2].map((i) =>
                   signalImgs[i]?.img ? (
@@ -193,6 +197,7 @@ if (recentError) console.error("ci_home_recent_interpretations error:", recentEr
             </div>
           </div>
 
+          {/* Right: Featured Board */}
           <aside className="col-span-12 lg:col-span-4">
             <div className="border-b border-neutral-200 pb-3">
               <p className="text-[12px] tracking-[0.18em] uppercase text-neutral-900">
@@ -218,6 +223,58 @@ if (recentError) console.error("ci_home_recent_interpretations error:", recentEr
               )}
             </div>
           </aside>
+        </section>
+
+        {/* PALETTE STRIP */}
+        <div className="mt-10">
+          <div className="h-[36px] w-full overflow-hidden bg-neutral-100">
+            <div className="flex h-full">
+              <div className="h-full w-[16%] bg-[#C9D1C0]" />
+              <div className="h-full w-[20%] bg-[#7D8A78]" />
+              <div className="h-full w-[14%] bg-[#E8E2D6]" />
+              <div className="h-full w-[18%] bg-[#9A7A53]" />
+              <div className="h-full w-[16%] bg-[#8B8D90]" />
+              <div className="h-full w-[16%] bg-[#5F6468]" />
+            </div>
+          </div>
+        </div>
+
+        {/* RECENT INTERPRETATIONS (THIS WAS MISSING) */}
+        <section className="mt-16 border-t border-neutral-200 pt-10">
+          <p className="text-center text-[12px] tracking-[0.18em] uppercase text-neutral-900">
+            Recent Interpretations
+          </p>
+
+          <div className="mx-auto mt-8 grid max-w-5xl grid-cols-2 gap-6 md:grid-cols-4">
+            {recentItems.map((r) => (
+              <Link key={r.id} href={boardHref(r.slug)} className="group">
+                <div className="relative aspect-[4/3] w-full overflow-hidden bg-neutral-100">
+                  {r.img ? (
+                    <Image
+                      src={r.img}
+                      alt={r.title ?? "Interpretation"}
+                      fill
+                      className="object-cover"
+                      sizes="(min-width: 768px) 25vw, 50vw"
+                    />
+                  ) : null}
+                </div>
+
+                <div className="mt-3 text-center text-[13px] leading-[1.35] text-neutral-800">
+                  <div className="italic">{(r.report_type ?? "Post").toString()}</div>
+                  <div className="mt-1 whitespace-normal break-words">
+                    {r.title ?? "Untitled"}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          {recentItems.length === 0 ? (
+            <p className="mx-auto mt-8 max-w-3xl text-center text-[14px] text-neutral-500">
+              No recent interpretations yet.
+            </p>
+          ) : null}
         </section>
       </div>
     </main>
