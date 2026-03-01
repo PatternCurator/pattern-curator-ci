@@ -44,11 +44,19 @@ function publicBucketUrl(bucket: string, path: string | null) {
 export default async function CiLandingPage() {
   const supabase = await supabaseServer();
 
-  const [{ data: signalsData }, { data: featuredData }, { data: recentData }] = await Promise.all([
-    supabase.from("ci_home_current_signals").select("*"),
-    supabase.from("ci_home_featured_board").select("*"),
-    supabase.from("ci_home_recent_interpretations").select("*"),
-  ]);
+  const [
+  { data: signalsData, error: signalsError },
+  { data: featuredData, error: featuredError },
+  { data: recentData, error: recentError },
+] = await Promise.all([
+  supabase.from("ci_home_current_signals").select("*"),
+  supabase.from("ci_home_featured_board").select("*"),
+  supabase.from("ci_home_recent_interpretations").select("*"),
+]);
+
+if (signalsError) console.error("ci_home_current_signals error:", signalsError);
+if (featuredError) console.error("ci_home_featured_board error:", featuredError);
+if (recentError) console.error("ci_home_recent_interpretations error:", recentError);
 
   const signals = (signalsData ?? []) as Signal[];
   const featured = ((featuredData ?? [])[0] ?? null) as Featured | null;
