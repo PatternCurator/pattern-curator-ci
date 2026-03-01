@@ -47,7 +47,7 @@ export default function SiteHeader() {
               }}
             >
               <Link
-                href="/"
+                href="/library"
                 className="text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
               >
                 Library
