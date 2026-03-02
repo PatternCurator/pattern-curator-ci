@@ -206,7 +206,7 @@ export default async function CiLandingPage() {
           </p>
 
           <div className="mt-8 flex items-center justify-center gap-8 text-[14px] tracking-[0.08em] uppercase">
-            <Link className="text-neutral-900 hover:underline" href="/inspiration">
+            <Link className="text-neutral-900 hover:underline" href="/library">
               Explore the Library
             </Link>
             <span className="text-neutral-300">|</span>

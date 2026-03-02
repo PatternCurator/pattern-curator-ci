@@ -3,7 +3,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/supabaseServer";
 import AssetInterpretation from "@/components/AssetInterpretation";
-import { requireUsageOrRedirect } from "@/lib/usageGuard";
 
 export const dynamic = "force-dynamic";
 
@@ -38,16 +37,6 @@ export default async function AssetDetailPage({
   const { id } = await params;
 
   const supabase = await supabaseServer();
-
-  // ✅ GATE: count asset views as usage (clicks + direct URL)
-  const { data: sessionData } = await supabase.auth.getSession();
-  const email = sessionData?.session?.user?.email ?? null;
-
-  await requireUsageOrRedirect({
-    email,
-    action: "view_asset",
-    redirectTo: "/pricing",
-  });
 
   const { data, error } = await supabase
     .from("assets")

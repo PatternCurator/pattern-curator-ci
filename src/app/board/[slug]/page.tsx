@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/supabaseServer";
 import AssetInterpretation from "@/components/AssetInterpretation";
 import ApplicationQuery from "@/components/ApplicationQuery";
-import { requireUsageOrRedirect } from "@/lib/usageGuard";
 
 export const dynamic = "force-dynamic";
 
@@ -28,16 +27,6 @@ export default async function BoardPage({
   const { slug } = await params;
 
   const supabase = await supabaseServer();
-
-  // ✅ GATE: count board views as usage (clicks + direct URL)
-  const { data: sessionData } = await supabase.auth.getSession();
-  const email = sessionData?.session?.user?.email ?? null;
-
-  await requireUsageOrRedirect({
-    email,
-    action: "view_board",
-    redirectTo: "/pricing",
-  });
 
   const { data, error } = await supabase
     .from("boards")
