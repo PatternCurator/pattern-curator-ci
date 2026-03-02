@@ -7,6 +7,7 @@ import { supabaseBrowser } from "@/lib/supabaseBrowser";
 const STORAGE_KEY = "pc_ci_email";
 const PENDING_EMAIL_KEY = "pc_ci_pending_email";
 const LAST_Q_KEY = "pc_ci_last_q";
+const LAST_VIEW_KEY = "pc_ci_last_view";
 
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
@@ -328,6 +329,52 @@ export default function EmailGate({
         if (!res.ok && res.status !== 402) {
           console.error("Usage logging failed:", { status: res.status, data });
         }
+
+        // Consume a free view when user lands on a detail page (counts clicks + direct URL visits).
+useEffect(() => {
+  if (!email) return;
+
+  const p = (pathname || "").toLowerCase();
+
+  let action: "view_asset" | "view_board" | "view_moodboard" | null = null;
+  if (p.startsWith("/asset/")) action = "view_asset";
+  else if (p.startsWith("/board/")) action = "view_board";
+  else if (p.startsWith("/moodboard/")) action = "view_moodboard";
+
+  if (!action) return;
+
+  const key = `${action}::${p}`;
+  const last = window.localStorage.getItem(LAST_VIEW_KEY);
+  if (last === key) return;
+
+  (async () => {
+    try {
+      const res = await fetch("/api/usage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify({
+          email,
+          action,
+          count: 1,
+          meta: { pathname: p },
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      const rem = extractRemaining(data);
+      if (typeof rem === "number") setRemaining(rem);
+
+      window.localStorage.setItem(LAST_VIEW_KEY, key);
+
+      if (res.status === 402) setRemaining(0);
+
+      await refreshRemaining(email);
+    } catch (err) {
+      console.error("View usage logging error:", err);
+    }
+  })();
+}, [email, pathname]);
 
         // Always sync from server truth
         await refreshRemaining(email);
