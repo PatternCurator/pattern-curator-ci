@@ -19,6 +19,20 @@ function isActiveBillingStatus(status: string | null | undefined) {
   return status === "active" || status === "trialing";
 }
 
+// ✅ actions that should count toward the free limit
+const COUNTED_ACTIONS = new Set([
+  "search",
+  "view_board",
+  "view_moodboard",
+  "view_asset",
+  "view_post",
+]);
+
+function normalizeAction(raw: any) {
+  const a = typeof raw === "string" ? raw.trim() : "";
+  return a || "search";
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({}));
@@ -26,8 +40,12 @@ export async function POST(req: Request) {
     const emailRaw = typeof body.email === "string" ? body.email : "";
     const email_normalized = normalizeEmail(emailRaw);
 
-    const action = typeof body.action === "string" ? body.action : "search";
-    const count = typeof body.count === "number" && body.count > 0 ? body.count : 1;
+    const action = normalizeAction(body.action);
+
+    const count =
+      typeof body.count === "number" && Number.isFinite(body.count) && body.count > 0
+        ? Math.floor(body.count)
+        : 1;
 
     if (!email_normalized || !email_normalized.includes("@")) {
       return NextResponse.json({ error: "Valid email is required" }, { status: 400 });
@@ -40,10 +58,7 @@ export async function POST(req: Request) {
     const envAllowlist = parseAllowlist(process.env.ADMIN_EMAIL_ALLOWLIST);
 
     // ✅ Failsafe fallback (so you can’t get locked out even if env var is missing/misnamed)
-    const fallbackAllowlist = [
-      "kristine@patterncurator.com",
-      "kristine.r.go@gmail.com",
-    ];
+    const fallbackAllowlist = ["kristine@patterncurator.com", "kristine.r.go@gmail.com"];
 
     const adminAllowlist = Array.from(new Set([...envAllowlist, ...fallbackAllowlist]));
     const is_admin = adminAllowlist.includes(email_normalized);
@@ -81,12 +96,13 @@ export async function POST(req: Request) {
       };
     }
 
-    async function computeFreeSearches() {
+    async function computeFreeUsesCounted() {
+      // ✅ count ALL actions that should consume free credits
       const { count: usedCount, error: usedErr } = await supabaseAdmin
         .from("ci_usage")
         .select("*", { count: "exact", head: true })
         .eq("email_normalized", email_normalized)
-        .eq("action", "search");
+        .in("action", Array.from(COUNTED_ACTIONS));
 
       if (usedErr) console.error("❌ ci_usage count error:", usedErr);
 
@@ -95,8 +111,7 @@ export async function POST(req: Request) {
       return { used, remaining };
     }
 
-    // ✅ CRITICAL FIX:
-    // Many clients treat null as 0 → so return a big number for unlimited users.
+    // ✅ Unlimited users: always unlocked
     function unlimitedResponse() {
       const payload: any = {
         ok: true,
@@ -106,6 +121,7 @@ export async function POST(req: Request) {
         is_unlimited: true,
         billing_status,
 
+        is_unlocked: true,
         limitReached: false,
         requires_subscription: false,
 
@@ -116,7 +132,6 @@ export async function POST(req: Request) {
         },
       };
 
-      // Helpful debug locally (won’t show in production)
       if (process.env.NODE_ENV !== "production") {
         payload._debug = {
           envAllowlist,
@@ -134,7 +149,7 @@ export async function POST(req: Request) {
     if (action === "status") {
       if (is_unlimited) return unlimitedResponse();
 
-      const { used, remaining } = await computeFreeSearches();
+      const { used, remaining } = await computeFreeUsesCounted();
       const limitReached = remaining <= 0;
 
       const payload: any = {
@@ -145,6 +160,7 @@ export async function POST(req: Request) {
         is_unlimited: false,
         billing_status,
 
+        is_unlocked: !limitReached,
         limitReached,
         requires_subscription: limitReached,
 
@@ -168,9 +184,9 @@ export async function POST(req: Request) {
       return NextResponse.json(payload);
     }
 
-    // Log non-search actions (optional)
-    if (action !== "search") {
-      const rows = Array.from({ length: count }, () => usageRow());
+    // ✅ If action is not counted, just log it (optional analytics) and return current entitlement
+    if (!COUNTED_ACTIONS.has(action)) {
+      const rows = Array.from({ length: count }, () => usageRow(action));
       const { error } = await supabaseAdmin.from("ci_usage").insert(rows);
 
       if (error) {
@@ -180,7 +196,7 @@ export async function POST(req: Request) {
 
       if (is_unlimited) return unlimitedResponse();
 
-      const { used, remaining } = await computeFreeSearches();
+      const { used, remaining } = await computeFreeUsesCounted();
       const limitReached = remaining <= 0;
 
       return NextResponse.json({
@@ -191,6 +207,7 @@ export async function POST(req: Request) {
         is_unlimited: false,
         billing_status,
 
+        is_unlocked: !limitReached,
         limitReached,
         requires_subscription: limitReached,
 
@@ -202,12 +219,12 @@ export async function POST(req: Request) {
       });
     }
 
-    // ✅ UNLIMITED USERS: no enforcement
+    // ✅ UNLIMITED USERS: optionally log counted actions (subscribers) but always unlocked
     if (is_unlimited) {
-      // Recommended: do not insert admin usage (keeps your logs clean)
+      // Recommended: do not insert admin usage (keeps logs clean)
       // Keep subscriber logging if you want analytics:
       if (!is_admin) {
-        const rows = Array.from({ length: count }, () => usageRow("search"));
+        const rows = Array.from({ length: count }, () => usageRow(action));
         const { error } = await supabaseAdmin.from("ci_usage").insert(rows);
 
         if (error) {
@@ -219,12 +236,12 @@ export async function POST(req: Request) {
       return unlimitedResponse();
     }
 
-    // ✅ FREE USERS: enforce cap
+    // ✅ FREE USERS: enforce cap for ANY counted action (search + view_*)
     const { count: usedBefore, error: usedErr } = await supabaseAdmin
       .from("ci_usage")
       .select("*", { count: "exact", head: true })
       .eq("email_normalized", email_normalized)
-      .eq("action", "search");
+      .in("action", Array.from(COUNTED_ACTIONS));
 
     if (usedErr) console.error("❌ ci_usage count error:", usedErr);
 
@@ -240,6 +257,7 @@ export async function POST(req: Request) {
           is_unlimited: false,
           billing_status,
 
+          is_unlocked: false,
           limitReached: true,
           requires_subscription: true,
 
@@ -256,7 +274,8 @@ export async function POST(req: Request) {
     const remainingBefore = Math.max(0, FREE_SEARCH_LIMIT - used);
     const toInsert = Math.min(count, remainingBefore);
 
-    const rows = Array.from({ length: toInsert }, () => usageRow("search"));
+    // Insert the counted action (search OR view_*)
+    const rows = Array.from({ length: toInsert }, () => usageRow(action));
     const { error: insertErr } = await supabaseAdmin.from("ci_usage").insert(rows);
 
     if (insertErr) {
@@ -276,6 +295,7 @@ export async function POST(req: Request) {
       is_unlimited: false,
       billing_status,
 
+      is_unlocked: true,
       limitReached,
       requires_subscription: limitReached,
 

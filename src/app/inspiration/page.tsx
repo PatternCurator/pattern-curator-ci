@@ -150,4 +150,3 @@ export default async function InspirationPage({
 }
 
 export const dynamic = "force-dynamic";
-export const revalidate = 0;

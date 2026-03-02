@@ -145,4 +145,3 @@ export default async function ArchivePage({
 }
 
 export const dynamic = "force-dynamic";
-export const revalidate = 0;

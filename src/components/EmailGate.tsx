@@ -53,7 +53,7 @@ export default function EmailGate({
   const [checkoutStatus, setCheckoutStatus] = useState<"idle" | "loading" | "error">("idle");
   const [checkoutError, setCheckoutError] = useState<string>("");
 
-  // ✅ NEW: prevents "Verify your email" flash on navigation/search
+  // ✅ prevents "Verify your email" flash on navigation/search
   const [authChecked, setAuthChecked] = useState<boolean>(false);
 
   const hasEmail = Boolean(email);
@@ -142,7 +142,7 @@ export default function EmailGate({
           } catch {}
         }
       } finally {
-        if (alive) setAuthChecked(true); // ✅ mark checked even if request fails
+        if (alive) setAuthChecked(true);
       }
     })();
 
@@ -162,7 +162,7 @@ export default function EmailGate({
         setEmail("");
         setRemaining(null);
       }
-      setAuthChecked(true); // ✅ ensures we never flash gate due to transient state
+      setAuthChecked(true);
     });
 
     return () => {
@@ -293,7 +293,7 @@ export default function EmailGate({
     }
   }
 
-  // Consume a free search when q changes and update counter to 5→4→3→2→1
+  // Consume a free search when q changes and update counter
   useEffect(() => {
     if (!email) return;
     if (!q) return;
@@ -337,6 +337,14 @@ export default function EmailGate({
     })();
   }, [email, q, pathname]);
 
+  // ✅ NEW: keep the counter accurate when user navigates (views are counted server-side now)
+  useEffect(() => {
+    if (!email) return;
+    // whenever pathname changes, pull server truth
+    refreshRemaining(email);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [email, pathname]);
+
   return (
     <div className="relative">
       {/* Always render background content */}
@@ -354,11 +362,12 @@ export default function EmailGate({
             </button>
           </div>
 
-          {typeof remaining === "number" ? <span>{remaining} free searches left</span> : <span />}
+          {/* ✅ label updated: it's no longer only searches */}
+          {typeof remaining === "number" ? <span>{remaining} free views left</span> : <span />}
         </div>
       ) : null}
 
-      {/* ✅ Gate overlay only AFTER authChecked to prevent flash */}
+      {/* Gate overlay only AFTER authChecked to prevent flash */}
       {authChecked && (!hasEmail || limitReached) ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-6">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
@@ -371,7 +380,7 @@ export default function EmailGate({
                 </h1>
 
                 <p className="mt-2 text-sm text-neutral-600">
-                  Get 5 free searches. No password.
+                  Get 5 free views. No password.
                   <br />
                   <span className="italic text-neutral-500">
                     We’ll send a one-time code to confirm it’s really you.
@@ -390,7 +399,7 @@ export default function EmailGate({
                     />
 
                     <p className="text-xs text-neutral-500 text-center">
-                      Already subscribed? Use the same email to unlock unlimited searches.
+                      Already subscribed? Use the same email to unlock unlimited access.
                     </p>
 
                     {status === "error" ? <p className="text-sm text-red-600">{error}</p> : null}
@@ -479,7 +488,7 @@ export default function EmailGate({
                   </button>
                 </div>
 
-                <p className="mt-4 text-sm text-neutral-600">You’ve used all 5 free searches.</p>
+                <p className="mt-4 text-sm text-neutral-600">You’ve used all 5 free views.</p>
 
                 <p className="mt-3 text-sm text-neutral-600">
                   To continue exploring the Pattern Curator CI library, full access is available by subscription.

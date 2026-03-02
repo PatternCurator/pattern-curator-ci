@@ -1,8 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
+import sharp from "sharp";
 import { supabaseServer } from "@/lib/supabaseServer";
 
 export const revalidate = 604800; // 7 days
+export const runtime = "nodejs"; // needed for sharp (not Edge)
 
 type Signal = {
   id: string;
@@ -41,6 +43,68 @@ function publicBucketUrl(bucket: string, path: string | null) {
   const clean = path.trim().replace(/^\/+/, "");
   const encoded = clean.split("/").map(encodeURIComponent).join("/");
   return `${base}/storage/v1/object/public/${bucket}/${encoded}`;
+}
+
+function clampByte(n: number) {
+  return Math.max(0, Math.min(255, Math.round(n)));
+}
+
+function rgbToHex(r: number, g: number, b: number) {
+  const rr = clampByte(r).toString(16).padStart(2, "0");
+  const gg = clampByte(g).toString(16).padStart(2, "0");
+  const bb = clampByte(b).toString(16).padStart(2, "0");
+  return `#${(rr + gg + bb).toUpperCase()}`;
+}
+
+function uniqueKeepOrder(hexes: string[], max: number) {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const h of hexes) {
+    const key = h.toUpperCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(key);
+    if (out.length >= max) break;
+  }
+  return out;
+}
+
+/**
+ * Pulls a small palette from an image URL by downsampling the image
+ * to a 1-row strip and reading pixel colors.
+ */
+async function paletteFromImageUrl(url: string, samples = 4): Promise<string[]> {
+  try {
+    const res = await fetch(url, {
+      // allow Next to cache the fetch alongside your revalidate window
+      next: { revalidate },
+    });
+
+    if (!res.ok) return [];
+    const buf = Buffer.from(await res.arrayBuffer());
+
+    // Resize to a thin strip (samples x 1) and read raw RGB pixels
+    const { data, info } = await sharp(buf)
+      .resize(samples, 1, { fit: "fill" })
+      .removeAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+
+    const channels = info.channels; // usually 3 (RGB)
+    const hexes: string[] = [];
+
+    for (let i = 0; i < samples; i++) {
+      const idx = i * channels;
+      const r = data[idx];
+      const g = data[idx + 1];
+      const b = data[idx + 2];
+      hexes.push(rgbToHex(r, g, b));
+    }
+
+    return uniqueKeepOrder(hexes, samples);
+  } catch {
+    return [];
+  }
 }
 
 export default async function CiLandingPage() {
@@ -93,6 +157,24 @@ export default async function CiLandingPage() {
 
   const weeklyLine =
     "A weekly snapshot of print, color, and surface directions shaping contemporary creative work.";
+
+  // ✅ Build palette from the SAME 3 images you're showing in Current Signals
+  const paletteSources = [signalImgs[0]?.img, signalImgs[1]?.img, signalImgs[2]?.img].filter(
+    (u): u is string => Boolean(u)
+  );
+
+  let paletteHexes: string[] = [];
+  if (paletteSources.length) {
+    const perImage = await Promise.all(
+      paletteSources.map((u) => paletteFromImageUrl(u, 4)) // 4 samples per image
+    );
+    paletteHexes = uniqueKeepOrder(perImage.flat(), 7); // take 7 total
+  }
+
+  // fallback (keeps your current vibe) if something fails
+  if (!paletteHexes.length) {
+    paletteHexes = ["#C9D1C0", "#7D8A78", "#E8E2D6", "#9A7A53", "#8B8D90", "#5F6468"];
+  }
 
   return (
     <main className="bg-white">
@@ -227,21 +309,23 @@ export default async function CiLandingPage() {
           </aside>
         </section>
 
-        {/* PALETTE STRIP */}
+        {/* ✅ PALETTE STRIP (NOW IMAGE-DERIVED) */}
         <div className="mt-10">
           <div className="h-[36px] w-full overflow-hidden bg-neutral-100">
             <div className="flex h-full">
-              <div className="h-full w-[16%] bg-[#C9D1C0]" />
-              <div className="h-full w-[20%] bg-[#7D8A78]" />
-              <div className="h-full w-[14%] bg-[#E8E2D6]" />
-              <div className="h-full w-[18%] bg-[#9A7A53]" />
-              <div className="h-full w-[16%] bg-[#8B8D90]" />
-              <div className="h-full w-[16%] bg-[#5F6468]" />
+              {paletteHexes.map((hex) => (
+                <div
+                  key={hex}
+                  className="h-full"
+                  style={{ backgroundColor: hex, width: `${100 / paletteHexes.length}%` }}
+                  title={hex}
+                />
+              ))}
             </div>
           </div>
         </div>
 
-        {/* RECENT INTERPRETATIONS (THIS WAS MISSING) */}
+        {/* RECENT INTERPRETATIONS */}
         <section className="mt-16 border-t border-neutral-200 pt-10">
           <p className="text-center text-[12px] tracking-[0.18em] uppercase text-neutral-900">
             Recent Interpretations
@@ -264,9 +348,7 @@ export default async function CiLandingPage() {
 
                 <div className="mt-3 text-center text-[13px] leading-[1.35] text-neutral-800">
                   <div className="italic">{(r.report_type ?? "Post").toString()}</div>
-                  <div className="mt-1 whitespace-normal break-words">
-                    {r.title ?? "Untitled"}
-                  </div>
+                  <div className="mt-1 whitespace-normal break-words">{r.title ?? "Untitled"}</div>
                 </div>
               </Link>
             ))}

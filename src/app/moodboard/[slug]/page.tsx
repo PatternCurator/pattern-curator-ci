@@ -4,9 +4,9 @@ import { notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/supabaseServer";
 import AssetInterpretation from "@/components/AssetInterpretation";
 import ApplicationQuery from "@/components/ApplicationQuery";
+import { requireUsageOrRedirect } from "@/lib/usageGuard";
 
 export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
 function publicMoodboardUrl(path: string | null) {
   if (!path) return null;
@@ -27,6 +27,17 @@ export default async function MoodboardDetailPage({
   const { slug } = await params;
 
   const supabase = await supabaseServer();
+
+  // ✅ GATE: count moodboard views as usage (clicks + direct URL)
+  const { data: sessionData } = await supabase.auth.getSession();
+  const email = sessionData?.session?.user?.email ?? null;
+
+  await requireUsageOrRedirect({
+    email,
+    action: "view_moodboard",
+    redirectTo: "/pricing",
+  });
+
   const { data, error } = await supabase
     .from("moodboards")
     .select(
@@ -61,22 +72,22 @@ export default async function MoodboardDetailPage({
   return (
     <main className="mx-auto max-w-4xl px-6 py-8 space-y-6">
       <div className="flex justify-end">
-    <Link
-    href="/moodboards"
-    className="inline-flex h-9 items-center rounded-full px-4 text-sm"
-    style={{
-      fontFamily: "Arial, Helvetica, sans-serif",
-      fontStyle: "italic",
-      textTransform: "uppercase",
-      letterSpacing: "0.06em",
-      border: "1px solid #B8B9B6",
-      color: "#707376ff",
-      background: "#f4f4f4",
-    }}
-  >
-    Back to Moodboards
-    </Link>
-  </div>
+        <Link
+          href="/moodboards"
+          className="inline-flex h-9 items-center rounded-full px-4 text-sm"
+          style={{
+            fontFamily: "Arial, Helvetica, sans-serif",
+            fontStyle: "italic",
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
+            border: "1px solid #B8B9B6",
+            color: "#707376ff",
+            background: "#f4f4f4",
+          }}
+        >
+          Back to Moodboards
+        </Link>
+      </div>
 
       <div className="mx-auto w-full max-w-6xl space-y-6">
         {/* Curatorial Intelligence (same as Boards/Assets) */}
@@ -102,18 +113,11 @@ export default async function MoodboardDetailPage({
 
         {/* Sources + Download at bottom (matches Boards pattern) */}
         <div className="pt-2 space-y-2">
-          {data.source_site ? (
-            <p className="text-sm text-zinc-500">{data.source_site}</p>
-          ) : null}
+          {data.source_site ? <p className="text-sm text-zinc-500">{data.source_site}</p> : null}
 
           {data.source_url ? (
             <p className="text-sm text-zinc-500">
-              <a
-                className="underline hover:opacity-80"
-                href={data.source_url}
-                target="_blank"
-                rel="noreferrer"
-              >
+              <a className="underline hover:opacity-80" href={data.source_url} target="_blank" rel="noreferrer">
                 {data.source_url}
               </a>
             </p>
@@ -132,17 +136,9 @@ export default async function MoodboardDetailPage({
           ) : null}
         </div>
 
-            <ApplicationQuery
-              boardTitle={data.title}
-              boardNotes={
-                [
-                  data.direction,
-                  data.color_notes,
-                  data.print_pattern_notes
-                ]
-                  .filter(Boolean)
-                  .join("\n\n")
-            }
+        <ApplicationQuery
+          boardTitle={data.title}
+          boardNotes={[data.direction, data.color_notes, data.print_pattern_notes].filter(Boolean).join("\n\n")}
         />
       </div>
     </main>

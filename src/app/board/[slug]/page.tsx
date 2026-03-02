@@ -4,9 +4,9 @@ import { notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/supabaseServer";
 import AssetInterpretation from "@/components/AssetInterpretation";
 import ApplicationQuery from "@/components/ApplicationQuery";
+import { requireUsageOrRedirect } from "@/lib/usageGuard";
 
 export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
 function publicBoardUrl(path: string | null) {
   if (!path) return null;
@@ -28,28 +28,38 @@ export default async function BoardPage({
   const { slug } = await params;
 
   const supabase = await supabaseServer();
+
+  // ✅ GATE: count board views as usage (clicks + direct URL)
+  const { data: sessionData } = await supabase.auth.getSession();
+  const email = sessionData?.session?.user?.email ?? null;
+
+  await requireUsageOrRedirect({
+    email,
+    action: "view_board",
+    redirectTo: "/pricing",
+  });
+
   const { data, error } = await supabase
     .from("boards")
     .select(
       "id,title,slug,board_image_path_1,board_image_path_2,source_site,domain,direction,color_notes,print_pattern_notes,catalog_state,report_type"
     )
-
-
     .eq("slug", slug)
     .single();
 
   if (error || !data) return notFound();
+
   const isMood = data.report_type === "mood";
   const aspectClass = isMood ? "aspect-[13/20.5]" : "aspect-[16/9]";
   const img1 = publicBoardUrl(data.board_image_path_1 ?? null);
   const img2 = publicBoardUrl(data.board_image_path_2 ?? null);
+
   const pdfHref =
     img1
       ? `/api/board/pdf?img1=${encodeURIComponent(img1)}${
           img2 ? `&img2=${encodeURIComponent(img2)}` : ""
         }&title=${encodeURIComponent(data.title ?? "Board")}`
       : null;
-
 
   // Reuse interpretation component by providing the shape it expects
   const interpretationAsset = {
@@ -68,32 +78,30 @@ export default async function BoardPage({
     <main className="mx-auto max-w-4xl px-6 py-8 space-y-6">
       <div className="flex items-start justify-between gap-6">
         <h1
-  className="text-xl tracking-tight italic"
-  style={{
-    fontFamily: "var(--font-libre), Libre Baskerville, serif",
-    color: "#8a8a8aff",
-  }}
->
-  {(data.title ?? "Untitled").toUpperCase()}
-</h1>
-
+          className="text-xl tracking-tight italic"
+          style={{
+            fontFamily: "var(--font-libre), Libre Baskerville, serif",
+            color: "#8a8a8aff",
+          }}
+        >
+          {(data.title ?? "Untitled").toUpperCase()}
+        </h1>
 
         <Link
-  href={data.catalog_state === "archive" ? "/archive" : "/inspiration"}
-  className="inline-flex h-9 items-center rounded-full px-4 text-sm"
-  style={{
-    fontFamily: "Arial, Helvetica, sans-serif",
-    fontStyle: "italic",
-    textTransform: "uppercase",
-    letterSpacing: "0.06em",
-    border: "1px solid #B8B9B6",
-    color: "#707376ff",
-    background: "#f4f4f4",
-  }}
->
-  {data.catalog_state === "archive" ? "Back to Archive" : "Back to Inspiration"}
-</Link>
-
+          href={data.catalog_state === "archive" ? "/archive" : "/inspiration"}
+          className="inline-flex h-9 items-center rounded-full px-4 text-sm"
+          style={{
+            fontFamily: "Arial, Helvetica, sans-serif",
+            fontStyle: "italic",
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
+            border: "1px solid #B8B9B6",
+            color: "#707376ff",
+            background: "#f4f4f4",
+          }}
+        >
+          {data.catalog_state === "archive" ? "Back to Archive" : "Back to Inspiration"}
+        </Link>
       </div>
 
       {/* ✅ Balanced layout: AI + images share the same width */}
@@ -135,37 +143,29 @@ export default async function BoardPage({
           </a>
         ) : null}
 
-          {/* Sources sentence + optional download at bottom */}
-          <div className="pt-2 space-y-2">
-            {data.source_site ? (
-              <p className="text-sm text-zinc-500">{data.source_site}</p>
-       ) : null}
+        {/* Sources sentence + optional download at bottom */}
+        <div className="pt-2 space-y-2">
+          {data.source_site ? <p className="text-sm text-zinc-500">{data.source_site}</p> : null}
 
-            {pdfHref ? (
-               <div className="flex justify-center">
-                <a
-                  href={pdfHref}
-                  className="inline-flex items-center px-3 h-8 text-xs uppercase tracking-wider border border-zinc-300 bg-zinc-100 text-zinc-600 rounded-full"
-                  style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
-          >
-              Download PDF
-      </a>
-    </div>
-  ) : null}
-</div>
-            <ApplicationQuery
-              boardTitle={data.title}
-              boardNotes={
-                [
-                  data.direction,
-                  data.color_notes,
-                  data.print_pattern_notes
-                ]
-                   .filter(Boolean)
-                   .join("\n\n")
-            }
-      />
+          {pdfHref ? (
+            <div className="flex justify-center">
+              <a
+                href={pdfHref}
+                className="inline-flex items-center px-3 h-8 text-xs uppercase tracking-wider border border-zinc-300 bg-zinc-100 text-zinc-600 rounded-full"
+                style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+              >
+                Download PDF
+              </a>
+            </div>
+          ) : null}
+        </div>
 
+        <ApplicationQuery
+          boardTitle={data.title}
+          boardNotes={[data.direction, data.color_notes, data.print_pattern_notes]
+            .filter(Boolean)
+            .join("\n\n")}
+        />
       </div>
     </main>
   );

@@ -3,9 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/supabaseServer";
 import AssetInterpretation from "@/components/AssetInterpretation";
+import { requireUsageOrRedirect } from "@/lib/usageGuard";
 
 export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
 type Asset = {
   id: string;
@@ -38,6 +38,17 @@ export default async function AssetDetailPage({
   const { id } = await params;
 
   const supabase = await supabaseServer();
+
+  // ✅ GATE: count asset views as usage (clicks + direct URL)
+  const { data: sessionData } = await supabase.auth.getSession();
+  const email = sessionData?.session?.user?.email ?? null;
+
+  await requireUsageOrRedirect({
+    email,
+    action: "view_asset",
+    redirectTo: "/pricing",
+  });
+
   const { data, error } = await supabase
     .from("assets")
     .select(
@@ -56,9 +67,7 @@ export default async function AssetDetailPage({
       <div className="flex items-start justify-between gap-6">
         <div>
           {/* Keep original title (no new title) */}
-          <h1 className="text-xl font-semibold tracking-tight">
-            {asset.title ?? "Untitled"}
-          </h1>
+          <h1 className="text-xl font-semibold tracking-tight">{asset.title ?? "Untitled"}</h1>
 
           {asset.source_url ? (
             <a
@@ -76,38 +85,36 @@ export default async function AssetDetailPage({
         </div>
 
         <Link
-  href="/"
-  className="inline-flex h-9 items-center rounded-full px-4 text-sm"
-  style={{ border: "1px solid #B8B9B6", color: "#707376ff" }}
->
-  Back to search
-</Link>
-
+          href="/"
+          className="inline-flex h-9 items-center rounded-full px-4 text-sm"
+          style={{ border: "1px solid #B8B9B6", color: "#707376ff" }}
+        >
+          Back to search
+        </Link>
       </div>
 
       {/* Single-asset interpretation (moved to top) */}
-<AssetInterpretation asset={asset} />
+      <AssetInterpretation asset={asset} />
 
-<div className="mt-6 flex justify-center">
-  <div className="w-full max-w-md overflow-hidden rounded-none bg-white">
-    <div className="relative aspect-[4/5] bg-zinc-50">
-      {url ? (
-        <Image
-          src={url}
-          alt={asset.title ?? "Asset"}
-          fill
-          className="object-contain"
-          sizes="(max-width: 768px) 90vw, 400px"
-        />
-      ) : (
-        <div className="absolute inset-0 flex items-center justify-center text-sm text-zinc-400">
-          No preview available
+      <div className="mt-6 flex justify-center">
+        <div className="w-full max-w-md overflow-hidden rounded-none bg-white">
+          <div className="relative aspect-[4/5] bg-zinc-50">
+            {url ? (
+              <Image
+                src={url}
+                alt={asset.title ?? "Asset"}
+                fill
+                className="object-contain"
+                sizes="(max-width: 768px) 90vw, 400px"
+              />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center text-sm text-zinc-400">
+                No preview available
+              </div>
+            )}
+          </div>
         </div>
-      )}
-    </div>
-  </div>
-</div>
-
+      </div>
     </main>
   );
 }
