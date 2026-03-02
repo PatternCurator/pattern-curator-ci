@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 export default function InfiniteScrollN({
@@ -16,13 +16,13 @@ export default function InfiniteScrollN({
   const pathname = usePathname();
 
   // Prevent repeated navigations while the sentinel stays in view
-  const [firedForN, setFiredForN] = useState<number | null>(null);
+  const firedForNRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!hasMore) return;
 
     // If we've already fired for this nextN, do nothing
-    if (firedForN === nextN) return;
+    if (firedForNRef.current === nextN) return;
 
     const el = ref.current;
     if (!el) return;
@@ -33,20 +33,24 @@ export default function InfiniteScrollN({
         if (!e?.isIntersecting) return;
 
         // One-shot per nextN
-        setFiredForN(nextN);
+        firedForNRef.current = nextN;
 
         const params = new URLSearchParams(sp.toString());
         params.set("n", String(nextN));
 
-        // IMPORTANT: preserve current route (not hardcoded "/")
+        // Preserve current route and prevent scroll jump
         router.replace(`${pathname}?${params.toString()}`, { scroll: false });
       },
-      { rootMargin: "900px 0px" }
+      {
+        // CHANGE: load earlier to feel more "never ending"
+        // (bigger margin = fetch triggers sooner)
+        rootMargin: "1600px 0px",
+      }
     );
 
     io.observe(el);
     return () => io.disconnect();
-  }, [hasMore, nextN, router, sp, firedForN, pathname]);
+  }, [hasMore, nextN, router, sp, pathname]);
 
   return <div ref={ref} className="h-1 w-full" aria-hidden="true" />;
 }
