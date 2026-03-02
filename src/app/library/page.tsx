@@ -102,7 +102,7 @@ export default async function LibraryPage({
     const orConditions = terms
       .map(
         (t) =>
-          `title.ilike.%${t}%,direction.ilike.%${t}%,color_notes.ilike.%${t}%,print_pattern_notes.ilike.%${t}%`
+          `title.ilike.%${t}%,season.ilike.%${t}%,direction.ilike.%${t}%,color_notes.ilike.%${t}%,print_pattern_notes.ilike.%${t}%`
       )
       .join(",");
 
