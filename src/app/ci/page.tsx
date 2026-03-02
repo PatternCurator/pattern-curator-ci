@@ -69,6 +69,79 @@ function uniqueKeepOrder(hexes: string[], max: number) {
   return out;
 }
 
+/** ✅ NEW: hex -> HSL (for "too close" checks) */
+function hexToHsl(hex: string) {
+  const raw = hex.replace("#", "").trim();
+  if (raw.length !== 6) return { h: 0, s: 0, l: 0 };
+
+  const r = parseInt(raw.slice(0, 2), 16) / 255;
+  const g = parseInt(raw.slice(2, 4), 16) / 255;
+  const b = parseInt(raw.slice(4, 6), 16) / 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const d = max - min;
+
+  let h = 0;
+  let s = 0;
+  const l = (max + min) / 2;
+
+  if (d !== 0) {
+    s = d / (1 - Math.abs(2 * l - 1));
+
+    switch (max) {
+      case r:
+        h = ((g - b) / d) % 6;
+        break;
+      case g:
+        h = (b - r) / d + 2;
+        break;
+      case b:
+        h = (r - g) / d + 4;
+        break;
+    }
+
+    h = h * 60;
+    if (h < 0) h += 360;
+  }
+
+  return { h, s: s * 100, l: l * 100 };
+}
+
+/**
+ * ✅ NEW: pick colors that aren't too close in hue + lightness
+ * - hue threshold prevents same-family repeats
+ * - lightness threshold prevents 3 near-greys, etc
+ */
+function pickDiverseColors(hexColors: string[], max = 6) {
+  const selected: string[] = [];
+
+  // tuning knobs (keep conservative for editorial feel)
+  const MIN_HUE_DIFF = 45; // degrees
+  const MIN_LIGHT_DIFF = 25; // percentage points
+
+  function circularHueDiff(a: number, b: number) {
+    const d = Math.abs(a - b);
+    return Math.min(d, 360 - d);
+  }
+
+  for (const hex of hexColors) {
+    const cur = hexToHsl(hex);
+
+    const tooClose = selected.some((sel) => {
+      const prev = hexToHsl(sel);
+      const hueDiff = circularHueDiff(prev.h, cur.h);
+      const lightDiff = Math.abs(prev.l - cur.l);
+      return hueDiff < MIN_HUE_DIFF && lightDiff < MIN_LIGHT_DIFF;
+    });
+
+    if (!tooClose) selected.push(hex.toUpperCase());
+    if (selected.length >= max) break;
+  }
+
+  return selected;
+}
+
 /**
  * Pulls a small palette from an image URL by downsampling the image
  * to a 1-row strip and reading pixel colors.
@@ -168,7 +241,24 @@ export default async function CiLandingPage() {
     const perImage = await Promise.all(
       paletteSources.map((u) => paletteFromImageUrl(u, 4)) // 4 samples per image
     );
-    paletteHexes = uniqueKeepOrder(perImage.flat(), 7); // take 7 total
+
+    // 1) gather candidates
+    const candidates = uniqueKeepOrder(perImage.flat(), 18);
+
+    // 2) pick a diverse subset (prevents close tones)
+    paletteHexes = pickDiverseColors(candidates, 6);
+
+    // 3) if diversity filter is too strict and returns fewer, backfill with remaining unique
+    if (paletteHexes.length < 6) {
+      const existing = new Set(paletteHexes.map((h) => h.toUpperCase()));
+      for (const c of candidates) {
+        const key = c.toUpperCase();
+        if (existing.has(key)) continue;
+        paletteHexes.push(key);
+        existing.add(key);
+        if (paletteHexes.length >= 6) break;
+      }
+    }
   }
 
   // fallback (keeps your current vibe) if something fails
@@ -309,7 +399,7 @@ export default async function CiLandingPage() {
           </aside>
         </section>
 
-        {/* ✅ PALETTE STRIP (NOW IMAGE-DERIVED) */}
+        {/* ✅ PALETTE STRIP (IMAGE-DERIVED + DIVERSITY FILTER) */}
         <div className="mt-10">
           <div className="h-[36px] w-full overflow-hidden bg-neutral-100">
             <div className="flex h-full">
