@@ -1,3 +1,4 @@
+import Link from "next/link";
 import EmailGate from "@/components/EmailGate";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { SearchHeader } from "@/components/SearchHeader";
@@ -29,7 +30,10 @@ export default async function LibraryPage({
 
   const DEFAULT_N = 8;
   const STEP = 40;
-  const AUTO_CAP = 124; // stop infinite auto-load here
+
+  // CHANGE 1: raise AUTO_CAP so auto-load continues longer
+  // (this is the safest, least-scope-creep way to make it feel "more never ending")
+  const AUTO_CAP = 1000000; // effectively no cap
 
   // Only apply progressive loading on the cover (no query)
   const n = !q ? clampInt(sp.n, DEFAULT_N) : DEFAULT_N;
@@ -126,8 +130,10 @@ export default async function LibraryPage({
           {/* After AUTO_CAP, show MORE (only if more exist) */}
           {autoCapReached && hasMore ? (
             <div className="pt-6 flex justify-center">
-              <a
+              {/* CHANGE 2: use Link + scroll={false} so it continues where you left off */}
+              <Link
                 href={`/library?n=${nextAfterCap}`}
+                scroll={false}
                 className="h-10 px-8 rounded-none flex items-center justify-center text-xs font-bold uppercase tracking-[0.2em]"
                 style={{
                   fontFamily: "Arial, Helvetica, sans-serif",
@@ -137,7 +143,7 @@ export default async function LibraryPage({
                 }}
               >
                 MORE
-              </a>
+              </Link>
             </div>
           ) : null}
         </div>
