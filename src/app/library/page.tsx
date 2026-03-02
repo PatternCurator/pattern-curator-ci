@@ -20,6 +20,51 @@ function clampInt(v: unknown, fallback: number) {
   return Math.max(1, n);
 }
 
+/**
+ * Deterministic PRNG for seeded shuffle
+ */
+function mulberry32(seed: number) {
+  return function () {
+    let t = (seed += 0x6d2b79f5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function seededShuffle<T>(arr: T[], seed: number) {
+  const rand = mulberry32(seed);
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+/**
+ * ISO week seed (changes once per week).
+ * Uses UTC to avoid server timezone surprises.
+ * Seed is deterministic for the whole ISO week.
+ */
+function getIsoWeekSeedUTC(d: Date) {
+  // Copy date, strip time
+  const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+
+  // ISO week: Thursday determines year
+  const day = date.getUTCDay() || 7; // Sunday=0 -> 7
+  date.setUTCDate(date.getUTCDate() + 4 - day);
+
+  const isoYear = date.getUTCFullYear();
+
+  // Week number: count weeks from Jan 1
+  const yearStart = new Date(Date.UTC(isoYear, 0, 1));
+  const diffDays = Math.floor((date.getTime() - yearStart.getTime()) / 86400000) + 1;
+  const isoWeek = Math.ceil(diffDays / 7);
+
+  // Compact seed like 202612 for week 12 of 2026
+  return isoYear * 100 + isoWeek;
+}
+
 export default async function LibraryPage({
   searchParams,
 }: {
@@ -31,9 +76,9 @@ export default async function LibraryPage({
   const DEFAULT_N = 8;
   const STEP = 40;
 
-  // CHANGE 1: raise AUTO_CAP so auto-load continues longer
-  // (this is the safest, least-scope-creep way to make it feel "more never ending")
-  const AUTO_CAP = 1000000; // effectively no cap
+  // Set very high so infinite scroll can include all images (500+)
+  // (this keeps your existing logic intact; it will naturally stop when hasMore becomes false)
+  const AUTO_CAP = 1000000;
 
   // Only apply progressive loading on the cover (no query)
   const n = !q ? clampInt(sp.n, DEFAULT_N) : DEFAULT_N;
@@ -64,7 +109,7 @@ export default async function LibraryPage({
     query = query.or(orConditions);
   }
 
-  // Newest first
+  // Newest first (keep as-is to avoid scope creep)
   query = query.order("created_at", { ascending: false });
 
   // Ask for 1 extra row so we can reliably determine if more exist
@@ -85,6 +130,10 @@ export default async function LibraryPage({
 
   // Next n after cap (MORE continues beyond cap)
   const nextAfterCap = limit + STEP;
+
+  // WEEKLY SHUFFLE (cover feed only, not search results)
+  const weekSeed = getIsoWeekSeedUTC(new Date());
+  const displayAssets = !q ? seededShuffle([...safeAssets], weekSeed) : safeAssets;
 
   return (
     <EmailGate source="ci-home">
@@ -116,13 +165,13 @@ export default async function LibraryPage({
           {/* IMPORTANT: pass the first `limit` rows only */}
           <CurateResults
             q={q}
-            assets={safeAssets.slice(0, limit)}
+            assets={displayAssets.slice(0, limit)}
             columns={4}
             showMeta
             rounded
           />
 
-          {/* Infinite scroll until AUTO_CAP */}
+          {/* Infinite scroll (cover feed only) */}
           {allowInfinite ? (
             <InfiniteScrollN nextN={nextAutoN} hasMore={allowInfinite} />
           ) : null}
@@ -130,7 +179,6 @@ export default async function LibraryPage({
           {/* After AUTO_CAP, show MORE (only if more exist) */}
           {autoCapReached && hasMore ? (
             <div className="pt-6 flex justify-center">
-              {/* CHANGE 2: use Link + scroll={false} so it continues where you left off */}
               <Link
                 href={`/library?n=${nextAfterCap}`}
                 scroll={false}
