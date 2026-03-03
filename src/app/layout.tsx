@@ -4,6 +4,7 @@ import { Libre_Baskerville } from "next/font/google";
 import { Suspense } from "react";
 import SiteHeader from "@/components/SiteHeader";
 import EmailGate from "@/components/EmailGate";
+import SiteFooter from "@/components/SiteFooter";
 
 const libre = Libre_Baskerville({
   subsets: ["latin"],
@@ -17,22 +18,23 @@ export const metadata: Metadata = {
   description: "Pattern Curator Curatorial Intelligence",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={libre.variable}>
-      <body style={{ fontFamily: "Arial, Helvetica, sans-serif" }}>
+      <body
+        className="min-h-dvh flex flex-col"
+        style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+      >
         <SiteHeader />
 
-        <Suspense fallback={null}>
-          <EmailGate>
-            {children}
-          </EmailGate>
-        </Suspense>
+        {/* Reserve the vertical space so footer doesn't jump */}
+        <main className="flex-1">
+          <Suspense fallback={null}>
+            <EmailGate>{children}</EmailGate>
+          </Suspense>
+        </main>
 
+        <SiteFooter />
       </body>
     </html>
   );

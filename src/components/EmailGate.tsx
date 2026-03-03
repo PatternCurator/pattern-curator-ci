@@ -40,6 +40,9 @@ export default function EmailGate({
 
   const q = useMemo(() => (searchParams?.get("q") ?? "").trim(), [searchParams]);
 
+  // Decide public routes (but DO NOT early-return yet — must keep hooks order stable)
+  const isLegalRoute = pathname === "/legal" || pathname?.startsWith("/legal");
+
   const [email, setEmail] = useState<string>("");
   const [input, setInput] = useState<string>("");
   const [step, setStep] = useState<GateStep>("email");
@@ -54,7 +57,7 @@ export default function EmailGate({
   const [checkoutStatus, setCheckoutStatus] = useState<"idle" | "loading" | "error">("idle");
   const [checkoutError, setCheckoutError] = useState<string>("");
 
-  // ✅ prevents "Verify your email" flash on navigation/search
+  // prevents "Verify your email" flash on navigation/search
   const [authChecked, setAuthChecked] = useState<boolean>(false);
 
   const hasEmail = Boolean(email);
@@ -77,12 +80,19 @@ export default function EmailGate({
     }
   }
 
-  async function hardLogoutAndGoHome() {
+  async function clearLocalAuthArtifacts() {
     try {
       window.localStorage.removeItem(STORAGE_KEY);
       window.localStorage.removeItem(PENDING_EMAIL_KEY);
       window.localStorage.removeItem(LAST_Q_KEY);
-    } catch {}
+      window.localStorage.removeItem(LAST_VIEW_KEY);
+    } catch {
+      // ignore
+    }
+  }
+
+  async function hardLogoutAndGoHome() {
+    await clearLocalAuthArtifacts();
 
     setEmail("");
     setInput("");
@@ -96,7 +106,9 @@ export default function EmailGate({
 
     try {
       await supabase.auth.signOut();
-    } catch {}
+    } catch {
+      // ignore
+    }
 
     window.location.href = "/";
   }
@@ -106,7 +118,9 @@ export default function EmailGate({
       window.localStorage.removeItem(STORAGE_KEY);
       window.localStorage.removeItem(PENDING_EMAIL_KEY);
       window.localStorage.removeItem(LAST_Q_KEY);
-    } catch {}
+    } catch {
+      // ignore
+    }
 
     setEmail("");
     setRemaining(null);
@@ -122,8 +136,24 @@ export default function EmailGate({
 
     (async () => {
       try {
-        const { data } = await supabase.auth.getSession();
-        const sessionEmail = data?.session?.user?.email ?? "";
+        // NOTE: sometimes supabase can throw if refresh token is missing/stale
+        let sessionEmail = "";
+        try {
+          const { data } = await supabase.auth.getSession();
+          sessionEmail = data?.session?.user?.email ?? "";
+        } catch (err: any) {
+          // Quietly recover from stale/missing refresh token
+          const code = err?.code || err?.error_code;
+          if (code === "refresh_token_not_found") {
+            await clearLocalAuthArtifacts();
+            try {
+              await supabase.auth.signOut();
+            } catch {
+              // ignore
+            }
+          }
+          sessionEmail = "";
+        }
 
         if (!alive) return;
 
@@ -132,7 +162,9 @@ export default function EmailGate({
           setEmail(clean);
           try {
             window.localStorage.setItem(STORAGE_KEY, clean);
-          } catch {}
+          } catch {
+            // ignore
+          }
           await refreshRemaining(clean);
         } else {
           try {
@@ -140,7 +172,9 @@ export default function EmailGate({
             const saved = window.localStorage.getItem(STORAGE_KEY);
             if (pending) setInput(pending);
             else if (saved) setInput(saved);
-          } catch {}
+          } catch {
+            // ignore
+          }
         }
       } finally {
         if (alive) setAuthChecked(true);
@@ -154,7 +188,9 @@ export default function EmailGate({
         setEmail(clean);
         try {
           window.localStorage.setItem(STORAGE_KEY, clean);
-        } catch {}
+        } catch {
+          // ignore
+        }
         setStep("email");
         setStatus("idle");
         setError("");
@@ -193,7 +229,9 @@ export default function EmailGate({
 
       try {
         window.localStorage.setItem(PENDING_EMAIL_KEY, clean);
-      } catch {}
+      } catch {
+        // ignore
+      }
 
       const { error: otpErr } = await supabase.auth.signInWithOtp({
         email: clean,
@@ -248,7 +286,9 @@ export default function EmailGate({
         window.localStorage.setItem(STORAGE_KEY, finalEmail);
         window.localStorage.removeItem(PENDING_EMAIL_KEY);
         window.localStorage.removeItem(LAST_Q_KEY);
-      } catch {}
+      } catch {
+        // ignore
+      }
 
       setEmail(finalEmail);
       setStep("email");
@@ -330,52 +370,6 @@ export default function EmailGate({
           console.error("Usage logging failed:", { status: res.status, data });
         }
 
-        // Consume a free view when user lands on a detail page (counts clicks + direct URL visits).
-useEffect(() => {
-  if (!email) return;
-
-  const p = (pathname || "").toLowerCase();
-
-  let action: "view_asset" | "view_board" | "view_moodboard" | null = null;
-  if (p.startsWith("/asset/")) action = "view_asset";
-  else if (p.startsWith("/board/")) action = "view_board";
-  else if (p.startsWith("/moodboard/")) action = "view_moodboard";
-
-  if (!action) return;
-
-  const key = `${action}::${p}`;
-  const last = window.localStorage.getItem(LAST_VIEW_KEY);
-  if (last === key) return;
-
-  (async () => {
-    try {
-      const res = await fetch("/api/usage", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        cache: "no-store",
-        body: JSON.stringify({
-          email,
-          action,
-          count: 1,
-          meta: { pathname: p },
-        }),
-      });
-
-      const data = await res.json().catch(() => ({}));
-      const rem = extractRemaining(data);
-      if (typeof rem === "number") setRemaining(rem);
-
-      window.localStorage.setItem(LAST_VIEW_KEY, key);
-
-      if (res.status === 402) setRemaining(0);
-
-      await refreshRemaining(email);
-    } catch (err) {
-      console.error("View usage logging error:", err);
-    }
-  })();
-}, [email, pathname]);
-
         // Always sync from server truth
         await refreshRemaining(email);
       } catch (err) {
@@ -384,13 +378,63 @@ useEffect(() => {
     })();
   }, [email, q, pathname]);
 
-  // ✅ NEW: keep the counter accurate when user navigates (views are counted server-side now)
+  // Consume a free view when user lands on a detail page (counts clicks + direct URL visits).
   useEffect(() => {
     if (!email) return;
-    // whenever pathname changes, pull server truth
+
+    const p = (pathname || "").toLowerCase();
+
+    let action: "view_asset" | "view_board" | "view_moodboard" | null = null;
+    if (p.startsWith("/asset/")) action = "view_asset";
+    else if (p.startsWith("/board/")) action = "view_board";
+    else if (p.startsWith("/moodboard/")) action = "view_moodboard";
+
+    if (!action) return;
+
+    const key = `${action}::${p}`;
+    const last = window.localStorage.getItem(LAST_VIEW_KEY);
+    if (last === key) return;
+
+    (async () => {
+      try {
+        const res = await fetch("/api/usage", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          cache: "no-store",
+          body: JSON.stringify({
+            email,
+            action,
+            count: 1,
+            meta: { pathname: p },
+          }),
+        });
+
+        const data = await res.json().catch(() => ({}));
+        const rem = extractRemaining(data);
+        if (typeof rem === "number") setRemaining(rem);
+
+        window.localStorage.setItem(LAST_VIEW_KEY, key);
+
+        if (res.status === 402) setRemaining(0);
+
+        await refreshRemaining(email);
+      } catch (err) {
+        console.error("View usage logging error:", err);
+      }
+    })();
+  }, [email, pathname]);
+
+  // Keep the counter accurate when user navigates
+  useEffect(() => {
+    if (!email) return;
     refreshRemaining(email);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [email, pathname]);
+
+  // ✅ IMPORTANT: bypass happens AFTER hooks, so hook order never changes
+  if (isLegalRoute) {
+    return <>{children}</>;
+  }
 
   return (
     <div className="relative">
@@ -401,7 +445,7 @@ useEffect(() => {
 
       {/* Top status strip */}
       {hasEmail ? (
-        <div className="fixed top-0 left-0 right-0 z-40 px-4 py-2 text-xs text-neutral-600 flex items-center justify-between border-b border-neutral-200 bg-white/80 backdrop-blur">
+        <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between border-b border-neutral-200 bg-white/80 px-4 py-2 text-xs text-neutral-600 backdrop-blur">
           <div className="flex items-center gap-4">
             <span>{email}</span>
             <button type="button" onClick={hardLogoutAndGoHome} className="underline hover:opacity-70">
@@ -409,7 +453,6 @@ useEffect(() => {
             </button>
           </div>
 
-          {/* ✅ label updated: it's no longer only searches */}
           {typeof remaining === "number" ? <span>{remaining} free views left</span> : <span />}
         </div>
       ) : null}
@@ -445,7 +488,7 @@ useEffect(() => {
                       autoComplete="email"
                     />
 
-                    <p className="text-xs text-neutral-500 text-center">
+                    <p className="text-center text-xs text-neutral-500">
                       Already subscribed? Use the same email to unlock unlimited access.
                     </p>
 
@@ -471,7 +514,7 @@ useEffect(() => {
                       value={code}
                       onChange={(e) => setCode(e.target.value)}
                       placeholder="6-digit code"
-                      className="w-full rounded-xl border border-neutral-300 px-4 py-3 text-sm outline-none focus:border-neutral-500 tracking-widest"
+                      className="w-full rounded-xl border border-neutral-300 px-4 py-3 text-sm tracking-widest outline-none focus:border-neutral-500"
                       autoComplete="one-time-code"
                     />
 
@@ -494,7 +537,7 @@ useEffect(() => {
                           setStatus("idle");
                           setError("");
                         }}
-                        className="text-xs underline text-neutral-600 hover:opacity-70"
+                        className="text-xs text-neutral-600 underline hover:opacity-70"
                       >
                         Change email
                       </button>
@@ -505,7 +548,7 @@ useEffect(() => {
                           sendCode({ preventDefault: () => {} } as any);
                         }}
                         disabled={status === "saving"}
-                        className="text-xs underline text-neutral-600 hover:opacity-70 disabled:opacity-50"
+                        className="text-xs text-neutral-600 underline hover:opacity-70 disabled:opacity-50"
                       >
                         Resend code
                       </button>
@@ -521,7 +564,7 @@ useEffect(() => {
                   <button
                     type="button"
                     onClick={hardLogoutAndGoHome}
-                    className="text-xs underline text-neutral-600 hover:opacity-70"
+                    className="text-xs text-neutral-600 underline hover:opacity-70"
                   >
                     Log out
                   </button>
@@ -529,7 +572,7 @@ useEffect(() => {
                   <button
                     type="button"
                     onClick={changeEmailOnly}
-                    className="text-xs underline text-neutral-600 hover:opacity-70"
+                    className="text-xs text-neutral-600 underline hover:opacity-70"
                   >
                     Change email
                   </button>
@@ -577,11 +620,9 @@ useEffect(() => {
                     {checkoutStatus === "loading" ? "Redirecting…" : "Subscribe to continue"}
                   </button>
 
-                  {checkoutStatus === "error" ? (
-                    <p className="text-sm text-red-600">{checkoutError}</p>
-                  ) : null}
+                  {checkoutStatus === "error" ? <p className="text-sm text-red-600">{checkoutError}</p> : null}
 
-                  <p className="text-xs text-neutral-500 text-center">
+                  <p className="text-center text-xs text-neutral-500">
                     {plan === "monthly" ? "$85/month" : "$850/year"}
                   </p>
                 </div>
@@ -589,7 +630,15 @@ useEffect(() => {
             )}
 
             <p className="mt-4 text-xs text-neutral-500">
-              By continuing, you agree to receive emails from Pattern Curator CI. Unsubscribe anytime.
+              By continuing, you agree to our{" "}
+              <a className="underline underline-offset-4" href="/legal#terms">
+                Terms and Conditions
+              </a>{" "}
+              and acknowledge our{" "}
+              <a className="underline underline-offset-4" href="/legal#privacy">
+                Privacy Policy
+              </a>
+              .
             </p>
           </div>
         </div>
