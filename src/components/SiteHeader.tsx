@@ -31,8 +31,8 @@ export default function SiteHeader() {
           </Link>
 
           {/* Navigation */}
-          <nav 
-            className="flex items-center gap-4 sm:gap-6 whitespace-nowrap overflow-x-auto max-w-full"
+          <nav
+            className="w-full flex flex-wrap justify-start gap-x-4 gap-y-2 sm:w-auto sm:flex-nowrap sm:justify-end sm:gap-6"
             style={{
               fontFamily: "Arial, Helvetica, sans-serif",
               color: "#8a8a8aff",
@@ -40,39 +40,39 @@ export default function SiteHeader() {
               fontStyle: "italic",
               fontWeight: 700,
               textTransform: "uppercase",
-            }}
-          >
+          }}
+        >
             <Link
               href="/library"
-              className="text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
+              className="text-[12px] sm:text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
             >
               Library
             </Link>
 
             <Link
               href="/inspiration"
-              className="text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
+              className="text-[12px] sm:text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
             >
               Inspiration
             </Link>
 
             <Link
               href="/archive"
-              className="text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
+              className="text-[12px] sm:text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
             >
               Archive
             </Link>
 
             <Link
               href="/moodboards"
-              className="text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
+              className="text-[12px] sm:text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
             >
               Moodboards
             </Link>
 
             <Link
               href="/about"
-              className="text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
+              className="text-[12px] sm:text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
             >
               About
             </Link>
