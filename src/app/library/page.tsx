@@ -76,9 +76,11 @@ export default async function LibraryPage({
   const DEFAULT_N = 8;
   const STEP = 40;
 
-  // Set very high so infinite scroll can include all images (500+)
-  // (this keeps your existing logic intact; it will naturally stop when hasMore becomes false)
-  const AUTO_CAP = 1000000;
+  // ✅ Require a click every 200 items (cover feed only)
+  const BLOCK_SIZE = 200;
+
+  // ✅ Pin newest 12 at top (cover feed only)
+  const PINNED_NEWEST = 12;
 
   // Only apply progressive loading on the cover (no query)
   const n = !q ? clampInt(sp.n, DEFAULT_N) : DEFAULT_N;
@@ -109,31 +111,66 @@ export default async function LibraryPage({
     query = query.or(orConditions);
   }
 
-  // Newest first (keep as-is to avoid scope creep)
+  // Newest first (keep as-is)
   query = query.order("created_at", { ascending: false });
 
   // Ask for 1 extra row so we can reliably determine if more exist
   const { data: assets = [], error } = await query.limit(limit + 1);
   if (error) console.error("Supabase error:", error.message);
 
+  // We fetched limit+1; use that extra row only to calculate hasMore
   const safeAssets = assets ?? [];
 
   // Is there more available beyond what we are currently showing?
   const hasMore = !q && safeAssets.length > limit;
 
-  // Stop auto-loading at AUTO_CAP, then require user click MORE
-  const autoCapReached = !q && limit >= AUTO_CAP;
+  /**
+   * ✅ Block cap logic (every 200)
+   * Example:
+   * - limit=8   -> blockEnd = 200
+   * - limit=240 -> blockEnd = 400
+   */
+  const blockIndex = Math.floor((Math.max(1, limit) - 1) / BLOCK_SIZE);
+  const blockEnd = (blockIndex + 1) * BLOCK_SIZE;
 
-  // Next n for infinite scroll, capped to AUTO_CAP
-  const nextAutoN = Math.min(limit + STEP, AUTO_CAP);
+  // Stop auto-loading when we hit the end of the current block
+  const autoCapReached = !q && limit >= blockEnd;
+
+  // Next n for infinite scroll, capped to end of this block
+  const nextAutoN = Math.min(limit + STEP, blockEnd);
+
+  // Only allow infinite scroll if:
+  // - cover feed (no query)
+  // - there are more rows
+  // - we haven't hit the block boundary yet
   const allowInfinite = !q && hasMore && !autoCapReached;
 
-  // Next n after cap (MORE continues beyond cap)
+  // Clicking MORE continues beyond the block boundary
   const nextAfterCap = limit + STEP;
 
-  // WEEKLY SHUFFLE (cover feed only, not search results)
-  const weekSeed = getIsoWeekSeedUTC(new Date());
-  const displayAssets = !q ? seededShuffle([...safeAssets], weekSeed) : safeAssets;
+  /**
+   * ✅ COVER FEED ORDERING:
+   * - Top 12 newest pinned (within currently fetched rows)
+   * - Rest shuffled weekly
+   *
+   * NOTE: Since we only fetched `limit+1` rows, the shuffle is "stable within what’s loaded so far".
+   * For beta, this is perfect (no scope creep).
+   */
+  let displayAssets = safeAssets;
+
+  if (!q) {
+    const weekSeed = getIsoWeekSeedUTC(new Date());
+
+    const pinned = safeAssets.slice(0, PINNED_NEWEST); // newest 12 (already desc)
+    const remainder = safeAssets.slice(PINNED_NEWEST);
+
+    const shuffledRemainder = seededShuffle([...remainder], weekSeed);
+
+    displayAssets = [...pinned, ...shuffledRemainder];
+  }
+
+  // Preserve view param if present (even though MORE only shows when !q)
+  const viewParam = sp.view ? `&view=${encodeURIComponent(sp.view)}` : "";
 
   return (
     <EmailGate source="ci-home">
@@ -176,11 +213,11 @@ export default async function LibraryPage({
             <InfiniteScrollN nextN={nextAutoN} hasMore={allowInfinite} />
           ) : null}
 
-          {/* After AUTO_CAP, show MORE (only if more exist) */}
+          {/* After every 200 items, show MORE (only if more exist) */}
           {autoCapReached && hasMore ? (
             <div className="pt-6 flex justify-center">
               <Link
-                href={`/library?n=${nextAfterCap}`}
+                href={`/library?n=${nextAfterCap}${viewParam}`}
                 scroll={false}
                 className="h-10 px-8 rounded-none flex items-center justify-center text-xs font-bold uppercase tracking-[0.2em]"
                 style={{
