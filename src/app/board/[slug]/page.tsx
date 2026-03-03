@@ -39,7 +39,6 @@ export default async function BoardPage({
   if (error || !data) return notFound();
 
   const isMood = data.report_type === "mood";
-  const aspectClass = isMood ? "aspect-[13/20.5]" : "aspect-[16/9]";
   const img1 = publicBoardUrl(data.board_image_path_1 ?? null);
   const img2 = publicBoardUrl(data.board_image_path_2 ?? null);
 
@@ -64,7 +63,7 @@ export default async function BoardPage({
   };
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-8 space-y-6">
+    <main className="mx-auto max-w-[1400px] px-6 py-8 space-y-6">
       <div className="flex items-start justify-between gap-6">
         <h1
           className="text-xl tracking-tight italic"
@@ -93,23 +92,24 @@ export default async function BoardPage({
         </Link>
       </div>
 
-      {/* ✅ Balanced layout: AI + images share the same width */}
-      <div className="mx-auto w-full max-w-3xl space-y-6">
-        {/* AI info (hide market/domain header line) */}
+      {/* ✅ Notes span full width (not stuck left) */}
+      <section className="w-full">
         <AssetInterpretation asset={interpretationAsset as any} showMeta />
+      </section>
 
-        {/* Board JPGs: landscape, sharp corners, no outlines.
-            Click opens the image alone in a new tab/window. */}
+      {/* ✅ Images: big hero scale, sharp corners */}
+      <section className="w-full space-y-6">
         {img1 ? (
           <a href={img1} target="_blank" rel="noreferrer" className="block">
             <div className="bg-zinc-50">
-              <div className={`relative ${aspectClass} w-full`}>
+              <div className={`relative w-full ${isMood ? "aspect-[13/20.5]" : "min-h-[75vh]"}`}>
                 <Image
                   src={img1}
                   alt="Board image 1"
                   fill
                   className="object-contain"
-                  sizes="(max-width: 768px) 90vw, 720px"
+                  sizes="(min-width: 1024px) 1200px, 95vw"
+                  priority
                 />
               </div>
             </div>
@@ -119,43 +119,46 @@ export default async function BoardPage({
         {img2 ? (
           <a href={img2} target="_blank" rel="noreferrer" className="block">
             <div className="bg-zinc-50">
-              <div className="relative aspect-[16/9] w-full">
+              <div className="relative w-full min-h-[75vh]">
                 <Image
                   src={img2}
                   alt="Board image 2"
                   fill
                   className="object-contain"
-                  sizes="(max-width: 768px) 90vw, 720px"
+                  sizes="(min-width: 1024px) 1200px, 95vw"
                 />
               </div>
             </div>
           </a>
         ) : null}
+      </section>
 
-        {/* Sources sentence + optional download at bottom */}
-        <div className="pt-2 space-y-2">
-          {data.source_site ? <p className="text-sm text-zinc-500">{data.source_site}</p> : null}
+      {/* ✅ Footer/meta (still full width) */}
+      <div className="pt-2 space-y-2">
+        {data.source_site ? <p className="text-sm text-zinc-500">{data.source_site}</p> : null}
 
-          {pdfHref ? (
-            <div className="flex justify-center">
-              <a
-                href={pdfHref}
-                className="inline-flex items-center px-3 h-8 text-xs uppercase tracking-wider border border-zinc-300 bg-zinc-100 text-zinc-600 rounded-full"
-                style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
-              >
-                Download PDF
-              </a>
-            </div>
-          ) : null}
-        </div>
+        {pdfHref ? (
+          <div className="flex justify-center">
+            <a
+              href={pdfHref}
+              className="inline-flex items-center px-3 h-8 text-xs uppercase tracking-wider border border-zinc-300 bg-zinc-100 text-zinc-600 rounded-full"
+              style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+            >
+              Download PDF
+            </a>
+          </div>
+        ) : null}
+      </div>
 
+      {/* ✅ ApplicationQuery spans full width */}
+      <section className="w-full">
         <ApplicationQuery
           boardTitle={data.title}
           boardNotes={[data.direction, data.color_notes, data.print_pattern_notes]
             .filter(Boolean)
             .join("\n\n")}
         />
-      </div>
+      </section>
     </main>
   );
 }

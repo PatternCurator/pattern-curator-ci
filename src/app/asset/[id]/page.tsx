@@ -52,7 +52,7 @@ export default async function AssetDetailPage({
   const url = publicAssetUrl(asset.image_path);
 
   return (
-    <main className="mx-auto max-w-5xl px-6 py-8">
+    <main className="mx-auto max-w-[1400px] px-6 py-8">
       <div className="flex items-start justify-between gap-6">
         <div>
           {/* Keep original title (no new title) */}
@@ -85,16 +85,18 @@ export default async function AssetDetailPage({
       {/* Single-asset interpretation (moved to top) */}
       <AssetInterpretation asset={asset} />
 
-      <div className="mt-6 flex justify-center">
-        <div className="w-full max-w-md overflow-hidden rounded-none bg-white">
-          <div className="relative aspect-[4/5] bg-zinc-50">
+      {/* HERO IMAGE */}
+      <div className="mt-8">
+        <div className="w-full overflow-hidden rounded-none bg-white">
+          <div className="relative w-full min-h-[75vh] bg-zinc-50">
             {url ? (
               <Image
                 src={url}
                 alt={asset.title ?? "Asset"}
                 fill
                 className="object-contain"
-                sizes="(max-width: 768px) 90vw, 400px"
+                sizes="(min-width: 1024px) 1200px, 95vw"
+                priority
               />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center text-sm text-zinc-400">
