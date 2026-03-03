@@ -20,16 +20,26 @@ export async function POST(req: Request) {
 
   // Deploy-first: Stripe not configured yet
   if (!stripeSecretKey || !webhookSecret) {
-    return NextResponse.json({ error: "Stripe is not configured yet" }, { status: 503 });
+    return NextResponse.json(
+      { error: "Stripe is not configured yet" },
+      { status: 503 }
+    );
   }
 
-  const stripe = new Stripe(stripeSecretKey, { apiVersion: "2024-06-20" as any });
+  const stripe = new Stripe(stripeSecretKey, {
+    apiVersion: "2024-06-20" as any,
+  });
 
   let event: Stripe.Event;
 
   try {
     const signature = req.headers.get("stripe-signature");
-    if (!signature) return NextResponse.json({ error: "Missing stripe-signature" }, { status: 400 });
+    if (!signature) {
+      return NextResponse.json(
+        { error: "Missing stripe-signature" },
+        { status: 400 }
+      );
+    }
 
     const rawBody = await req.text();
     event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
@@ -53,17 +63,18 @@ export async function POST(req: Request) {
           "";
 
         const email_normalized = normalizeEmail(emailRaw);
+        if (!email_normalized) break;
 
         const subscriptionId =
           typeof session.subscription === "string" ? session.subscription : null;
 
-        const customerId = typeof session.customer === "string" ? session.customer : null;
+        const customerId =
+          typeof session.customer === "string" ? session.customer : null;
 
         const priceId =
-          (typeof session.metadata?.stripe_price_id === "string" && session.metadata.stripe_price_id) ||
+          (typeof session.metadata?.stripe_price_id === "string" &&
+            session.metadata.stripe_price_id) ||
           null;
-
-        if (!email_normalized) break;
 
         const { error } = await supabaseAdmin.from("ci_billing").upsert(
           {
@@ -87,7 +98,10 @@ export async function POST(req: Request) {
 
         if (error) {
           console.error("❌ ci_billing upsert error:", error);
-          return NextResponse.json({ error: "ci_billing upsert failed" }, { status: 500 });
+          return NextResponse.json(
+            { error: "ci_billing upsert failed" },
+            { status: 500 }
+          );
         }
 
         break;
@@ -100,47 +114,82 @@ export async function POST(req: Request) {
         const subId = sub.id;
         const customerId = typeof sub.customer === "string" ? sub.customer : null;
 
-        // Stripe status is like: active, trialing, canceled, unpaid, etc.
         const stripeStatus = sub.status;
         const normalizedStatus =
-          event.type === "customer.subscription.deleted" ? "inactive" : stripeStatus;
+          event.type === "customer.subscription.deleted"
+            ? "inactive"
+            : stripeStatus;
 
         const cancelAtPeriodEnd = !!sub.cancel_at_period_end;
 
-        // ✅ Period end: prefer subscription item (most reliable), fallback to any if present
-        const itemPeriodEndSec =
-          (sub.items?.data?.[0] as any)?.current_period_end ??
-          (sub as any)?.current_period_end ??
-          null;
+        // ✅ Stripe field exists at runtime; some Stripe TS versions don’t type it on Subscription.
+        const currentPeriodEndSec = (sub as any).current_period_end ?? null;
+        const currentPeriodEnd = toIsoFromUnixSeconds(currentPeriodEndSec);
 
-        const currentPeriodEnd = toIsoFromUnixSeconds(itemPeriodEndSec);
-
-        // ✅ Price id: prefer price.id, fallback plan.id
         const stripePriceId =
           (sub.items?.data?.[0] as any)?.price?.id ??
           (sub.items?.data?.[0] as any)?.plan?.id ??
           null;
 
-        const { error } = await supabaseAdmin
-          .from("ci_billing")
-          .update({
-            status: normalizedStatus,
-            stripe_customer_id: customerId,
-            stripe_subscription_id: subId,
-            stripe_price_id: stripePriceId,
-            cancel_at_period_end: cancelAtPeriodEnd,
-            current_period_end: currentPeriodEnd,
-            updated_at: now,
-            meta: {
-              source: event.type,
-              stripe_status: stripeStatus,
-            },
-          })
-          .eq("stripe_subscription_id", subId);
+        const updatePayload = {
+          status: normalizedStatus,
+          stripe_customer_id: customerId,
+          stripe_subscription_id: subId,
+          stripe_price_id: stripePriceId,
+          cancel_at_period_end: cancelAtPeriodEnd,
+          current_period_end: currentPeriodEnd,
+          updated_at: now,
+          meta: {
+            source: event.type,
+            stripe_status: stripeStatus,
+          },
+        };
 
-        if (error) {
-          console.error("❌ ci_billing update error:", error);
-          return NextResponse.json({ error: "ci_billing update failed" }, { status: 500 });
+        // Prefer updating by stripe_customer_id (more reliable early on)
+        let updated = false;
+
+        if (customerId) {
+          const { error, data } = await supabaseAdmin
+            .from("ci_billing")
+            .update(updatePayload)
+            .eq("stripe_customer_id", customerId)
+            .select("email_normalized");
+
+          if (error) {
+            console.error("❌ ci_billing update by customer_id error:", error);
+            return NextResponse.json(
+              { error: "ci_billing update failed" },
+              { status: 500 }
+            );
+          }
+
+          if (data && data.length > 0) updated = true;
+        }
+
+        // Fallback: update by subscription id
+        if (!updated) {
+          const { error, data } = await supabaseAdmin
+            .from("ci_billing")
+            .update(updatePayload)
+            .eq("stripe_subscription_id", subId)
+            .select("email_normalized");
+
+          if (error) {
+            console.error("❌ ci_billing update by subscription_id error:", error);
+            return NextResponse.json(
+              { error: "ci_billing update failed" },
+              { status: 500 }
+            );
+          }
+
+          if (data && data.length > 0) updated = true;
+        }
+
+        if (!updated) {
+          console.warn(
+            "⚠️ ci_billing update found no matching row for subscription event",
+            { customerId, subId, eventType: event.type }
+          );
         }
 
         break;
