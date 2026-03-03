@@ -421,7 +421,7 @@ export default async function CiLandingPage() {
             Recent Interpretations
           </p>
 
-          <div className="mx-auto mt-8 grid max-w-5xl grid-cols-2 gap-6 md:grid-cols-4">
+          <div className="mx-auto mt-8 grid max-w-5xl grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-6 md:grid-cols-4">
             {recentItems.map((r) => (
               <Link key={r.id} href={boardHref(r.slug)} className="group">
                 <div className="relative aspect-[4/3] w-full overflow-hidden bg-neutral-100">

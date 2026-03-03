@@ -20,9 +20,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={libre.variable}>
-      <body
-        className="min-h-dvh flex flex-col"
+    <html lang="en" className={`${libre.variable} bg-white`}>
+      <body className="min-h-dvh flex flex-col bg-white text-black"
         style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
       >
         <SiteHeader />

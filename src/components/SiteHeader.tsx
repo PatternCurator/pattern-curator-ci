@@ -3,8 +3,8 @@ import Link from "next/link";
 export default function SiteHeader() {
   return (
     <header className="relative z-10 mt-6 w-full border-b border-black/5 bg-white">
-      <div className="mx-auto max-w-[1400px] px-6 pt-6 pb-4">
-        <div className="flex items-center justify-between gap-6">
+      <div className="mx-auto max-w-[1400px] px-4 pt-4 pb-3 sm:px-6 sm:pt-6 sm:pb-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-6">
           
           {/* Brand Lockup */}
           <Link href="/ci" className="block leading-tight">
@@ -31,8 +31,8 @@ export default function SiteHeader() {
           </Link>
 
           {/* Navigation */}
-          <nav
-            className="flex items-center gap-6 whitespace-nowrap"
+          <nav 
+            className="flex items-center gap-4 sm:gap-6 whitespace-nowrap overflow-x-auto max-w-full"
             style={{
               fontFamily: "Arial, Helvetica, sans-serif",
               color: "#8a8a8aff",
