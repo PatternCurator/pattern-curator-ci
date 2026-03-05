@@ -15,8 +15,11 @@ function parseAllowlist(raw: string | undefined) {
     .filter(Boolean);
 }
 
+// Stripe subscription statuses you may want to treat as "access granted"
 function isActiveBillingStatus(status: string | null | undefined) {
-  return status === "active" || status === "trialing";
+  // active + trialing are the main ones
+  // past_due is often still "in service" depending on your policy
+  return status === "active" || status === "trialing" || status === "past_due";
 }
 
 // ✅ actions that should count toward the free limit
@@ -73,16 +76,67 @@ export async function POST(req: Request) {
 
     if (leadErr) console.error("❌ ci_leads upsert error:", leadErr);
 
-    // Billing lookup (entitlement)
-    const { data: billing, error: billingErr } = await supabaseAdmin
+    /**
+     * Billing lookup (entitlement)
+     *
+     * Beta reality: a subscriber may have:
+     * - a row keyed by email_normalized
+     * - OR a row keyed by raw email (different column)
+     * - OR status values you still want to treat as entitled (e.g. past_due)
+     *
+     * We do:
+     * 1) try email_normalized match (your current approach)
+     * 2) if not found, try matching on a plain "email" column (case-insensitive),
+     *    BUT only if that column exists (we ignore "missing column" errors).
+     */
+    let billing_status: string | null = null;
+    let billingMatchedBy: "email_normalized" | "email_ilike" | "none" = "none";
+    let billingLookupError: any = null;
+
+    // 1) Primary: email_normalized
+    const { data: billing1, error: billingErr1 } = await supabaseAdmin
       .from("ci_billing")
       .select("status")
       .eq("email_normalized", email_normalized)
       .maybeSingle();
 
-    if (billingErr) console.error("❌ ci_billing select error:", billingErr);
+    if (billingErr1) {
+      console.error("❌ ci_billing select error (email_normalized):", billingErr1);
+      billingLookupError = billingErr1;
+    }
 
-    const billing_status = billing?.status ?? null;
+    if (billing1?.status) {
+      billing_status = billing1.status ?? null;
+      billingMatchedBy = "email_normalized";
+    }
+
+    // 2) Fallback: if no row found via email_normalized, try `email ilike`
+    if (!billing_status) {
+      const { data: billing2, error: billingErr2 } = await supabaseAdmin
+        .from("ci_billing")
+        .select("status")
+        // ilike is case-insensitive; normalizeEmail already lowercases, but this helps if stored mixed
+        .ilike("email", email_normalized)
+        .maybeSingle();
+
+      if (billingErr2) {
+        // If the table doesn't have an "email" column, ignore it (avoid breaking production)
+        // Postgres missing column is typically 42703
+        const code = (billingErr2 as any)?.code;
+        const message = (billingErr2 as any)?.message || "";
+        const isMissingColumn =
+          code === "42703" || /column .*email.* does not exist/i.test(message);
+
+        if (!isMissingColumn) {
+          console.error("❌ ci_billing select error (email ilike):", billingErr2);
+          billingLookupError = billingErr2;
+        }
+      } else if (billing2?.status) {
+        billing_status = billing2.status ?? null;
+        billingMatchedBy = "email_ilike";
+      }
+    }
+
     const is_subscriber = isActiveBillingStatus(billing_status);
 
     // ✅ Admins OR active subscribers are unlimited
@@ -139,6 +193,11 @@ export async function POST(req: Request) {
           finalAllowlist: adminAllowlist,
           matchedEmail: email_normalized,
           is_admin,
+          _debug_billing: {
+            matchedBy: billingMatchedBy,
+            status: billing_status,
+            error: billingLookupError ? String(billingLookupError?.message || billingLookupError) : null,
+          },
         };
       }
 
@@ -178,6 +237,11 @@ export async function POST(req: Request) {
           finalAllowlist: adminAllowlist,
           matchedEmail: email_normalized,
           is_admin,
+          _debug_billing: {
+            matchedBy: billingMatchedBy,
+            status: billing_status,
+            error: billingLookupError ? String(billingLookupError?.message || billingLookupError) : null,
+          },
         };
       }
 
