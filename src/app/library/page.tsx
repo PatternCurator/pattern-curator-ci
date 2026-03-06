@@ -190,9 +190,7 @@ export default async function LibraryPage({
           {!q ? (
             <div className="max-w-3xl pt-1 text-xs leading-relaxed text-zinc-500">
               <p className="mt-2">
-                Curatorial Intelligence™ retrieves and prioritizes images in response to
-                your prompt—while preserving Pattern Curator’s editorial sensibility and
-                the integrity of a curated library. Curated intelligence meant to inspire.
+                Curatorial Intelligence™ retrieves and prioritizes images in response to your prompt—combining visual discovery with AI interpretation while preserving Pattern Curator’s editorial sensibility and the integrity of a curated library.
               </p>
             </div>
           ) : null}

@@ -126,8 +126,8 @@ export default function PricingClient() {
             <ul className="list-disc pl-5 space-y-1">
               <li>Unlimited browsing + full content access</li>
               <li>Curatorial interpretations using AI with Pattern Curator (direction, color, print, application)</li>
-              <li>Inspiration trend boards, moodboards, and libary detail views</li>
-              <li>New signals added continuously</li>
+              <li>Trend reports, moodboards, and library detail views</li>
+              <li>New references added continuously</li>
             </ul>
           </div>
 

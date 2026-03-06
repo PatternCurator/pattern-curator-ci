@@ -43,6 +43,13 @@ export default function SiteHeader() {
           }}
         >
             <Link
+              href="/inspiration"
+              className="text-[12px] sm:text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
+            >
+              Trend
+            </Link>
+
+            <Link
               href="/library"
               className="text-[12px] sm:text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
             >
@@ -50,10 +57,10 @@ export default function SiteHeader() {
             </Link>
 
             <Link
-              href="/inspiration"
+              href="/moodboards"
               className="text-[12px] sm:text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
             >
-              Inspiration
+              Moodboards
             </Link>
 
             <Link
@@ -61,13 +68,6 @@ export default function SiteHeader() {
               className="text-[12px] sm:text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
             >
               Archive
-            </Link>
-
-            <Link
-              href="/moodboards"
-              className="text-[12px] sm:text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
-            >
-              Moodboards
             </Link>
 
             <Link

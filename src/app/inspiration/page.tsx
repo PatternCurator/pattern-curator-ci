@@ -118,7 +118,7 @@ export default async function InspirationPage({
         season={season}
         seasonOptions={seasonOptions}
         mode="inspiration"
-        titleLabel="INSPIRATION"
+        titleLabel="TREND REPORTS"
       />
 
       <TrendResults boards={safeBoards.slice(0, limit) as any} />

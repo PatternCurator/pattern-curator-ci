@@ -88,7 +88,7 @@ export default async function BoardPage({
             background: "#f4f4f4",
           }}
         >
-          {data.catalog_state === "archive" ? "Back to Archive" : "Back to Inspiration"}
+          {data.catalog_state === "archive" ? "Back to Archive" : "Back to Trend"}
         </Link>
       </div>
 

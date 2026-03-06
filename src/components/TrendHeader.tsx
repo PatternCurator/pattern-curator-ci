@@ -72,7 +72,7 @@ export default function TrendHeader({
     subtext ??
     (mode === "archive"
       ? "Curated inspiration of past seasons through the Pattern Curator lens."
-      : "Pattern Curator Trend Service is evolving into a visual intelligence system that identifies, edits, and interprets the visual signals shaping possibilities for upcoming seasons.");
+      : "Pattern Curator Trend Service is evolving into a visual intelligence platform that continues to deliver curated trend forecasts and design direction for upcoming seasons—now enhanced with AI interpretation and integrated data insights.");
 
   return (
     <div className="space-y-4">
@@ -101,7 +101,7 @@ export default function TrendHeader({
           <input
             name="q"
             defaultValue={q}
-            placeholder="Search inspiration..."
+            placeholder="Search trends..."
             className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none"
           />
           <button

@@ -219,8 +219,8 @@ export default async function CiLandingPage() {
 
   const heroTitle = "Curatorial Intelligence";
   const heroSubtitleA =
-    "An evolving intelligence system for interpreting culture through print, color, and surface.";
-  const heroSubtitleB = "Signals observed. Context synthesized. Direction translated into application.";
+    "A curated space exploring cultural shifts through color, print, and surface — translating them into future ideas.";
+  const heroSubtitleB = "Curatorial Intelligence™ pairs curated visual discovery with AI interpretation—turning visual exploration into clear design direction.";
 
   const teaserSignal = signalImgs[0] ?? null;
 
@@ -287,17 +287,17 @@ export default async function CiLandingPage() {
             {heroTitle}
           </h1>
 
-          <p className="mx-auto mt-8 max-w-3xl text-[16px] leading-[1.75] text-neutral-700">
+          <p className="mx-auto mt-8 max-w-4xl text-[16px] leading-[1.75] text-neutral-700">
             {heroSubtitleA}
           </p>
 
-          <p className="mx-auto mt-3 max-w-3xl text-[16px] leading-[1.75] text-neutral-700">
+          <p className="mx-auto mt-3 max-w-xl text-[16px] leading-[1.75] text-neutral-700">
             {heroSubtitleB}
           </p>
 
           <div className="mt-8 flex items-center justify-center gap-8 text-[14px] tracking-[0.08em] uppercase">
-            <Link className="text-neutral-900 hover:underline" href="/library">
-              Explore the Library
+            <Link className="text-neutral-900 hover:underline" href="/inspiration">
+              Explore Trend Reports
             </Link>
             <span className="text-neutral-300">|</span>
             <Link className="text-neutral-900 hover:underline" href="/pricing">
