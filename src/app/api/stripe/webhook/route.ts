@@ -6,6 +6,12 @@ import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const CI_MONTHLY_PRICE_ID =
+  process.env.STRIPE_CI_MONTHLY_PRICE_ID || "price_1T0RQCK3OxyriLPq00F52CRG";
+
+const CI_ANNUAL_PRICE_ID =
+  process.env.STRIPE_CI_ANNUAL_PRICE_ID || "price_1T0RSoK3OxyriLPq4ZYS59dq";
+
 function normalizeEmail(email: unknown) {
   const s = typeof email === "string" ? email : "";
   return s.trim().toLowerCase();
@@ -36,8 +42,18 @@ function pickEmailFromSession(session: Stripe.Checkout.Session): string {
 function isMissingColumnError(err: any, colName: string) {
   const code = err?.code;
   const msg = String(err?.message || "");
-  // Postgres missing column is often 42703
   return code === "42703" || new RegExp(`column .*${colName}.* does not exist`, "i").test(msg);
+}
+
+function getPlanIntervalFromPriceId(priceId: string | null): "monthly" | "annual" | null {
+  if (!priceId) return null;
+  if (priceId === CI_MONTHLY_PRICE_ID) return "monthly";
+  if (priceId === CI_ANNUAL_PRICE_ID) return "annual";
+  return null;
+}
+
+function isCiPriceId(priceId: string | null): boolean {
+  return priceId === CI_MONTHLY_PRICE_ID || priceId === CI_ANNUAL_PRICE_ID;
 }
 
 export async function POST(req: Request) {
@@ -71,7 +87,6 @@ export async function POST(req: Request) {
     const supabaseAdmin = getSupabaseAdmin();
     const now = new Date().toISOString();
 
-    // Helper: update existing billing rows by Stripe ids (most reliable)
     async function updateBillingByStripeIds(opts: {
       stripe_customer_id?: string | null;
       stripe_subscription_id?: string | null;
@@ -80,39 +95,69 @@ export async function POST(req: Request) {
       const { stripe_customer_id, stripe_subscription_id, payload } = opts;
 
       let updated = false;
+      let safePayload = { ...payload };
 
       if (stripe_customer_id) {
-        const { data, error } = await supabaseAdmin
+        let { data, error } = await supabaseAdmin
           .from("ci_billing")
-          .update(payload)
+          .update(safePayload)
           .eq("stripe_customer_id", stripe_customer_id)
           .select("email_normalized");
+
+        if (error && isMissingColumnError(error, "plan_interval")) {
+          const { plan_interval, ...fallbackPayload } = safePayload;
+          safePayload = fallbackPayload;
+
+          const retry = await supabaseAdmin
+            .from("ci_billing")
+            .update(safePayload)
+            .eq("stripe_customer_id", stripe_customer_id)
+            .select("email_normalized");
+
+          data = retry.data;
+          error = retry.error;
+        }
 
         if (error) {
           console.error("❌ ci_billing update by stripe_customer_id error:", error);
           throw error;
         }
+
         if (data && data.length > 0) updated = true;
       }
 
       if (!updated && stripe_subscription_id) {
-        const { data, error } = await supabaseAdmin
+        let { data, error } = await supabaseAdmin
           .from("ci_billing")
-          .update(payload)
+          .update(safePayload)
           .eq("stripe_subscription_id", stripe_subscription_id)
           .select("email_normalized");
+
+        if (error && isMissingColumnError(error, "plan_interval")) {
+          const { plan_interval, ...fallbackPayload } = safePayload;
+          safePayload = fallbackPayload;
+
+          const retry = await supabaseAdmin
+            .from("ci_billing")
+            .update(safePayload)
+            .eq("stripe_subscription_id", stripe_subscription_id)
+            .select("email_normalized");
+
+          data = retry.data;
+          error = retry.error;
+        }
 
         if (error) {
           console.error("❌ ci_billing update by stripe_subscription_id error:", error);
           throw error;
         }
+
         if (data && data.length > 0) updated = true;
       }
 
       return updated;
     }
 
-    // Helper: upsert by email_normalized (fallback)
     async function upsertBillingByEmail(opts: {
       email_raw: string;
       email_normalized: string;
@@ -122,6 +167,7 @@ export async function POST(req: Request) {
       status: string;
       cancel_at_period_end?: boolean;
       current_period_end?: string | null;
+      plan_interval?: "monthly" | "annual" | null;
       meta?: any;
     }) {
       const {
@@ -133,6 +179,7 @@ export async function POST(req: Request) {
         status,
         cancel_at_period_end = false,
         current_period_end = null,
+        plan_interval = null,
         meta = {},
       } = opts;
 
@@ -143,15 +190,26 @@ export async function POST(req: Request) {
         stripe_customer_id: stripe_customer_id ?? null,
         stripe_subscription_id: stripe_subscription_id ?? null,
         stripe_price_id: stripe_price_id ?? null,
+        plan_interval,
         cancel_at_period_end: !!cancel_at_period_end,
         current_period_end,
         updated_at: now,
         meta,
       };
 
-      const { error } = await supabaseAdmin.from("ci_billing").upsert(payload, {
+      let { error } = await supabaseAdmin.from("ci_billing").upsert(payload, {
         onConflict: "email_normalized",
       });
+
+      if (error && isMissingColumnError(error, "plan_interval")) {
+        const { plan_interval: _omit, ...fallbackPayload } = payload;
+
+        const retry = await supabaseAdmin.from("ci_billing").upsert(fallbackPayload, {
+          onConflict: "email_normalized",
+        });
+
+        error = retry.error;
+      }
 
       if (error) {
         console.error("❌ ci_billing upsert by email_normalized error:", error);
@@ -159,7 +217,6 @@ export async function POST(req: Request) {
       }
     }
 
-    // Helper: try to find email if missing (from Customer)
     async function getEmailFromCustomerId(customerId: string | null): Promise<string> {
       if (!customerId) return "";
       try {
@@ -173,24 +230,16 @@ export async function POST(req: Request) {
     }
 
     switch (event.type) {
-      /**
-       * ✅ Main checkout completion
-       * - Pull subscription + customer ids
-       * - If subscription exists, fetch it to get true status/period end/price
-       * - Update by stripe ids if possible, else upsert by email_normalized
-       */
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
 
         const customerId = getId(session.customer);
         const subscriptionId = getId(session.subscription);
 
-        // Try email from session; fallback to customer lookup
         const emailFromSession = normalizeEmail(pickEmailFromSession(session));
         const emailFromCustomer = emailFromSession ? "" : await getEmailFromCustomerId(customerId);
         const email_normalized = emailFromSession || emailFromCustomer;
 
-        // Pull plan/price (prefer subscription line item if present)
         let stripeStatus: string | null = null;
         let currentPeriodEnd: string | null = null;
         let stripePriceId: string | null =
@@ -216,27 +265,37 @@ export async function POST(req: Request) {
           }
         }
 
-        // If we still don't have email, we can only update by Stripe ids
-        const statusToWrite = stripeStatus || "active"; // good default
+        if (stripePriceId && !isCiPriceId(stripePriceId)) {
+          console.warn("⚠️ Skipping non-CI checkout session", {
+            sessionId: session.id,
+            customerId,
+            subscriptionId,
+            stripePriceId,
+          });
+          break;
+        }
+
+        const statusToWrite = stripeStatus || "active";
+        const planInterval = getPlanIntervalFromPriceId(stripePriceId);
 
         const updatePayload = {
           status: statusToWrite,
           stripe_customer_id: customerId,
           stripe_subscription_id: subscriptionId,
           stripe_price_id: stripePriceId,
+          plan_interval: planInterval,
           cancel_at_period_end: false,
           current_period_end: currentPeriodEnd,
           updated_at: now,
           meta: {
             source: "checkout.session.completed",
-            plan: session.metadata?.plan ?? null,
             session_id: session.id,
             stripe_status: stripeStatus,
           },
         };
 
-        // Prefer updating an existing row created earlier ("pending") via Stripe ids
         let updated = false;
+
         try {
           updated = await updateBillingByStripeIds({
             stripe_customer_id: customerId,
@@ -244,10 +303,9 @@ export async function POST(req: Request) {
             payload: updatePayload,
           });
         } catch {
-          // updateBillingByStripeIds already logged; continue to email upsert fallback below
+          // already logged inside helper
         }
 
-        // If not updated, fallback to upsert by email_normalized (if we have it)
         if (!updated && email_normalized) {
           await upsertBillingByEmail({
             email_raw: emailFromSession || email_normalized,
@@ -258,9 +316,9 @@ export async function POST(req: Request) {
             status: statusToWrite,
             cancel_at_period_end: false,
             current_period_end: currentPeriodEnd,
+            plan_interval: planInterval,
             meta: {
               source: "checkout.session.completed",
-              plan: session.metadata?.plan ?? null,
               session_id: session.id,
               stripe_status: stripeStatus,
             },
@@ -276,10 +334,6 @@ export async function POST(req: Request) {
         break;
       }
 
-      /**
-       * ✅ Subscription lifecycle
-       * Add CREATED (you were missing this)
-       */
       case "customer.subscription.created":
       case "customer.subscription.updated":
       case "customer.subscription.deleted": {
@@ -302,7 +356,18 @@ export async function POST(req: Request) {
           (sub.items?.data?.[0] as any)?.plan?.id ??
           null;
 
-        // Try to retrieve a customer email for fallback upsert
+        const planInterval = getPlanIntervalFromPriceId(stripePriceId);
+
+        if (stripePriceId && !isCiPriceId(stripePriceId)) {
+          console.warn("⚠️ Skipping non-CI subscription event", {
+            eventType: event.type,
+            subId,
+            customerId,
+            stripePriceId,
+          });
+          break;
+        }
+
         const email_normalized = await getEmailFromCustomerId(customerId);
 
         const updatePayload = {
@@ -310,6 +375,7 @@ export async function POST(req: Request) {
           stripe_customer_id: customerId,
           stripe_subscription_id: subId,
           stripe_price_id: stripePriceId,
+          plan_interval: planInterval,
           cancel_at_period_end: cancelAtPeriodEnd,
           current_period_end: currentPeriodEnd,
           updated_at: now,
@@ -319,8 +385,7 @@ export async function POST(req: Request) {
           },
         };
 
-        let updated = false;
-        updated = await updateBillingByStripeIds({
+        const updated = await updateBillingByStripeIds({
           stripe_customer_id: customerId,
           stripe_subscription_id: subId,
           payload: updatePayload,
@@ -336,6 +401,7 @@ export async function POST(req: Request) {
             status: normalizedStatus,
             cancel_at_period_end: cancelAtPeriodEnd,
             current_period_end: currentPeriodEnd,
+            plan_interval: planInterval,
             meta: {
               source: event.type,
               stripe_status: stripeStatus,
@@ -352,11 +418,6 @@ export async function POST(req: Request) {
         break;
       }
 
-      /**
-       * ✅ Payment failsafe:
-       * If a $0 coupon invoice is created/succeeded, this flips status to active.
-       * If payment fails, mark past_due (and your usage route can treat past_due as entitled if you keep that).
-       */
       case "invoice.payment_succeeded":
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
@@ -366,20 +427,30 @@ export async function POST(req: Request) {
 
         const statusToWrite = event.type === "invoice.payment_succeeded" ? "active" : "past_due";
 
-        // Try to capture price id from invoice lines
         const stripePriceId =
           (invoice.lines?.data?.[0] as any)?.price?.id ??
           (invoice.lines?.data?.[0] as any)?.plan?.id ??
           null;
 
-        // Try to get email for fallback upsert
-        const email_normalized = await getEmailFromCustomerId(customerId);
+        const planInterval = getPlanIntervalFromPriceId(stripePriceId);
+
+        if (stripePriceId && !isCiPriceId(stripePriceId)) {
+          console.warn("⚠️ Skipping non-CI invoice event", {
+            eventType: event.type,
+            invoiceId: invoice.id,
+            customerId,
+            subscriptionId,
+            stripePriceId,
+          });
+          break;
+        }
 
         const payload = {
           status: statusToWrite,
           stripe_customer_id: customerId,
           stripe_subscription_id: subscriptionId,
           stripe_price_id: stripePriceId,
+          plan_interval: planInterval,
           updated_at: now,
           meta: {
             source: event.type,
@@ -387,28 +458,14 @@ export async function POST(req: Request) {
           },
         };
 
-        let updated = false;
-        updated = await updateBillingByStripeIds({
+        const updated = await updateBillingByStripeIds({
           stripe_customer_id: customerId,
           stripe_subscription_id: subscriptionId,
           payload,
         });
 
-        if (!updated && email_normalized) {
-          await upsertBillingByEmail({
-            email_raw: email_normalized,
-            email_normalized,
-            stripe_customer_id: customerId,
-            stripe_subscription_id: subscriptionId,
-            stripe_price_id: stripePriceId,
-            status: statusToWrite,
-            meta: {
-              source: event.type,
-              invoice_id: invoice.id,
-            },
-          });
-        } else if (!updated) {
-          console.warn("⚠️ invoice event: no billing row updated (no match + no email)", {
+        if (!updated) {
+          console.warn("⚠️ invoice event did not update any existing ci_billing row; skipping row creation", {
             customerId,
             subscriptionId,
             eventType: event.type,
