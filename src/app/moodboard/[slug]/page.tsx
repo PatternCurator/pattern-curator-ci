@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/supabaseServer";
@@ -39,12 +38,11 @@ export default async function MoodboardDetailPage({
 
   const img = publicMoodboardUrl(data.image_path ?? null);
 
-  const pdfHref =
-    img
-      ? `/api/moodboard/pdf?img1=${encodeURIComponent(img)}&title=${encodeURIComponent(
-          data.title ?? "Moodboard"
-        )}`
-      : null;
+  const pdfHref = img
+    ? `/api/moodboard/pdf?img1=${encodeURIComponent(img)}&title=${encodeURIComponent(
+        data.title ?? "Moodboard"
+      )}`
+    : null;
 
   const interpretationAsset = {
     id: data.id,
@@ -79,34 +77,31 @@ export default async function MoodboardDetailPage({
       </div>
 
       <div className="mx-auto w-full max-w-6xl space-y-6">
-        {/* Curatorial Intelligence (same as Boards/Assets) */}
         <AssetInterpretation asset={interpretationAsset as any} showMeta />
 
-        {/* Full moodboard visible (no crop) */}
         {img ? (
           <a href={img} target="_blank" rel="noreferrer" className="block">
             <div className="bg-zinc-50">
-              <div className="relative aspect-[13/22] w-full bg-white">
-                <Image
-                  src={img}
-                  alt={data.title ?? "Moodboard"}
-                  fill
-                  className="object-contain"
-                  sizes="(max-width: 768px) 90vw, 720px"
-                  priority
-                />
-              </div>
+              <img
+                src={img}
+                alt={data.title ?? "Moodboard"}
+                className="mx-auto block h-auto w-full max-w-[720px]"
+              />
             </div>
           </a>
         ) : null}
 
-        {/* Sources + Download at bottom (matches Boards pattern) */}
         <div className="pt-2 space-y-2">
           {data.source_site ? <p className="text-sm text-zinc-500">{data.source_site}</p> : null}
 
           {data.source_url ? (
             <p className="text-sm text-zinc-500">
-              <a className="underline hover:opacity-80" href={data.source_url} target="_blank" rel="noreferrer">
+              <a
+                className="underline hover:opacity-80"
+                href={data.source_url}
+                target="_blank"
+                rel="noreferrer"
+              >
                 {data.source_url}
               </a>
             </p>
@@ -127,7 +122,9 @@ export default async function MoodboardDetailPage({
 
         <ApplicationQuery
           boardTitle={data.title}
-          boardNotes={[data.direction, data.color_notes, data.print_pattern_notes].filter(Boolean).join("\n\n")}
+          boardNotes={[data.direction, data.color_notes, data.print_pattern_notes]
+            .filter(Boolean)
+            .join("\n\n")}
         />
       </div>
     </main>
