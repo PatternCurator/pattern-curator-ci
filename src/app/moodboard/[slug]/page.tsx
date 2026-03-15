@@ -29,12 +29,32 @@ export default async function MoodboardDetailPage({
   const { data, error } = await supabase
     .from("moodboards")
     .select(
-      "id,title,slug,image_path,source_url,source_site,domain,direction,color_notes,print_pattern_notes"
+      "id,title,slug,image_path,source_url,source_site,domain,direction,color_notes,print_pattern_notes,created_at"
     )
     .eq("slug", slug)
     .single();
 
   if (error || !data) return notFound();
+
+  const { data: previousBoard } = await supabase
+    .from("moodboards")
+    .select("slug,title")
+    .eq("status", "ready")
+    .eq("catalog_state", "current")
+    .gt("created_at", data.created_at)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  const { data: nextBoard } = await supabase
+    .from("moodboards")
+    .select("slug,title")
+    .eq("status", "ready")
+    .eq("catalog_state", "current")
+    .lt("created_at", data.created_at)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
   const img = publicMoodboardUrl(data.image_path ?? null);
 
@@ -57,8 +77,8 @@ export default async function MoodboardDetailPage({
   };
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-8 space-y-6">
-      <div className="flex justify-end">
+    <main className="mx-auto max-w-[1400px] px-6 py-10 space-y-10">
+      <div className="flex justify-end pb-6">
         <Link
           href="/moodboards"
           className="inline-flex h-9 items-center rounded-full px-4 text-sm"
@@ -72,7 +92,7 @@ export default async function MoodboardDetailPage({
             background: "#f4f4f4",
           }}
         >
-          Back to Moodboards
+          Back to Boards
         </Link>
       </div>
 
@@ -81,18 +101,20 @@ export default async function MoodboardDetailPage({
 
         {img ? (
           <a href={img} target="_blank" rel="noreferrer" className="block">
-            <div className="bg-zinc-50">
+            <div className="bg-white py-6">
               <img
                 src={img}
                 alt={data.title ?? "Moodboard"}
-                className="mx-auto block h-auto w-full max-w-[720px]"
+                className="mx-auto block h-auto w-full max-w-[900px]"
               />
             </div>
           </a>
         ) : null}
 
-        <div className="pt-2 space-y-2">
-          {data.source_site ? <p className="text-sm text-zinc-500">{data.source_site}</p> : null}
+        <div className="pt-6 space-y-3 text-center">
+          {data.source_site ? (
+            <p className="text-sm text-zinc-500">{data.source_site}</p>
+          ) : null}
 
           {data.source_url ? (
             <p className="text-sm text-zinc-500">
@@ -108,7 +130,7 @@ export default async function MoodboardDetailPage({
           ) : null}
 
           {pdfHref ? (
-            <div className="flex justify-center">
+            <div className="flex justify-center pt-2">
               <a
                 href={pdfHref}
                 className="inline-flex items-center px-3 h-8 text-xs uppercase tracking-wider border border-zinc-300 bg-zinc-100 text-zinc-600 rounded-full"
@@ -116,6 +138,37 @@ export default async function MoodboardDetailPage({
               >
                 Download PDF
               </a>
+            </div>
+          ) : null}
+
+          {(previousBoard?.slug || nextBoard?.slug) ? (
+            <div className="pt-6">
+              <div
+                className="flex items-center justify-between gap-6"
+                style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+              >
+                <div className="min-w-0 flex-1 text-left">
+                  {previousBoard?.slug ? (
+                    <Link
+                      href={`/moodboard/${previousBoard.slug}`}
+                      className="inline-flex items-center text-sm font-bold uppercase tracking-[0.12em] text-zinc-600 underline underline-offset-4 hover:opacity-80"
+                    >
+                      ← Previous Board
+                    </Link>
+                  ) : null}
+                </div>
+
+                <div className="min-w-0 flex-1 text-right">
+                  {nextBoard?.slug ? (
+                    <Link
+                      href={`/moodboard/${nextBoard.slug}`}
+                      className="inline-flex items-center text-sm font-bold uppercase tracking-[0.12em] text-zinc-600 underline underline-offset-4 hover:opacity-80"
+                    >
+                      Next Board →
+                    </Link>
+                  ) : null}
+                </div>
+              </div>
             </div>
           ) : null}
         </div>
