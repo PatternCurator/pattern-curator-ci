@@ -25,20 +25,21 @@ function publicMoodboardUrl(path: string | null) {
 export default async function CiLandingPage() {
   const supabase = await supabaseServer();
 
-  const { data: boards = [], error } = await supabase
-    .from("moodboards")
-    .select("id,slug,title,image_path")
-    .eq("status", "ready")
-    .eq("catalog_state", "current")
-    .order("created_at", { ascending: false })
-    .limit(7);
+  const { data, error } = await supabase
+  .from("moodboards")
+  .select("id,slug,title,image_path")
+  .eq("status", "ready")
+  .eq("catalog_state", "current")
+  .order("created_at", { ascending: false })
+  .limit(7);
 
-  if (error) {
-    console.error("Supabase error (ci landing moodboards):", error.message);
-  }
+if (error) {
+  console.error("Supabase error (ci landing moodboards):", error.message);
+}
 
-  const featuredBoard = boards[0] ?? null;
-  const previewBoards = boards.slice(1, 7);
+const boards = data ?? [];
+const featuredBoard = boards[0] ?? null;
+const previewBoards = boards.slice(1, 7);
   const featuredImg = publicMoodboardUrl(featuredBoard?.image_path ?? null);
 
   return (
