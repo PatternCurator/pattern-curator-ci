@@ -5,7 +5,7 @@ export default function SiteHeader() {
     <header className="relative z-10 mt-6 w-full border-b border-black/5 bg-white">
       <div className="mx-auto max-w-[1400px] px-4 pt-4 pb-3 sm:px-6 sm:pt-6 sm:pb-4">
         <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-6">
-          
+
           {/* Brand Lockup */}
           <Link href="/ci" className="block leading-tight">
             <div
@@ -40,34 +40,20 @@ export default function SiteHeader() {
               fontStyle: "italic",
               fontWeight: 700,
               textTransform: "uppercase",
-          }}
-        >
+            }}
+          >
             <Link
-              href="/inspiration"
+              href="/ci"
               className="text-[12px] sm:text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
             >
-              Trend
-            </Link>
-
-            <Link
-              href="/library"
-              className="text-[12px] sm:text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
-            >
-              Library
+              Home
             </Link>
 
             <Link
               href="/moodboards"
               className="text-[12px] sm:text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
             >
-              Moodboards
-            </Link>
-
-            <Link
-              href="/archive"
-              className="text-[12px] sm:text-[13px] hover:opacity-80 underline underline-offset-4 decoration-[0.5px]"
-            >
-              Archive
+              Boards
             </Link>
 
             <Link
@@ -77,6 +63,7 @@ export default function SiteHeader() {
               About
             </Link>
           </nav>
+
         </div>
       </div>
     </header>
