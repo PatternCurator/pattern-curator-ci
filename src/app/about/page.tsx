@@ -108,6 +108,40 @@ export default function AboutPage() {
           </div>
         </section>
 
+        {/* COLOR INTELLIGENCE */}
+        <section className="max-w-3xl space-y-4">
+          <h2
+            className="text-[15px] font-bold uppercase tracking-wide"
+            style={{ color: BRAND_GREY }}
+          >
+            Color Intelligence
+          </h2>
+
+          <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
+            CI moodboards now include automatically extracted color palettes
+            calibrated to the visual composition of each board.
+          </p>
+
+          <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
+            The palette system analyzes each moodboard image and identifies key
+            color relationships within the visual reference set. Palettes are
+            rendered directly in CI as color chips with corresponding hex values
+            and descriptive naming.
+          </p>
+
+          <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
+            This extends Curatorial Intelligence beyond visual discovery and
+            interpretation into more structured color direction — supporting
+            palette building, product development, and assortment planning.
+          </p>
+
+          <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
+            Palette data is stored alongside each board as part of the
+            Curatorial Intelligence workflow, creating a consistent and
+            repeatable system across the platform.
+          </p>
+        </section>
+
         {/* IMAGE USAGE */}
         <section className="max-w-3xl space-y-4">
           <h2
@@ -140,8 +174,8 @@ export default function AboutPage() {
           >
             <p>• Explore the boards to identify emerging visual direction.</p>
             <p>
-              • Open an individual board to view Curatorial Intelligence notes
-              and contextual interpretation.
+              • Open an individual board to view Curatorial Intelligence notes,
+              extracted palette data, and contextual interpretation.
             </p>
             <p>
               • Use Application Query to translate visual direction into
@@ -196,13 +230,14 @@ export default function AboutPage() {
           </h2>
 
           <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
-            CI includes five free views. Full access requires a paid subscription.
+            CI includes five free views. Full access requires a paid
+            subscription.
           </p>
 
           <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
-            Subscriptions are available monthly ($12.99) or annually ($129).
-            Plans renew automatically and may be canceled at any time through
-            your account settings.
+            Subscriptions are available monthly ($29) or annually ($290). Plans
+            renew automatically and may be canceled at any time through your
+            account settings.
           </p>
         </section>
 
@@ -217,15 +252,15 @@ export default function AboutPage() {
 
           <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
             Your subscription provides access to the Curatorial Intelligence
-            system — including editorial moodboards, AI-assisted
-            interpretation, and application-based design insight.
+            system — including editorial moodboards, extracted color palettes,
+            AI-assisted interpretation, and application-based design insight.
           </p>
 
           <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
             You are not paying for image ownership. Images within CI are curated
             as editorial references. You are paying for access to the
-            structured methodology and interpretive framework developed as
-            Curatorial Intelligence™.
+            structured methodology, palette intelligence, and interpretive
+            framework developed as Curatorial Intelligence™.
           </p>
         </section>
 

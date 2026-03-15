@@ -29,7 +29,7 @@ export default async function MoodboardDetailPage({
   const { data, error } = await supabase
     .from("moodboards")
     .select(
-      "id,title,slug,image_path,source_url,source_site,domain,direction,color_notes,print_pattern_notes,created_at"
+      "id,title,slug,image_path,source_url,source_site,domain,direction,color_notes,print_pattern_notes,created_at,palette_hex,palette_names"
     )
     .eq("slug", slug)
     .single();
@@ -112,8 +112,42 @@ export default async function MoodboardDetailPage({
         ) : null}
 
         <div className="pt-6 space-y-3 text-center">
+          {Array.isArray(data.palette_hex) && data.palette_hex.length > 0 ? (
+            <div className="pt-8 pb-6">
+              <div className="mx-auto flex w-full max-w-[900px] justify-center gap-4">
+                {data.palette_hex.map((hex: string, index: number) => (
+                  <div key={`${hex}-${index}`} className="min-w-0 flex-1">
+                    <div
+                      className="h-14 w-full border border-zinc-300"
+                      style={{ backgroundColor: hex }}
+                    />
+                    <div className="pt-2 text-center">
+                      {Array.isArray(data.palette_names) && data.palette_names[index] ? (
+                        <p className="text-xs uppercase tracking-[0.08em] text-zinc-600">
+                          {data.palette_names[index]}
+                        </p>
+                      ) : null}
+                      <p
+                        className="text-[11px] text-zinc-500"
+                        style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+                      >
+                        {hex}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+                    <p className="text-xs text-zinc-400">
+            Mood board and color palette shown for editorial and educational purposes. Colors are approximate and may not exactly match the original source. Reference imagery used only for visual analysis; editorial research context, commentary and color direction.
+          </p>
+
           {data.source_site ? (
-            <p className="text-sm text-zinc-500">{data.source_site}</p>
+            <p className="text-sm text-zinc-500">
+              sources: {data.source_site}
+            </p>
           ) : null}
 
           {data.source_url ? (
