@@ -26,20 +26,28 @@ export default async function CiLandingPage() {
   const supabase = await supabaseServer();
 
   const { data, error } = await supabase
-  .from("moodboards")
-  .select("id,slug,title,image_path")
-  .eq("status", "ready")
-  .eq("catalog_state", "current")
-  .order("created_at", { ascending: false })
-  .limit(7);
+    .from("moodboards")
+    .select("id,slug,title,image_path")
+    .eq("status", "ready")
+    .eq("catalog_state", "current")
+    .order("created_at", { ascending: false })
+    .limit(24);
 
-if (error) {
-  console.error("Supabase error (ci landing moodboards):", error.message);
-}
+  if (error) {
+    console.error("Supabase error (ci landing moodboards):", error.message);
+  }
 
-const boards = data ?? [];
-const featuredBoard = boards[0] ?? null;
-const previewBoards = boards.slice(1, 7);
+  const boards: Moodboard[] = data ?? [];
+
+  const rotationWindow = Math.floor(Date.now() / (1000 * 60 * 60 * 24 * 3));
+  const featuredIndex = boards.length > 0 ? rotationWindow % boards.length : 0;
+
+  const featuredBoard = boards[featuredIndex] ?? null;
+
+  const previewBoards = boards
+    .filter((board) => board.id !== featuredBoard?.id)
+    .slice(0, 6);
+
   const featuredImg = publicMoodboardUrl(featuredBoard?.image_path ?? null);
 
   return (
@@ -69,10 +77,11 @@ const previewBoards = boards.slice(1, 7);
             Curatorial Intelligence
           </h1>
 
-            <p className="mx-auto max-w-2xl text-[16px] leading-[1.8] text-neutral-600">
-              Curatorial Intelligence™ pairs curated visual discovery with AI interpretation —
-              turning visual exploration into clear design direction.
-            </p>
+          <p className="mx-auto max-w-2xl text-[16px] leading-[1.8] text-neutral-600">
+            Curatorial Intelligence™ pairs curated visual discovery with AI
+            interpretation — turning visual exploration into clear design
+            direction.
+          </p>
         </section>
 
         {/* Featured Board */}
