@@ -208,14 +208,19 @@ export default async function MoodboardDetailPage({
         </div>
 
         {data.season ? (
-  <div className="pt-6 text-left">
+          <div className="pt-6 text-left">
     <p
       className="text-[11px] uppercase tracking-[0.12em] text-zinc-400"
       style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
     >
       Season
     </p>
-    <p className="pt-1 text-sm text-zinc-600">{data.season}</p>
+    <Link
+      href={`/season/${encodeURIComponent(data.season)}`}
+      className="inline-block pt-1 text-sm text-zinc-600 underline underline-offset-4 hover:opacity-80"
+    >
+      {data.season}
+    </Link>
   </div>
 ) : null}
 
