@@ -48,7 +48,7 @@ export default async function CiLandingPage() {
         <section className="space-y-8 text-center">
           <Link href="/ci" className="block leading-tight">
             <div
-              className="text-[20px] italic"
+              className="text-[24px] italic"
               style={{
                 fontFamily: "var(--font-libre), Libre Baskerville, serif",
                 color: "#8a8a8aff",
@@ -59,23 +59,23 @@ export default async function CiLandingPage() {
           </Link>
 
           <h1
-            className="text-[44px] uppercase tracking-[0.14em] text-neutral-900 sm:text-[62px]"
+            className="text-[36px] uppercase tracking-[0.14em] text-neutral-900 sm:text-[50px]"
             style={{
               fontFamily: "Arial, Helvetica, sans-serif",
-              fontWeight: 500,
+              fontWeight: 300,
             }}
           >
             Curatorial Intelligence
           </h1>
 
-          <p className="mx-auto max-w-3xl text-[18px] leading-[1.9] text-neutral-700">
-            A rotating editorial view of visual direction, interpreted through
-            Curatorial Intelligence.
-          </p>
+            <p className="mx-auto max-w-2xl text-[16px] leading-[1.8] text-neutral-600">
+              Curatorial Intelligence™ pairs curated visual discovery with AI interpretation —
+              turning visual exploration into clear design direction.
+            </p>
         </section>
 
         {/* Featured Board */}
-        <section className="mt-16 grid grid-cols-1 gap-10 lg:grid-cols-12 lg:items-start">
+        <section className="mt-20 grid grid-cols-1 gap-10 lg:grid-cols-12 lg:items-start">
           <div className="lg:col-span-7">
             {featuredBoard?.slug && featuredImg ? (
               <Link href={`/moodboard/${featuredBoard.slug}`} className="block">

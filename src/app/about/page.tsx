@@ -196,8 +196,7 @@ export default function AboutPage() {
           </h2>
 
           <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
-            CI includes a five-view free allowance. Full access requires a paid
-            subscription.
+            CI includes five free views. Full access requires a paid subscription.
           </p>
 
           <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
