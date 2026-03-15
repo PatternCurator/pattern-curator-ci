@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-const BRAND_GREY = "#5f6368"; // darker grey for stronger hierarchy
+const BRAND_GREY = "#5f6368";
 
 export default function AboutPage() {
   return (
@@ -20,21 +20,21 @@ export default function AboutPage() {
 
           <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
             Pattern Curator Curatorial Intelligence™ (CI) is a curated visual
-            intelligence system designed to help designers move from visual
-            exploration to design direction with clarity and intention.
+            research platform designed to help designers move from visual
+            exploration to clearer creative direction.
           </p>
 
           <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
-            Curatorial Intelligence builds on the foundation of Pattern Curator
-            Trend Service, expanding it into a structured visual intelligence
-            platform with AI-assisted interpretation.
+            Curatorial Intelligence builds on the foundation of Pattern Curator,
+            evolving it into a more focused editorial system that pairs curated
+            moodboards with AI-assisted interpretation.
           </p>
 
           <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
-            CI sits at the intersection of editorial direction and AI-assisted
-            interpretation. It sharpens thinking without replacing it,
-            supporting real creative decision-making through structure rather
-            than automation.
+            CI sits at the intersection of editorial direction and structured
+            insight. It is designed to support creative thinking, sharpen
+            decision-making, and help translate visual signals into more usable
+            design direction.
           </p>
         </header>
 
@@ -48,15 +48,19 @@ export default function AboutPage() {
           </h2>
 
           <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
-            Curatorial Intelligence combines a curated visual library with an
-            interpretation layer powered by AI. The library is intentionally
-            edited, organized, and refined to support working designers. The
-            interpretation layer is optional—activated when clarity,
+            Curatorial Intelligence combines a curated collection of editorial
+            moodboards with an interpretation layer powered by AI.
+          </p>
+
+          <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
+            Each board is selected and organized to highlight emerging visual
+            signals across color, print, surface, and cultural direction. The
+            interpretation layer adds context when greater clarity,
             articulation, or directional framing is needed.
           </p>
 
           <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
-            Together they pair visual discovery with structured insight.
+            Together, they pair visual discovery with structured insight.
           </p>
         </section>
 
@@ -70,7 +74,7 @@ export default function AboutPage() {
           </h2>
 
           <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
-            Curatorial Intelligence operates through a four-step framework
+            Curatorial Intelligence operates through a three-part framework
             designed to move from visual exploration to applied design
             direction.
           </p>
@@ -81,30 +85,25 @@ export default function AboutPage() {
           >
             <p>
               <strong>1) Curate</strong>
-              <br />A focused visual library built and maintained with editorial
-              standards—cohesive, relevant, and structured to reduce noise.
+              <br />A focused collection of editorial moodboards built and
+              maintained with a strong point of view — selective, relevant, and
+              designed to reduce noise.
             </p>
 
             <p>
-              <strong>2) Lens</strong>
+              <strong>2) Interpret</strong>
               <br />
-              Refine by category (library, trend, moodboards, archive) to
-              isolate patterns and strengthen point of view.
+              Translate visual references into structured insight through
+              Curatorial Intelligence notes, including directional context,
+              design relevance, and broader creative meaning.
             </p>
 
             <p>
-              <strong>3) Interpret</strong>
+              <strong>3) Apply</strong>
               <br />
-              Translate visual references into structured insight—direction,
-              color strategy, surface application, and commercial context.
-            </p>
-
-            <p>
-              <strong>4) Apply</strong>
-              <br />
-              Use Product Application Query to translate curated direction into
-              specific product categories such as swim, lounge, knit tops,
-              accessories, and more.
+              Use Application Query to translate a board’s direction into
+              specific product or category thinking, such as swim, lounge, knit
+              tops, accessories, and more.
             </p>
           </div>
         </section>
@@ -120,8 +119,9 @@ export default function AboutPage() {
 
           <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
             Images within CI are curated as editorial references selected to
-            support context, methodology, and interpretation. They are not
-            standalone downloadable assets.
+            support context, methodology, and interpretation. They are
+            presented as part of a visual research and analysis system, not as
+            standalone downloadable assets or image ownership.
           </p>
         </section>
 
@@ -138,25 +138,34 @@ export default function AboutPage() {
             className="space-y-2 text-sm leading-relaxed"
             style={{ color: BRAND_GREY }}
           >
-            <p>• Begin broad within the library to explore emerging visual direction.</p>
-            <p>• Refine through trend and moodboards to build cohesion.</p>
-            <p>• Generate interpretation when articulation or clarity is needed.</p>
-            <p>• Use Product Application Query to translate direction into product-level thinking.</p>
+            <p>• Explore the boards to identify emerging visual direction.</p>
+            <p>
+              • Open an individual board to view Curatorial Intelligence notes
+              and contextual interpretation.
+            </p>
+            <p>
+              • Use Application Query to translate visual direction into
+              product, category, or concept-specific thinking.
+            </p>
+            <p>
+              • Move through boards sequentially to compare signals, themes, and
+              evolving direction.
+            </p>
           </div>
         </section>
 
-        {/* PRODUCT APPLICATION */}
+        {/* APPLICATION */}
         <section className="max-w-3xl space-y-4">
           <h2
             className="text-[15px] font-bold uppercase tracking-wide"
             style={{ color: BRAND_GREY }}
           >
-            Product Application Query
+            Application Query
           </h2>
 
           <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
-            Product Application Query extends CI from visual exploration into
-            applied product direction.
+            Application Query extends CI from visual exploration into applied
+            design thinking.
           </p>
 
           <div
@@ -165,14 +174,15 @@ export default function AboutPage() {
           >
             <p>
               Enter a category such as swim, lounge, knit tops, or accessories
-              to receive structured insight through the Pattern Curator lens:
+              to receive structured insight through the Pattern Curator lens,
+              including:
             </p>
             <p>• Direction translation</p>
             <p>• Color strategy</p>
             <p>• Print and surface application</p>
-            <p>• Fabric and construction</p>
-            <p>• Assortment strategy</p>
-            <p>• Commercial read</p>
+            <p>• Fabric and construction ideas</p>
+            <p>• Assortment thinking</p>
+            <p>• Commercial context</p>
           </div>
         </section>
 
@@ -186,14 +196,14 @@ export default function AboutPage() {
           </h2>
 
           <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
-            CI includes a five-search free allowance. Full access requires a
-            paid subscription.
+            CI includes a five-view free allowance. Full access requires a paid
+            subscription.
           </p>
 
           <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
-            Subscriptions are available monthly ($85) or annually ($850). Plans
-            renew automatically. Cancellations require 30 days written notice
-            via email. No refunds are offered.
+            Subscriptions are available monthly ($12.99) or annually ($129).
+            Plans renew automatically and may be canceled at any time through
+            your account settings.
           </p>
         </section>
 
@@ -207,15 +217,16 @@ export default function AboutPage() {
           </h2>
 
           <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
-            Your subscription provides full access to the curated library,
-            trend forecasts, moodboards, and AI-assisted interpretation layers.
+            Your subscription provides access to the Curatorial Intelligence
+            system — including editorial moodboards, AI-assisted
+            interpretation, and application-based design insight.
           </p>
 
           <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
-            You are not paying for image ownership. Images curated within CI are
-            sourced as editorial references. You are paying for the structured
-            system and methodology developed and trademarked as Curatorial
-            Intelligence™.
+            You are not paying for image ownership. Images within CI are curated
+            as editorial references. You are paying for access to the
+            structured methodology and interpretive framework developed as
+            Curatorial Intelligence™.
           </p>
         </section>
 
@@ -253,7 +264,7 @@ export default function AboutPage() {
               background: "#f4f4f4",
             }}
           >
-            Back to Home 
+            Back to Home
           </Link>
         </div>
       </div>
