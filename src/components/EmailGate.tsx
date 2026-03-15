@@ -623,7 +623,7 @@ export default function EmailGate({
                   {checkoutStatus === "error" ? <p className="text-sm text-red-600">{checkoutError}</p> : null}
 
                   <p className="text-center text-xs text-neutral-500">
-                    {plan === "monthly" ? "$12.99/month" : "$129/year"}
+                    {plan === "monthly" ? "$29/month" : "$290/year"}
                   </p>
                 </div>
               </>

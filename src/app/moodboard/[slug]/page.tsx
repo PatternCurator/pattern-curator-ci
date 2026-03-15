@@ -29,7 +29,7 @@ export default async function MoodboardDetailPage({
   const { data, error } = await supabase
     .from("moodboards")
     .select(
-      "id,title,slug,image_path,source_url,source_site,domain,direction,color_notes,print_pattern_notes,created_at,palette_hex,palette_names"
+      "id,title,slug,image_path,source_url,source_site,domain,direction,color_notes,print_pattern_notes,created_at,palette_hex,palette_names,season"
     )
     .eq("slug", slug)
     .single();
@@ -206,6 +206,18 @@ export default async function MoodboardDetailPage({
             </div>
           ) : null}
         </div>
+
+        {data.season ? (
+  <div className="pt-6 text-left">
+    <p
+      className="text-[11px] uppercase tracking-[0.12em] text-zinc-400"
+      style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+    >
+      Season
+    </p>
+    <p className="pt-1 text-sm text-zinc-600">{data.season}</p>
+  </div>
+) : null}
 
         <ApplicationQuery
           boardTitle={data.title}
