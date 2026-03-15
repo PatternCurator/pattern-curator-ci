@@ -38,14 +38,14 @@ export default function MoodboardResults({ moodboards }: { moodboards: Moodboard
                   src={src}
                   alt={m.title ?? "Moodboard"}
                   fill
-                  className="object-cover"
+                  className="object-cover transition-transform duration-300 ease-out group-hover:scale-[1.03]"
                   sizes="(max-width: 1024px) 33vw, 20vw"
                 />
               ) : null}
 
               {m.title ? (
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 ease-in-out group-hover:opacity-100">
-                  <div className="mx-4 w-[calc(100%-2rem)] bg-white/60 backdrop-blur-sm px-4 py-3 text-center">
+                  <div className="mx-4 w-[calc(100%-2rem)] bg-white/70 backdrop-blur-sm px-4 py-3 text-center">
                     <div
                       className="text-[15px] font-bold uppercase"
                       style={{
