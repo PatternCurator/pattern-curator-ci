@@ -1,277 +1,52 @@
 import Link from "next/link";
 import Image from "next/image";
-import sharp from "sharp";
 import { supabaseServer } from "@/lib/supabaseServer";
 
-export const revalidate = 604800; // 7 days
-export const runtime = "nodejs"; // needed for sharp (not Edge)
+export const dynamic = "force-dynamic";
 
-type Signal = {
-  id: string;
-  image_path: string | null;
-  source_url: string | null;
-  source_site: string | null;
-  title: string | null;
-  direction: string | null;
-  color_notes: string | null;
-  print_pattern_notes: string | null;
-};
-
-type Featured = {
+type Moodboard = {
   id: string;
   slug: string | null;
   title: string | null;
   image_path: string | null;
-  source_url: string | null;
-  source_site: string | null;
 };
 
-type Recent = {
-  id: string;
-  slug: string | null;
-  title: string | null;
-  cover_image_path: string | null;
-  report_type: string | null;
-  created_at: string | null;
-};
-
-function publicBucketUrl(bucket: string, path: string | null) {
+function publicMoodboardUrl(path: string | null) {
   if (!path) return null;
+
   const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
   if (!base) return null;
 
   const clean = path.trim().replace(/^\/+/, "");
   const encoded = clean.split("/").map(encodeURIComponent).join("/");
-  return `${base}/storage/v1/object/public/${bucket}/${encoded}`;
-}
-
-function clampByte(n: number) {
-  return Math.max(0, Math.min(255, Math.round(n)));
-}
-
-function rgbToHex(r: number, g: number, b: number) {
-  const rr = clampByte(r).toString(16).padStart(2, "0");
-  const gg = clampByte(g).toString(16).padStart(2, "0");
-  const bb = clampByte(b).toString(16).padStart(2, "0");
-  return `#${(rr + gg + bb).toUpperCase()}`;
-}
-
-function uniqueKeepOrder(hexes: string[], max: number) {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const h of hexes) {
-    const key = h.toUpperCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(key);
-    if (out.length >= max) break;
-  }
-  return out;
-}
-
-/** ✅ NEW: hex -> HSL (for "too close" checks) */
-function hexToHsl(hex: string) {
-  const raw = hex.replace("#", "").trim();
-  if (raw.length !== 6) return { h: 0, s: 0, l: 0 };
-
-  const r = parseInt(raw.slice(0, 2), 16) / 255;
-  const g = parseInt(raw.slice(2, 4), 16) / 255;
-  const b = parseInt(raw.slice(4, 6), 16) / 255;
-
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  const d = max - min;
-
-  let h = 0;
-  let s = 0;
-  const l = (max + min) / 2;
-
-  if (d !== 0) {
-    s = d / (1 - Math.abs(2 * l - 1));
-
-    switch (max) {
-      case r:
-        h = ((g - b) / d) % 6;
-        break;
-      case g:
-        h = (b - r) / d + 2;
-        break;
-      case b:
-        h = (r - g) / d + 4;
-        break;
-    }
-
-    h = h * 60;
-    if (h < 0) h += 360;
-  }
-
-  return { h, s: s * 100, l: l * 100 };
-}
-
-/**
- * ✅ NEW: pick colors that aren't too close in hue + lightness
- * - hue threshold prevents same-family repeats
- * - lightness threshold prevents 3 near-greys, etc
- */
-function pickDiverseColors(hexColors: string[], max = 6) {
-  const selected: string[] = [];
-
-  // tuning knobs (keep conservative for editorial feel)
-  const MIN_HUE_DIFF = 45; // degrees
-  const MIN_LIGHT_DIFF = 25; // percentage points
-
-  function circularHueDiff(a: number, b: number) {
-    const d = Math.abs(a - b);
-    return Math.min(d, 360 - d);
-  }
-
-  for (const hex of hexColors) {
-    const cur = hexToHsl(hex);
-
-    const tooClose = selected.some((sel) => {
-      const prev = hexToHsl(sel);
-      const hueDiff = circularHueDiff(prev.h, cur.h);
-      const lightDiff = Math.abs(prev.l - cur.l);
-      return hueDiff < MIN_HUE_DIFF && lightDiff < MIN_LIGHT_DIFF;
-    });
-
-    if (!tooClose) selected.push(hex.toUpperCase());
-    if (selected.length >= max) break;
-  }
-
-  return selected;
-}
-
-/**
- * Pulls a small palette from an image URL by downsampling the image
- * to a 1-row strip and reading pixel colors.
- */
-async function paletteFromImageUrl(url: string, samples = 4): Promise<string[]> {
-  try {
-    const res = await fetch(url, {
-      // allow Next to cache the fetch alongside your revalidate window
-      next: { revalidate },
-    });
-
-    if (!res.ok) return [];
-    const buf = Buffer.from(await res.arrayBuffer());
-
-    // Resize to a thin strip (samples x 1) and read raw RGB pixels
-    const { data, info } = await sharp(buf)
-      .resize(samples, 1, { fit: "fill" })
-      .removeAlpha()
-      .raw()
-      .toBuffer({ resolveWithObject: true });
-
-    const channels = info.channels; // usually 3 (RGB)
-    const hexes: string[] = [];
-
-    for (let i = 0; i < samples; i++) {
-      const idx = i * channels;
-      const r = data[idx];
-      const g = data[idx + 1];
-      const b = data[idx + 2];
-      hexes.push(rgbToHex(r, g, b));
-    }
-
-    return uniqueKeepOrder(hexes, samples);
-  } catch {
-    return [];
-  }
+  return `${base}/storage/v1/object/public/moodboards/${encoded}`;
 }
 
 export default async function CiLandingPage() {
   const supabase = await supabaseServer();
 
-  const [
-    { data: signalsData, error: signalsError },
-    { data: featuredData, error: featuredError },
-    { data: recentData, error: recentError },
-  ] = await Promise.all([
-    supabase.from("ci_home_current_signals").select("*"),
-    supabase.from("ci_home_featured_board").select("*"),
-    supabase.from("ci_home_recent_interpretations").select("*"),
-  ]);
+  const { data: boards = [], error } = await supabase
+    .from("moodboards")
+    .select("id,slug,title,image_path")
+    .eq("status", "ready")
+    .eq("catalog_state", "current")
+    .order("created_at", { ascending: false })
+    .limit(7);
 
-  if (signalsError) console.error("ci_home_current_signals error:", signalsError);
-  if (featuredError) console.error("ci_home_featured_board error:", featuredError);
-  if (recentError) console.error("ci_home_recent_interpretations error:", recentError);
-
-  const signals = (signalsData ?? []) as Signal[];
-  const featured = ((featuredData ?? [])[0] ?? null) as Featured | null;
-  const recent = (recentData ?? []) as Recent[];
-
-  const signalImgs = signals.map((s) => ({
-    ...s,
-    img: publicBucketUrl("assets", s.image_path),
-  }));
-
-  const featuredImg = publicBucketUrl("moodboards", featured?.image_path ?? null);
-
-  const recentItems = recent.map((r) => ({
-    ...r,
-    img: publicBucketUrl("boards_covers", r.cover_image_path),
-  }));
-
-  const signalHref = (id: string) => `/asset/${id}`;
-  const featuredHref = featured?.slug ? `/moodboard/${featured.slug}` : "/moodboards";
-  const boardHref = (slug: string | null) => (slug ? `/board/${slug}` : "/archive");
-
-  const heroTitle = "Curatorial Intelligence";
-  const heroSubtitleA =
-    "A curated space exploring cultural shifts through color, print, and surface — translating them into future ideas.";
-  const heroSubtitleB = "Curatorial Intelligence™ pairs curated visual discovery with AI interpretation—turning visual exploration into clear design direction.";
-
-  const teaserSignal = signalImgs[0] ?? null;
-
-  const directionLine = teaserSignal?.direction?.trim()
-    ? teaserSignal.direction.trim().toUpperCase()
-    : "";
-
-  const weeklyLine =
-    "A weekly snapshot of print, color, and surface directions shaping contemporary creative work.";
-
-  // ✅ Build palette from the SAME 3 images you're showing in Current Signals
-  const paletteSources = [signalImgs[0]?.img, signalImgs[1]?.img, signalImgs[2]?.img].filter(
-    (u): u is string => Boolean(u)
-  );
-
-  let paletteHexes: string[] = [];
-  if (paletteSources.length) {
-    const perImage = await Promise.all(
-      paletteSources.map((u) => paletteFromImageUrl(u, 4)) // 4 samples per image
-    );
-
-    // 1) gather candidates
-    const candidates = uniqueKeepOrder(perImage.flat(), 18);
-
-    // 2) pick a diverse subset (prevents close tones)
-    paletteHexes = pickDiverseColors(candidates, 6);
-
-    // 3) if diversity filter is too strict and returns fewer, backfill with remaining unique
-    if (paletteHexes.length < 6) {
-      const existing = new Set(paletteHexes.map((h) => h.toUpperCase()));
-      for (const c of candidates) {
-        const key = c.toUpperCase();
-        if (existing.has(key)) continue;
-        paletteHexes.push(key);
-        existing.add(key);
-        if (paletteHexes.length >= 6) break;
-      }
-    }
+  if (error) {
+    console.error("Supabase error (ci landing moodboards):", error.message);
   }
 
-  // fallback (keeps your current vibe) if something fails
-  if (!paletteHexes.length) {
-    paletteHexes = ["#C9D1C0", "#7D8A78", "#E8E2D6", "#9A7A53", "#8B8D90", "#5F6468"];
-  }
+  const featuredBoard = boards[0] ?? null;
+  const previewBoards = boards.slice(1, 7);
+  const featuredImg = publicMoodboardUrl(featuredBoard?.image_path ?? null);
 
   return (
     <main className="bg-white">
-      <div className="mx-auto max-w-6xl px-6 pt-14 pb-16">
-        {/* HERO */}
-        <header className="text-center">
-          <Link href="/" className="block leading-tight">
+      <div className="mx-auto max-w-[1400px] px-6 pb-16 pt-12">
+        {/* Hero */}
+        <section className="space-y-8 text-center">
+          <Link href="/ci" className="block leading-tight">
             <div
               className="text-[20px] italic"
               style={{
@@ -283,172 +58,209 @@ export default async function CiLandingPage() {
             </div>
           </Link>
 
-          <h1 className="mt-4 font-libre text-[44px] tracking-[0.14em] uppercase text-neutral-900">
-            {heroTitle}
+          <h1
+            className="text-[44px] uppercase tracking-[0.14em] text-neutral-900 sm:text-[62px]"
+            style={{
+              fontFamily: "Arial, Helvetica, sans-serif",
+              fontWeight: 500,
+            }}
+          >
+            Curatorial Intelligence
           </h1>
 
-          <p className="mx-auto mt-8 max-w-4xl text-[16px] leading-[1.75] text-neutral-700">
-            {heroSubtitleA}
+          <p className="mx-auto max-w-3xl text-[18px] leading-[1.9] text-neutral-700">
+            A rotating editorial view of visual direction, interpreted through
+            Curatorial Intelligence.
           </p>
-
-          <p className="mx-auto mt-3 max-w-xl text-[16px] leading-[1.75] text-neutral-700">
-            {heroSubtitleB}
-          </p>
-
-          <div className="mt-8 flex items-center justify-center gap-8 text-[14px] tracking-[0.08em] uppercase">
-            <Link className="text-neutral-900 hover:underline" href="/inspiration">
-              Explore Trend Reports
-            </Link>
-            <span className="text-neutral-300">|</span>
-            <Link className="text-neutral-900 hover:underline" href="/pricing">
-              Unlock Full Access
-            </Link>
-          </div>
-        </header>
-
-        {/* MAIN SURFACE */}
-        <section className="mt-14 grid grid-cols-12 gap-10">
-          {/* Left: Current Signals */}
-          <div className="col-span-12 lg:col-span-8">
-            <div className="border-b border-neutral-200 pb-3">
-              <p className="text-[12px] tracking-[0.18em] uppercase text-neutral-900">
-                Current Signals
-              </p>
-            </div>
-
-            <p className="mt-4 max-w-3xl text-[16px] leading-[1.75] text-neutral-700">
-              {weeklyLine}
-            </p>
-
-            {directionLine ? (
-              <p className="mt-3 text-[12px] tracking-[0.18em] uppercase text-neutral-500">
-                {directionLine}
-              </p>
-            ) : null}
-
-            {/* Brick layout */}
-            <div className="mt-6 grid grid-cols-12 gap-4">
-              {/* Large */}
-              <div className="col-span-12 md:col-span-8">
-                {signalImgs[0]?.img ? (
-                  <Link href={signalHref(signalImgs[0].id)} className="block">
-                    <div className="relative aspect-[16/10] w-full overflow-hidden bg-neutral-100">
-                      <Image
-                        src={signalImgs[0].img}
-                        alt={signalImgs[0].title ?? "Current signal"}
-                        fill
-                        className="object-cover"
-                        sizes="(min-width: 768px) 66vw, 100vw"
-                        priority
-                      />
-                    </div>
-                  </Link>
-                ) : (
-                  <div className="aspect-[16/10] w-full bg-neutral-100" />
-                )}
-              </div>
-
-              {/* Two small */}
-              <div className="col-span-12 md:col-span-4 grid grid-rows-2 gap-4">
-                {[1, 2].map((i) =>
-                  signalImgs[i]?.img ? (
-                    <Link key={signalImgs[i].id} href={signalHref(signalImgs[i].id)} className="block">
-                      <div className="relative aspect-[16/10] w-full overflow-hidden bg-neutral-100">
-                        <Image
-                          src={signalImgs[i].img}
-                          alt={signalImgs[i].title ?? `Signal ${i + 1}`}
-                          fill
-                          className="object-cover"
-                          sizes="(min-width: 768px) 33vw, 100vw"
-                        />
-                      </div>
-                    </Link>
-                  ) : (
-                    <div key={i} className="aspect-[16/10] w-full bg-neutral-100" />
-                  )
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Right: Featured Board */}
-          <aside className="col-span-12 lg:col-span-4">
-            <div className="border-b border-neutral-200 pb-3">
-              <p className="text-[12px] tracking-[0.18em] uppercase text-neutral-900">
-                Featured Board
-              </p>
-            </div>
-
-            <div className="mt-6">
-              {featuredImg ? (
-                <Link href={featuredHref} className="block">
-                  <div className="relative aspect-[4/5] w-full overflow-hidden bg-neutral-100">
-                    <Image
-                      src={featuredImg}
-                      alt={featured?.title ?? "Featured board"}
-                      fill
-                      className="object-cover"
-                      sizes="(min-width: 1024px) 33vw, 100vw"
-                    />
-                  </div>
-                </Link>
-              ) : (
-                <div className="aspect-[4/5] w-full bg-neutral-100" />
-              )}
-            </div>
-          </aside>
         </section>
 
-        {/* ✅ PALETTE STRIP (IMAGE-DERIVED + DIVERSITY FILTER) */}
-        <div className="mt-10">
-          <div className="h-[36px] w-full overflow-hidden bg-neutral-100">
-            <div className="flex h-full">
-              {paletteHexes.map((hex) => (
-                <div
-                  key={hex}
-                  className="h-full"
-                  style={{ backgroundColor: hex, width: `${100 / paletteHexes.length}%` }}
-                  title={hex}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* RECENT INTERPRETATIONS */}
-        <section className="mt-16 border-t border-neutral-200 pt-10">
-          <p className="text-center text-[12px] tracking-[0.18em] uppercase text-neutral-900">
-            Recent Interpretations
-          </p>
-
-          <div className="mx-auto mt-8 grid max-w-5xl grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-6 md:grid-cols-4">
-            {recentItems.map((r) => (
-              <Link key={r.id} href={boardHref(r.slug)} className="group">
-                <div className="relative aspect-[4/3] w-full overflow-hidden bg-neutral-100">
-                  {r.img ? (
-                    <Image
-                      src={r.img}
-                      alt={r.title ?? "Interpretation"}
-                      fill
-                      className="object-cover"
-                      sizes="(min-width: 768px) 25vw, 50vw"
-                    />
-                  ) : null}
-                </div>
-
-                <div className="mt-3 text-center text-[13px] leading-[1.35] text-neutral-800">
-                  <div className="italic">{(r.report_type ?? "Post").toString()}</div>
-                  <div className="mt-1 whitespace-normal break-words">{r.title ?? "Untitled"}</div>
+        {/* Featured Board */}
+        <section className="mt-16 grid grid-cols-1 gap-10 lg:grid-cols-12 lg:items-start">
+          <div className="lg:col-span-7">
+            {featuredBoard?.slug && featuredImg ? (
+              <Link href={`/moodboard/${featuredBoard.slug}`} className="block">
+                <div className="relative aspect-[4/5] w-full overflow-hidden bg-zinc-100">
+                  <Image
+                    src={featuredImg}
+                    alt={featuredBoard.title ?? "Featured board"}
+                    fill
+                    className="object-cover"
+                    sizes="(min-width: 1024px) 58vw, 100vw"
+                    priority
+                  />
                 </div>
               </Link>
-            ))}
+            ) : (
+              <div className="aspect-[4/5] w-full bg-zinc-100" />
+            )}
           </div>
 
-          {recentItems.length === 0 ? (
-            <p className="mx-auto mt-8 max-w-3xl text-center text-[14px] text-neutral-500">
-              No recent interpretations yet.
+          <div className="space-y-5 lg:col-span-5 lg:pt-8">
+            <div
+              className="text-[11px] uppercase tracking-[0.18em] text-neutral-500"
+              style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+            >
+              Featured Board
+            </div>
+
+            <h2
+              className="text-[30px] leading-[1.25] text-neutral-900"
+              style={{
+                fontFamily: "var(--font-libre), Libre Baskerville, serif",
+              }}
+            >
+              {featuredBoard?.title ?? "Latest Editorial Moodboard"}
+            </h2>
+
+            <div
+              className="text-[11px] uppercase tracking-[0.18em] text-neutral-500"
+              style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+            >
+              Seasonal Direction
+            </div>
+
+            <p
+              className="max-w-md text-[24px] leading-[1.6] text-neutral-800"
+              style={{
+                fontFamily: "var(--font-libre), Libre Baskerville, serif",
+              }}
+            >
+              Softened resort palettes, heritage stripes, and a return to
+              relaxed refinement.
             </p>
-          ) : null}
+
+            {featuredBoard?.slug ? (
+              <Link
+                href={`/moodboard/${featuredBoard.slug}`}
+                className="inline-flex items-center border border-neutral-300 px-5 py-3 text-[12px] uppercase tracking-[0.16em] text-neutral-700"
+                style={{
+                  fontFamily: "Arial, Helvetica, sans-serif",
+                }}
+              >
+                View Board
+              </Link>
+            ) : null}
+          </div>
+        </section>
+
+        {/* Curatorial Intelligence excerpt */}
+        <section className="mt-20 border-t border-neutral-200 pt-10">
+          <div className="max-w-3xl space-y-4">
+            <div
+              className="text-[11px] uppercase tracking-[0.18em] text-neutral-500"
+              style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+            >
+              Curatorial Intelligence
+            </div>
+
+            <p
+              className="text-[24px] leading-[1.7] text-neutral-800"
+              style={{
+                fontFamily: "var(--font-libre), Libre Baskerville, serif",
+              }}
+            >
+              A selective reading of color, print, and cultural direction —
+              connecting visual signals to broader creative context.
+            </p>
+          </div>
+        </section>
+
+        {/* Boards preview */}
+        <section className="mt-20 space-y-6">
+          <div className="flex items-end justify-between gap-4">
+            <div
+              className="text-[11px] uppercase tracking-[0.18em] text-neutral-500"
+              style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+            >
+              Editorial Moodboards
+            </div>
+
+            <Link
+              href="/moodboards"
+              className="inline-flex border border-neutral-300 px-4 py-2 text-[11px] uppercase tracking-[0.16em] text-neutral-700"
+              style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+            >
+              Explore Boards
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-3">
+            {previewBoards.map((board) => {
+              const img = publicMoodboardUrl(board.image_path);
+
+              return (
+                <Link
+                  key={board.id}
+                  href={board.slug ? `/moodboard/${board.slug}` : "/moodboards"}
+                  className="block"
+                >
+                  <div className="group relative aspect-[4/5] w-full overflow-hidden bg-zinc-100">
+                    {img ? (
+                      <Image
+                        src={img}
+                        alt={board.title ?? "Moodboard"}
+                        fill
+                        className="object-cover"
+                        sizes="(min-width: 1024px) 22vw, 50vw"
+                      />
+                    ) : null}
+
+                    {board.title ? (
+                      <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 ease-in-out group-hover:opacity-100">
+                        <div className="mx-4 w-[calc(100%-2rem)] bg-white/70 px-4 py-3 text-center backdrop-blur-sm">
+                          <div
+                            className="text-[14px] font-bold uppercase"
+                            style={{
+                              fontFamily: "Arial, Helvetica, sans-serif",
+                              letterSpacing: "0.12em",
+                              color: "#5f6368",
+                            }}
+                          >
+                            {board.title}
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Advisory bridge */}
+        <section className="mt-20 border-t border-neutral-200 pt-10">
+          <div className="max-w-3xl space-y-4">
+            <div
+              className="text-[11px] uppercase tracking-[0.18em] text-neutral-500"
+              style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+            >
+              Apply Curatorial Intelligence
+            </div>
+
+            <p
+              className="text-[24px] leading-[1.7] text-neutral-800"
+              style={{
+                fontFamily: "var(--font-libre), Libre Baskerville, serif",
+              }}
+            >
+              Pattern Curator offers one-on-one advisory for brands and creative
+              teams seeking deeper direction through color, print, and concept
+              development.
+            </p>
+
+            <div>
+              <a
+                href="https://www.patterncurator.com/contact"
+                className="inline-flex items-center border border-neutral-300 px-5 py-3 text-[12px] uppercase tracking-[0.16em] text-neutral-700"
+                style={{
+                  fontFamily: "Arial, Helvetica, sans-serif",
+                }}
+              >
+                Advisory Inquiry
+              </a>
+            </div>
+          </div>
         </section>
       </div>
     </main>
