@@ -9,10 +9,19 @@ const allowedRoutes = [
 ];
 
 export function middleware(request: NextRequest) {
-  const pathname = request.nextUrl.pathname;
+  const { pathname } = request.nextUrl;
 
-  const isAllowed = allowedRoutes.some(route =>
-    pathname === route || pathname.startsWith(route + "/")
+  // Allow Next.js internals and static assets
+  if (
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/api") ||
+    pathname.includes(".")
+  ) {
+    return NextResponse.next();
+  }
+
+  const isAllowed = allowedRoutes.some(
+    route => pathname === route || pathname.startsWith(route + "/")
   );
 
   if (!isAllowed) {
