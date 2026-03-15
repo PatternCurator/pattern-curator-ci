@@ -1,6 +1,5 @@
 import { supabaseServer } from "@/lib/supabaseServer";
 import MoodboardResults from "@/components/MoodboardResults";
-import InfiniteScrollN from "@/components/InfiniteScrollN";
 
 function tokenize(q: string) {
   return q
@@ -25,15 +24,13 @@ export default async function MoodboardsPage({
   const sp = (await searchParams) ?? {};
   const q = (sp.q ?? "").trim();
 
-  const DEFAULT_N = 120;
-  const STEP = 40;
-  const AUTO_CAP = DEFAULT_N; // disable infinite auto-load (MORE only)
+  const DEFAULT_N = 9;
+  const STEP = 9;
 
-  // Progressive loading only when there is no query
   const isDefaultFeed = !q;
 
-  const n = isDefaultFeed ? clampInt(sp.n, DEFAULT_N) : DEFAULT_N;
-  const limit = isDefaultFeed ? n : DEFAULT_N;
+  const n = isDefaultFeed ? clampInt(sp.n, DEFAULT_N) : 120;
+  const limit = isDefaultFeed ? n : 120;
 
   const supabase = await supabaseServer();
 
@@ -46,6 +43,7 @@ export default async function MoodboardsPage({
     .eq("catalog_state", "current");
 
   const terms = tokenize(q);
+
   if (terms.length > 0) {
     const orConditions = terms
       .map(
@@ -53,29 +51,26 @@ export default async function MoodboardsPage({
           `title.ilike.%${t}%,domain.ilike.%${t}%,direction.ilike.%${t}%,color_notes.ilike.%${t}%,print_pattern_notes.ilike.%${t}%,source_site.ilike.%${t}%`
       )
       .join(",");
+
     query = query.or(orConditions);
   }
 
   query = query.order("created_at", { ascending: false });
 
-  // Ask for 1 extra row so we can reliably determine if more exist
   const { data: moodboards = [], error } = await query.limit(limit + 1);
 
-  if (error) console.error("Supabase error (moodboards):", error.message);
+  if (error) {
+    console.error("Supabase error (moodboards):", error.message);
+  }
 
   const safeMoodboards = moodboards ?? [];
 
   const hasMore = isDefaultFeed && safeMoodboards.length > limit;
-  const autoCapReached = isDefaultFeed && limit >= AUTO_CAP;
-
-  const nextAutoN = Math.min(limit + STEP, AUTO_CAP);
-  const allowInfinite = isDefaultFeed && hasMore && !autoCapReached;
-
-  const nextAfterCap = limit + STEP;
+  const nextN = limit + STEP;
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-6 space-y-6">
-      <div className="space-y-2">
+    <main className="mx-auto max-w-[1400px] px-6 py-10">
+      <div className="space-y-3">
         <div
           className="text-[18px] font-bold italic uppercase tracking-widest"
           style={{
@@ -83,27 +78,28 @@ export default async function MoodboardsPage({
             color: "#8a8a8aff",
           }}
         >
-          MOODBOARDS
+          EDITORIAL MOODBOARDS
         </div>
 
-        <p className="max-w-3xl pt-1 text-xs leading-relaxed text-zinc-500">
-          A curated moodboard library — an ongoing source of color, print, and
-          pattern inspiration.
+        <p className="max-w-2xl text-[15px] leading-[1.8] text-zinc-600">
+          A rotating collection of curated boards exploring color, print, and
+          cultural direction.
         </p>
       </div>
 
-      {/* Search bar */}
-      <form method="get" action="/moodboards" className="space-y-3">
+      {/* Search */}
+      <form method="get" action="/moodboards" className="mt-8">
         <div className="flex gap-2">
           <input
             name="q"
             defaultValue={q}
-            placeholder="Search moodboards..."
-            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none"
+            placeholder="Search boards..."
+            className="w-full border border-zinc-200 bg-white px-4 py-3 text-sm outline-none"
           />
+
           <button
             type="submit"
-            className="shrink-0 h-[46px] rounded-full px-6 text-[11px] flex items-center justify-center"
+            className="shrink-0 h-[46px] px-6 text-[11px] flex items-center justify-center"
             style={{
               fontFamily: "Arial, Helvetica, sans-serif",
               fontStyle: "italic",
@@ -119,30 +115,27 @@ export default async function MoodboardsPage({
         </div>
       </form>
 
-      <MoodboardResults moodboards={safeMoodboards.slice(0, limit) as any} />
+      <div className="mt-8">
+        <MoodboardResults moodboards={safeMoodboards.slice(0, limit) as any} />
+      </div>
 
-      {/* Infinite scroll until AUTO_CAP */}
-      {allowInfinite ? (
-        <InfiniteScrollN nextN={nextAutoN} hasMore={allowInfinite} />
-      ) : null}
-
-      {/* After AUTO_CAP, show MORE (only if more exist) */}
+      {/* MORE BUTTON */}
       {isDefaultFeed && hasMore ? (
-        <div className="pt-6 flex justify-center">
+        <div className="pt-10 flex justify-center">
           <a
-            href={`/moodboards?n=${nextAfterCap}`}
-            className="h-10 px-8 rounded-none flex items-center justify-center text-xs font-bold uppercase tracking-[0.2em]"
+            href={`/moodboards?n=${nextN}`}
+            className="h-10 px-8 flex items-center justify-center text-xs font-bold uppercase tracking-[0.2em]"
             style={{
               fontFamily: "Arial, Helvetica, sans-serif",
               color: "#707376ff",
               background: "#f4f4f4",
               border: "1px solid #B8B9B6",
-             }}
-           >
-             MORE
-     </a>
-    </div>
-) : null}
+            }}
+          >
+            MORE
+          </a>
+        </div>
+      ) : null}
     </main>
   );
 }
