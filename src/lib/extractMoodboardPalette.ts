@@ -68,186 +68,200 @@ function pickDeterministic(words: string[], r: number, g: number, b: number, sal
   return words[index];
 }
 
-function classifyNeutralFamily(r: number, g: number, b: number, l: number) {
+function classifyFamily(r: number, g: number, b: number, h: number, l: number) {
   const spread = Math.max(r, g, b) - Math.min(r, g, b);
 
-  if (spread < 8 && l > 0.92) return "porcelain";
+  if (spread < 8 && l > 0.92) return "ivory";
   if (spread < 10 && l > 0.84) return "chalk";
   if (spread < 12 && l > 0.74) return "shell";
-  if (spread < 14 && l > 0.62) return "parchment";
-  if (spread < 16 && l > 0.48) return "stone";
-  if (spread < 18 && l <= 0.48) return "charcoal";
+  if (spread < 14 && l > 0.62) return "linen";
+  if (spread < 16 && l > 0.48) return "cement";
+  if (spread < 18 && l <= 0.48) return "slate";
 
-  return null;
-}
-
-function classifyHueFamily(h: number) {
-  if (h >= 15 && h < 32) return "clay";
-  if (h >= 32 && h < 48) return "honey";
+  if (h >= 15 && h < 32) return "terracotta";
+  if (h >= 32 && h < 48) return "amber";
   if (h >= 48 && h < 65) return "gold";
-  if (h >= 65 && h < 90) return "olive";
-  if (h >= 90 && h < 140) return "moss";
-  if (h >= 140 && h < 175) return "sage";
-  if (h >= 175 && h < 210) return "mineral";
-  if (h >= 210 && h < 250) return "sky";
-  if (h >= 250 && h < 290) return "violet";
-  if (h >= 290 && h < 330) return "rose";
-  if (h >= 330 && h < 345) return "blossom";
-  return "berry";
+  if (h >= 65 && h < 90) return "citron";
+  if (h >= 90 && h < 140) return "grass";
+  if (h >= 140 && h < 175) return "jade";
+  if (h >= 175 && h < 210) return "ocean";
+  if (h >= 210 && h < 250) return "navy";
+  if (h >= 250 && h < 290) return "indigo";
+  if (h >= 290 && h < 320) return l > 0.65 ? "pink" : "ruby";
+  if (h >= 320 && h < 345) return "rose";
+  return l > 0.55 ? "pink" : "ruby";
 }
 
-function classifyMood(h: number, s: number, l: number) {
-  if (l > 0.86 && s < 0.18) return "airy";
-  if (l > 0.76 && s < 0.34) return "soft";
-  if (l < 0.32) return "nocturne";
-  if (s > 0.5 && l > 0.62) return "whimsy";
-  if (s < 0.18) return "mineral";
-  if (h >= 30 && h < 95 && l < 0.62) return "earth";
-  return "editorial";
-}
+/**
+ * Curated, family-specific approved combinations only.
+ * This is intentionally more constrained so the output feels smarter.
+ */
+const combinationsByFamily: Record<string, string[]> = {
+  ivory: [
+    "Opalescent Ivory",
+    "Airy Pearl",
+    "Translucent Lace",
+    "Cloud Ivory",
+    "Ephemeral Pearl",
+    "Porcelain Ivory",
+    "Seaside Pearl",
+  ],
+  chalk: [
+    "Smoke Chalk",
+    "Cloud Bone",
+    "Opalescent Plaster",
+    "Airy Chalk",
+    "Modern Ash",
+    "Translucent Bone",
+  ],
+  shell: [
+    "Rosewater Shell",
+    "Opalescent Shell",
+    "Airy Blush",
+    "Cloud Pearl",
+    "Ephemeral Petal",
+    "Modern Shell",
+  ],
+  linen: [
+    "Artisan Linen",
+    "Modern Canvas",
+    "Coastal Linen",
+    "Painterly Flax",
+    "Romantic Parchment",
+    "Airy Canvas",
+  ],
+  cement: [
+    "Ocean Cement",
+    "Smoke Stone",
+    "Coastal Pebble",
+    "Modern Cement",
+    "Artisan Mica",
+    "Cloud Stone",
+  ],
+  slate: [
+    "Smoke Slate",
+    "Inked Graphite",
+    "Modern Cinder",
+    "Ocean Slate",
+    "Coastal Shadow",
+    "Indigo Slate",
+  ],
 
-const familyWords: Record<string, string[]> = {
-  porcelain: ["porcelain", "ivory", "pearl", "alabaster", "cream"],
-  chalk: ["chalk", "milk", "bone", "plaster", "frost"],
-  shell: ["shell", "oyster", "soft pearl", "shell blush", "petal shell"],
-  parchment: ["parchment", "linen", "oat", "canvas", "flax"],
-  stone: ["stone", "river stone", "weathered stone", "pebble", "mineral stone"],
-  charcoal: ["charcoal", "graphite", "inkstone", "smoke", "cinder"],
-
-  clay: ["clay", "terracotta", "apricot clay", "rose clay", "sun clay"],
-  honey: ["honey", "amber", "nectar", "raw honey", "golden nectar"],
-  gold: ["gold", "marigold", "saffron", "sun", "buttergold"],
-  olive: ["olive", "lichen", "grove", "moss olive", "garden olive"],
-  moss: ["moss", "fern", "meadow", "forest moss", "lichen green"],
-  sage: ["sage", "eucalyptus", "garden sage", "dried sage", "soft herb"],
-  mineral: ["mineral", "sea glass", "storm glass", "tidal blue", "mineral blue"],
-  sky: ["sky", "horizon", "rain blue", "coastal blue", "dawn sky"],
-  violet: ["violet", "iris", "plum", "fig", "mulberry"],
-  rose: ["rose", "petal", "rosewater", "tea rose", "dusty bloom"],
-  blossom: ["blossom", "camellia", "peony", "garden bloom", "soft bloom"],
-  berry: ["berry", "poppy", "currant", "wild berry", "crushed berry"],
-};
-
-const modifiersByMood: Record<string, string[]> = {
-  airy: ["mist", "cloud", "luminous", "dawn", "breezy", "lightfall"],
-  soft: ["powder", "petal", "faded", "hushed", "blushed", "velvet"],
-  nocturne: ["dusk", "shadow", "midnight", "ink", "moonlit", "velvet"],
-  whimsy: ["dewdrop", "candied", "storybook", "sunlit", "sugared", "dreamlit"],
-  mineral: ["chalked", "weathered", "quiet", "softened", "mineral", "ashen"],
-  earth: ["burnished", "sunbaked", "harvest", "toasted", "earthy", "aged"],
-  editorial: ["softened", "quiet", "mellow", "faded", "tonal", "muted"],
-};
-
-const endingsByMood: Record<string, string[]> = {
-  airy: ["mist", "light", "veil", "glow"],
-  soft: ["blush", "bloom", "haze", "wash"],
-  nocturne: ["shadow", "velvet", "night", "ink"],
-  whimsy: ["dream", "sugar", "spark", "glow"],
-  mineral: ["stone", "glass", "chalk", "ash"],
-  earth: ["clay", "grain", "field", "harvest"],
-  editorial: ["tone", "cast", "wash", "finish"],
+  terracotta: [
+    "Artisan Terracotta",
+    "Painterly Terra",
+    "Romantic Clay",
+    "Burnish Terracotta",
+    "Modern Poppy",
+    "Desert Clay",
+    "Rosewater Terra",
+  ],
+  amber: [
+    "Amber Lantern",
+    "Honeyed Amber",
+    "Artisan Ochre",
+    "Golden Cider",
+    "Burnish Maple",
+    "Saffron Lantern",
+    "Modern Amber",
+  ],
+  gold: [
+    "Sunlit Gold",
+    "Golden Ochre",
+    "Saffron Pollen",
+    "Marigold Brocade",
+    "Citron Gold",
+    "Artisan Ochre",
+    "Burnish Gold",
+  ],
+  citron: [
+    "Citron Pollen",
+    "Modern Citron",
+    "Sunlit Citron",
+    "Citrus Glow",
+    "Saffron Citron",
+    "Artisan Lemon",
+  ],
+  grass: [
+    "Grass Meadow",
+    "Garden Clover",
+    "Modern Grass",
+    "Romantic Grove",
+    "Artisan Field",
+    "Seaside Grass",
+    "Painterly Fern",
+  ],
+  jade: [
+    "Jade Moss",
+    "Emerald Clover",
+    "Modern Jade",
+    "Ocean Herb",
+    "Artisan Fern",
+    "Rich Jade",
+    "Garden Moss",
+  ],
+  ocean: [
+    "Ocean Glass",
+    "Seaside Tide",
+    "Coastal Wave",
+    "Tidal Glass",
+    "Modern Lagoon",
+    "Smoke Ocean",
+    "Ocean Harbor",
+  ],
+  navy: [
+    "Navy Horizon",
+    "Seaside Navy",
+    "Ocean Rain",
+    "Modern Harbor",
+    "Smoke Navy",
+    "Rich Horizon",
+    "Coastal Sky",
+  ],
+  indigo: [
+    "Indigo Ink",
+    "Sapphire Indigo",
+    "Modern Indigo",
+    "Smoke Fig",
+    "Rich Indigo",
+    "Ocean Night",
+    "Studio Indigo",
+  ],
+  pink: [
+    "Romantic Peony",
+    "Rosewater Pink",
+    "Opalescent Blush",
+    "Airy Camellia",
+    "Modern Pink",
+    "Cloud Peony",
+    "Ephemeral Rosewater",
+  ],
+  ruby: [
+    "Ruby Fig",
+    "Rich Mulberry",
+    "Modern Ruby",
+    "Smoke Wine",
+    "Jewel Plum",
+    "Artisan Berry",
+    "Painterly Fig",
+  ],
+  rose: [
+    "Rosewater Peony",
+    "Romantic Rose",
+    "Cloud Rose",
+    "Opalescent Camellia",
+    "Modern Rose",
+    "Airy Petal",
+    "Ephemeral Dahlia",
+  ],
 };
 
 function buildName(r: number, g: number, b: number) {
-  const { h, s, l } = rgbToHsl(r, g, b);
+  const { h, l } = rgbToHsl(r, g, b);
+  const family = classifyFamily(r, g, b, h, l);
 
-  const neutralFamily = classifyNeutralFamily(r, g, b, l);
-  const family = neutralFamily ?? classifyHueFamily(h);
-  const mood = classifyMood(h, s, l);
-
-  const familyPool = familyWords[family] ?? [family];
-  const modifierPool = modifiersByMood[mood] ?? ["softened"];
-  const endingPool = endingsByMood[mood] ?? ["tone"];
-
-  const familyWord = pickDeterministic(familyPool, r, g, b, `family-${family}`);
-  const familyWordIsCompound = familyWord.includes(" ");
-  const modifier = pickDeterministic(modifierPool, r, g, b, `modifier-${mood}`);
-  const ending = pickDeterministic(endingPool, r, g, b, `ending-${mood}`);
-
-  const structure = hashRgb(r, g, b, "structure") % 8;
-
-  let result = "";
-
-  switch (structure) {
-  case 0:
-    result = familyWordIsCompound ? familyWord : `${modifier} ${familyWord}`;
-    break;
-  case 1:
-    result = familyWord;
-    break;
-  case 2:
-    result = neutralFamily ? familyWord : `${modifier} ${family}`;
-    break;
-  case 3:
-    result = familyWordIsCompound ? familyWord : `${familyWord} ${ending}`;
-    break;
-  case 4:
-    result = neutralFamily ? familyWord : `${modifier} ${familyWord}`;
-    break;
-  case 5:
-    result = familyWord;
-    break;
-  case 6:
-    result = neutralFamily ? familyWord : `${modifier} ${family}`;
-    break;
-  default:
-    result = familyWordIsCompound ? familyWord : `${modifier} ${familyWord}`;
-    break;
-}
-
-  result = result
-    .replace(/\bsoft herb\b/gi, "Herb")
-    .replace(/\bsoft herb haze\b/gi, "Herb Haze")
-    .replace(/\bsoft herb bloom\b/gi, "Herb Bloom")
-    .replace(/\bsoft herb wash\b/gi, "Herb Wash")
-    .replace(/\brain blue\b/gi, "Rain Blue")
-    .replace(/\bdawn sky\b/gi, "Dawn Sky")
-    .replace(/\bsea glass\b/gi, "Sea Glass")
-    .replace(/\bstorm glass\b/gi, "Storm Glass")
-    .replace(/\btidal blue\b/gi, "Tidal Blue")
-    .replace(/\bmineral blue\b/gi, "Mineral Blue")
-    .replace(/\bdusty bloom\b/gi, "Dusty Bloom")
-    .replace(/\bgarden bloom\b/gi, "Garden Bloom")
-    .replace(/\bshell blush\b/gi, "Shell Blush")
-    .replace(/\bpetal shell\b/gi, "Petal Shell")
-    .replace(/\bsoft pearl\b/gi, "Soft Pearl")
-    .replace(/\braw honey\b/gi, "Raw Honey")
-    .replace(/\bgolden nectar\b/gi, "Golden Nectar")
-    .replace(/\bapricot clay\b/gi, "Apricot Clay")
-    .replace(/\brose clay\b/gi, "Rose Clay")
-    .replace(/\bsun clay\b/gi, "Sun Clay")
-    .replace(/\bforest moss\b/gi, "Forest Moss")
-    .replace(/\blichen green\b/gi, "Lichen Green")
-    .replace(/\bgarden sage\b/gi, "Garden Sage")
-    .replace(/\bdried sage\b/gi, "Dried Sage")
-    .replace(/\btea rose\b/gi, "Tea Rose")
-    .replace(/\bweathered stone\b/gi, "Weathered Stone")
-    .replace(/\briver stone\b/gi, "River Stone")
-    .replace(/\bmineral stone\b/gi, "Stone")
-    .replace(/\bcrushed berry\b/gi, "Crushed Berry")
-    .replace(/\bwild berry\b/gi, "Wild Berry")
-    .replace(/\bmoss olive\b/gi, "Moss Olive")
-    .replace(/\bgarden olive\b/gi, "Garden Olive")
-    .replace(/\bcoastal blue\b/gi, "Coastal Blue")
-    .replace(/\bbuttergold\b/gi, "Buttergold")
-    .replace(/\binkstone\b/gi, "Inkstone")
-    .replace(/\bweathered stone stone\b/gi, "Weathered Stone")
-    .replace(/\bstone stone\b/gi, "Stone")
-    .replace(/\bberry berry\b/gi, "Berry")
-    .replace(/\brose rose\b/gi, "Rose")
-    .replace(/\bviolet violet\b/gi, "Violet")
-    .replace(/\bgold gold\b/gi, "Gold")
-    .replace(/\bclay clay\b/gi, "Clay")
-    .replace(/\bmoss moss\b/gi, "Moss")
-    .replace(/\bsky sky\b/gi, "Sky")
-    .replace(/\bsage sage\b/gi, "Sage")
-    .replace(/\bblossom blossom\b/gi, "Blossom")
-    .replace(/\bporcelain mist\b/gi, "Porcelain")
-    .replace(/\bporcelain glow\b/gi, "Porcelain")
-    .replace(/\bchalk chalk\b/gi, "Chalk")
-    .replace(/\bparchment wash\b/gi, "Parchment")
-    .replace(/\boyster wash\b/gi, "Oyster")
-    .replace(/\bcream wash\b/gi, "Cream");
+  const options = combinationsByFamily[family] ?? ["Modern Color"];
+  const result = pickDeterministic(options, r, g, b, `combo-${family}`);
 
   return toTitleCase(result.trim());
 }
