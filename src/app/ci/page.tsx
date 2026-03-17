@@ -137,20 +137,32 @@ export default async function CiLandingPage() {
           </Link>
 
           <h1
-            className="text-[36px] uppercase tracking-[0.14em] text-neutral-900 sm:text-[50px]"
-            style={{
-              fontFamily: "Arial, Helvetica, sans-serif",
-              fontWeight: 300,
-            }}
-          >
-            Curatorial Intelligence
-          </h1>
+  className="text-[36px] uppercase tracking-[0.14em] text-neutral-900 sm:text-[50px]"
+  style={{
+    fontFamily: "Arial, Helvetica, sans-serif",
+    fontWeight: 300,
+  }}
+>
+  Curatorial Intelligence
+</h1>
 
-          <p className="mx-auto max-w-2xl text-[16px] leading-[1.8] text-neutral-600">
-            Curatorial Intelligence™ pairs curated visual discovery with AI
-            interpretation — turning visual exploration into clear design
-            direction.
-          </p>
+<p
+  className="mt-3 text-[18px] italic tracking-[0.02em] text-center px-6"
+  style={{
+    fontFamily: "var(--font-libre), Libre Baskerville, serif",
+    color: "#8a8a8aff",
+  }}
+>
+  A return to an endless stream of visual
+  inspiration for color, print + pattern — now expanded through interpretation.
+</p>
+
+<p className="mx-auto max-w-2xl text-[16px] leading-[1.8] text-neutral-600">
+  Curatorial Intelligence™ pairs curated visual discovery with AI
+  interpretation — turning visual exploration into clear design
+  direction.
+</p>
+
         </section>
 
         {/* Featured Board */}
@@ -221,7 +233,7 @@ export default async function CiLandingPage() {
           </div>
         </section>
 
-        {/* Curatorial Intelligence excerpt */}
+                {/* Curatorial Intelligence excerpt */}
         <section className="mt-20 border-t border-neutral-200 pt-10">
           <div className="max-w-3xl space-y-4">
             <div
@@ -240,6 +252,16 @@ export default async function CiLandingPage() {
               A selective reading of color, print, and cultural direction —
               connecting visual signals to broader creative context.
             </p>
+
+<p
+  className="max-w-2xl text-[17px] leading-[1.8] text-neutral-700 italic"
+  style={{
+    fontFamily: "var(--font-libre), Libre Baskerville, serif",
+  }}
+>
+  What we call trend today can often reflect repetition. CI offers a more
+  intentional approach, using AI to support interpretation, not direction.
+</p>
           </div>
         </section>
 
