@@ -55,7 +55,7 @@ export default function ApplicationQuery({
       <div className="space-y-3">
 
         <div className="text-[11px] uppercase tracking-widest text-neutral-600">
-          Product application query
+          Enter the category you want to apply this board to
         </div>
 
         <input

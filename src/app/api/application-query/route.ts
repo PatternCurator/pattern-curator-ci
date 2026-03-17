@@ -9,7 +9,7 @@ function buildPrompt(boardTitle: string, notes: string, query: string) {
   return `
 You are Pattern Curator CI.
 
-Translate the following direction into the specified product application.
+Your role is to translate curated visual research into applied product direction for a designer or creative team.
 
 BOARD TITLE:
 ${boardTitle}
@@ -17,7 +17,7 @@ ${boardTitle}
 CURATORIAL NOTES:
 ${notes}
 
-PRODUCT APPLICATION QUERY:
+CATEGORY:
 ${query}
 
 Return markdown using ONLY these sections:
@@ -29,8 +29,14 @@ Return markdown using ONLY these sections:
 ## Assortment Strategy
 ## Commercial Read
 
-Be concise. Strategic. Specific.
-Avoid generic language.
+Write with a restrained, editorial, design-literate tone.
+Be specific to the category provided.
+Focus on interpretation, translation, and application.
+Avoid generic trend language, filler, hype, and obvious statements.
+Do not sound like a chatbot.
+Do not over-explain.
+Do not repeat the same point across sections.
+Keep each section concise but useful.
 `.trim();
 }
 
@@ -61,8 +67,8 @@ export async function POST(req: Request) {
 
     const allowlistRaw =
       process.env.ADMIN_EMAIL_ALLOWLIST ??
-      process.env.CI_ADMIN_EMAILS ?? // fallback (if you used this elsewhere)
-      process.env.ADMIN_EMAILS ?? // optional fallback
+      process.env.CI_ADMIN_EMAILS ??
+      process.env.ADMIN_EMAILS ??
       "";
 
     const adminAllowlist = allowlistRaw
@@ -111,7 +117,8 @@ export async function POST(req: Request) {
       messages: [
         {
           role: "system",
-          content: "You are Pattern Curator CI. Write in a restrained, editorial, strategic tone.",
+          content:
+            "You are Pattern Curator CI. Write like a creative director translating visual research into applied design direction. The tone should feel restrained, editorial, intelligent, and specific. Avoid sounding like a generic AI assistant, trend report, or marketing copywriter.",
         },
         {
           role: "user",
@@ -144,8 +151,8 @@ export async function POST(req: Request) {
           billing_status,
           is_subscriber,
           is_unlocked,
-    },
-});
+        },
+      });
     }
 
     // ------------------------------
