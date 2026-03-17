@@ -36,7 +36,7 @@ function fallbackResponse(mode: "board" | "asset", domainOptions: string[] = [])
             return acc;
           }, {})
         : {},
-    ai_error: true, // optional signal for UI
+    ai_error: true,
   };
 }
 
@@ -60,6 +60,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Missing query or assets" }, { status: 400 });
       }
     }
+
     if (mode === "asset" && !asset) {
       return NextResponse.json({ error: "Missing asset" }, { status: 400 });
     }
@@ -83,7 +84,8 @@ export async function POST(req: Request) {
           }
         : null;
 
-    const domainOptions = mode === "asset" ? parseDomainOptions(compactAsset?.domain ?? null) : [];
+    const domainOptions =
+      mode === "asset" ? parseDomainOptions(compactAsset?.domain ?? null) : [];
 
     // If OpenAI isn't configured, do NOT 500 — return fallback 200
     const openai = getOpenAIOrNull();
@@ -92,11 +94,15 @@ export async function POST(req: Request) {
     }
 
     const systemPrompt = `
-You are Pattern Curator Curatorial Intelligence (CI).
+You are Pattern Curator Curatorial Intelligence (CI), rooted in the practice of curation — observing shifts, interpreting meaning, and translating visual signals into creative direction.
 
 Rules:
 - Interpretation only. No forecasting. No trend-report language.
+- Curation is about perspective, not prediction — focus on what is emerging, not what will happen.
 - Ground all insight in the provided metadata.
+- Connect visual signals to broader cultural shifts and human behavior where relevant.
+- Treat each board as a curated story, not a collection of assets.
+- Emphasize relevance, resonance, and creative evolution.
 - Write for experienced creatives.
 - Calm, editorial, intelligent tone.
 - No taxonomy explanations.
@@ -112,33 +118,38 @@ Return this exact JSON shape:
 }
 
 Constraints:
+- curatorial_summary should feel like an editorial interpretation, not product copy.
+- Avoid generic language like "this aesthetic" or "this asset" when possible.
 - Bullets max ~12 words.
 - why_by_domain:
   - ONLY include keys for the provided domain options (verbatim).
   - One sentence per domain (<= 22 words).
   - No bullets inside values.
-- For SINGLE ASSET mode:
-  - Interpret ONLY the single asset.
-  - In the curatorial_summary, include ONE subtle line suggesting where this asset can be curated.
+- For SINGLE BOARD mode:
+  - Interpret ONLY the single board.
+  - Treat it as a curated visual composition, not an isolated asset.
+  - In the curatorial_summary, include ONE subtle line suggesting where this board can be curated or applied.
   - Use ONLY the provided domain options verbatim.
 - For CURATED BOARD mode:
+  - Interpret the set as a cohesive curated story.
   - You may omit why_by_domain or return it as {}.
 `.trim();
 
     const userPrompt =
       mode === "asset"
         ? `
-MODE: SINGLE ASSET
+MODE: SINGLE BOARD
 
-Asset:
+Board:
 ${JSON.stringify(compactAsset, null, 2)}
 
 Domain options (use verbatim, do not invent):
 ${JSON.stringify(domainOptions, null, 2)}
 
 Instructions:
-- Write grounded interpretation of this asset only.
-- Include one line in the summary suggesting curation across the domain options.
+- Write a grounded interpretation of this board only.
+- Connect visual direction to broader context where relevant.
+- Include one subtle line in the summary suggesting curation across the domain options.
 - Then create why_by_domain with one sentence per provided domain option.
 `.trim()
         : `
@@ -147,11 +158,12 @@ MODE: CURATED BOARD
 Search query:
 "${q}"
 
-Assets:
+Boards:
 ${JSON.stringify(compactAssets, null, 2)}
 
 Instructions:
 - Interpret the set as a cohesive curated story.
+- Connect visual signals to broader creative and cultural context where relevant.
 - Do not forecast.
 `.trim();
 
@@ -198,10 +210,16 @@ Instructions:
 
     const base = {
       curatorial_summary: safeString(parsed?.curatorial_summary).trim(),
-      why_it_matters: Array.isArray(parsed?.why_it_matters) ? parsed.why_it_matters.map(safeString).slice(0, 5) : [],
-      context_pulse: Array.isArray(parsed?.context_pulse) ? parsed.context_pulse.map(safeString).slice(0, 5) : [],
+      why_it_matters: Array.isArray(parsed?.why_it_matters)
+        ? parsed.why_it_matters.map(safeString).slice(0, 5)
+        : [],
+      context_pulse: Array.isArray(parsed?.context_pulse)
+        ? parsed.context_pulse.map(safeString).slice(0, 5)
+        : [],
       why_by_domain:
-        parsed?.why_by_domain && typeof parsed.why_by_domain === "object" && !Array.isArray(parsed.why_by_domain)
+        parsed?.why_by_domain &&
+        typeof parsed.why_by_domain === "object" &&
+        !Array.isArray(parsed.why_by_domain)
           ? parsed.why_by_domain
           : {},
     };
