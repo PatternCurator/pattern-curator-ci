@@ -49,7 +49,9 @@ export default function AboutPage() {
 
           <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
             Curatorial Intelligence combines a curated collection of editorial
-            moodboards with an interpretation layer powered by AI.
+            moodboards with an interpretation layer powered by AI.Curation is not about predicting or chasing trends. It is about paying close attention and knowing what story you want to tell that feels relevant, inspiring, and evolutionary.
+
+Pattern Curator has always been rooted in the practice of curation — observing visual shifts, analyzing human behaviors, collecting fragments of culture, and identifying the details that begin to shape creative direction.
           </p>
 
           <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
