@@ -9,6 +9,10 @@ type Moodboard = {
   slug: string | null;
   title: string | null;
   image_path: string | null;
+  domain: string | null;
+  direction: string | null;
+  color_notes: string | null;
+  print_pattern_notes: string | null;
 };
 
 function publicMoodboardUrl(path: string | null) {
@@ -22,12 +26,70 @@ function publicMoodboardUrl(path: string | null) {
   return `${base}/storage/v1/object/public/moodboards/${encoded}`;
 }
 
+function getAppUrl() {
+  return (
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
+  );
+}
+
+function firstSentence(text: string | null | undefined) {
+  const clean = (text ?? "").replace(/\s+/g, " ").trim();
+  if (!clean) return null;
+
+  const match = clean.match(/^.*?[.!?](?=\s|$)/);
+  return match ? match[0].trim() : clean;
+}
+
+async function getFeaturedBoardAiSentence(board: Moodboard | null) {
+  if (!board) {
+    return "AI interpretation highlights the broader context behind this featured moodboard.";
+  }
+
+  try {
+    const appUrl = getAppUrl();
+
+    const res = await fetch(`${appUrl}/api/interpret`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+      body: JSON.stringify({
+        mode: "asset",
+        asset: {
+          title: board.title,
+          domain: board.domain,
+          direction: board.direction,
+          color_notes: board.color_notes,
+          print_pattern_notes: board.print_pattern_notes,
+        },
+      }),
+    });
+
+    if (!res.ok) {
+      return "AI interpretation highlights the broader context behind this featured moodboard.";
+    }
+
+    const data = await res.json();
+    const summary = firstSentence(data?.curatorial_summary);
+
+    return (
+      summary ||
+      "AI interpretation highlights the broader context behind this featured moodboard."
+    );
+  } catch (error) {
+    console.error("Failed to load featured board AI interpretation:", error);
+    return "AI interpretation highlights the broader context behind this featured moodboard.";
+  }
+}
+
 export default async function CiLandingPage() {
   const supabase = await supabaseServer();
 
   const { data, error } = await supabase
     .from("moodboards")
-    .select("id,slug,title,image_path")
+    .select("id,slug,title,image_path,domain,direction,color_notes,print_pattern_notes")
     .eq("status", "ready")
     .eq("catalog_state", "current")
     .order("created_at", { ascending: false })
@@ -39,7 +101,13 @@ export default async function CiLandingPage() {
 
   const boards: Moodboard[] = data ?? [];
 
-  const rotationWindow = Math.floor(Date.now() / (1000 * 60 * 60 * 24 * 3));
+  // stable 7-day rotation based on UTC calendar days
+  const now = new Date();
+  const utcDayNumber = Math.floor(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) /
+      (1000 * 60 * 60 * 24)
+  );
+  const rotationWindow = Math.floor(utcDayNumber / 7);
   const featuredIndex = boards.length > 0 ? rotationWindow % boards.length : 0;
 
   const featuredBoard = boards[featuredIndex] ?? null;
@@ -49,6 +117,7 @@ export default async function CiLandingPage() {
     .slice(0, 6);
 
   const featuredImg = publicMoodboardUrl(featuredBoard?.image_path ?? null);
+  const featuredText = await getFeaturedBoardAiSentence(featuredBoard);
 
   return (
     <main className="bg-white">
@@ -119,7 +188,7 @@ export default async function CiLandingPage() {
                 fontFamily: "var(--font-libre), Libre Baskerville, serif",
               }}
             >
-              {featuredBoard?.title ?? "Latest Editorial Moodboard"}
+              {featuredBoard?.title ?? "Featured Moodboard"}
             </h2>
 
             <div
@@ -135,8 +204,7 @@ export default async function CiLandingPage() {
                 fontFamily: "var(--font-libre), Libre Baskerville, serif",
               }}
             >
-              Softened resort palettes, heritage stripes, and a return to
-              relaxed refinement.
+              {featuredText}
             </p>
 
             {featuredBoard?.slug ? (
