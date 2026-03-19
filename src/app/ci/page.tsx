@@ -260,7 +260,7 @@ export default async function CiLandingPage() {
   }}
 >
   What we call trend today can often reflect repetition. CI offers a more
-  intentional approach, using AI to support interpretation, not direction.
+  intentional approach, using AI to support interpretation and expand creative perspective.
 </p>
           </div>
         </section>
