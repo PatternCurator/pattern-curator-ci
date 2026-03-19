@@ -81,10 +81,21 @@ export default async function MoodboardsPage({
           EDITORIAL MOODBOARDS
         </div>
 
-        <p className="max-w-2xl text-[15px] leading-[1.8] text-zinc-600">
-          A rotating collection of curated boards exploring color, print, and
-          cultural direction.
-        </p>
+        <div className="max-w-2xl space-y-3 text-zinc-600">
+          <p className="text-[13px] italic tracking-[0.04em] text-zinc-500">
+              A simple way to explore emerging trends through curated visual direction
+          </p>
+
+          <ul className="list-disc pl-5 space-y-1 text-[15px] leading-[1.8]">
+            <li>Browse the moodboards</li>
+            <li>
+              Curatorial context highlights relevance and trend-forward direction
+            </li>
+            <li>
+              Enter a query to explore application across category or market
+            </li>
+          </ul>
+        </div>
       </div>
 
       {/* Search */}
