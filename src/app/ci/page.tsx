@@ -157,10 +157,11 @@ export default async function CiLandingPage() {
   inspiration for color, print + pattern — now expanded through interpretation.
 </p>
 
-<p className="mx-auto max-w-2xl text-[16px] leading-[1.8] text-neutral-600">
-  Curatorial Intelligence™ pairs curated visual discovery with AI
-  interpretation — turning visual exploration into clear design
-  direction.
+<p className="mx-auto max-w-4xl text-[16px] leading-[1.8] text-neutral-600">
+  Curatorial Intelligence™ pairs curated visual discovery with AI interpretation —
+  turning visual exploration into clear design direction. A simple way to explore
+  emerging trends in a visual way with curatorial context notes and an option to ask how a
+  mood translates into product, category, or direction.
 </p>
 
         </section>
