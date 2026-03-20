@@ -445,6 +445,8 @@ export async function POST(req: Request) {
           break;
         }
 
+        const email_normalized = await getEmailFromCustomerId(customerId);
+
         const payload = {
           status: statusToWrite,
           stripe_customer_id: customerId,
@@ -464,8 +466,22 @@ export async function POST(req: Request) {
           payload,
         });
 
-        if (!updated) {
-          console.warn("⚠️ invoice event did not update any existing ci_billing row; skipping row creation", {
+        if (!updated && email_normalized) {
+          await upsertBillingByEmail({
+            email_raw: email_normalized,
+            email_normalized,
+            stripe_customer_id: customerId,
+            stripe_subscription_id: subscriptionId,
+            stripe_price_id: stripePriceId,
+            status: statusToWrite,
+            plan_interval: planInterval,
+            meta: {
+              source: event.type,
+              invoice_id: invoice.id,
+            },
+          });
+        } else if (!updated) {
+          console.warn("⚠️ invoice event: no billing row updated (no match + no email)", {
             customerId,
             subscriptionId,
             eventType: event.type,
