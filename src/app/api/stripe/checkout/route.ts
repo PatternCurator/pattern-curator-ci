@@ -163,6 +163,7 @@ export async function POST(req: Request) {
         {
           email: email_normalized,
           email_normalized,
+          stripe_customer_id: stripeCustomerId,
           status: "pending",
           stripe_price_id: priceId,
           updated_at: now,
