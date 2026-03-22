@@ -34,13 +34,16 @@ export default async function MoodboardsPage({
 
   const supabase = await supabaseServer();
 
-  let query = supabase
+    let query = supabase
     .from("moodboards")
     .select(
       "id,slug,title,image_path,source_url,source_site,domain,direction,color_notes,print_pattern_notes"
     )
     .eq("status", "ready")
-    .eq("catalog_state", "current");
+    .eq("catalog_state", "current")
+    .order("season_order", { ascending: false })
+    .order("created_at", { ascending: false });
+    
 
   const terms = tokenize(q);
 
