@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/supabaseServer";
 import AssetInterpretation from "@/components/AssetInterpretation";
 import ApplicationQuery from "@/components/ApplicationQuery";
+import SupportingBoardsGallery from "@/components/SupportingBoardsGallery";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,34 @@ function publicMoodboardUrl(path: string | null) {
   return `${base}/storage/v1/object/public/moodboards/${encoded}`;
 }
 
+function parseTerms(value: string | null) {
+  if (!value) return [];
+
+  return value
+    .split(/,|\/|\||&|\n/)
+    .map((term) => term.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+type SupportingBoard = {
+  id: string;
+  board_type: string;
+  match_value: string | null;
+  image_path: string | null;
+  context_line: string | null;
+  season: string | null;
+  macro_key: string | null;
+  sort_order: number | null;
+};
+
+function findBestMatch(boards: SupportingBoard[], terms: string[]) {
+  const exactMatch = boards.find((board) =>
+    terms.includes((board.match_value ?? "").trim().toLowerCase())
+  );
+
+  return exactMatch || boards[0] || null;
+}
+
 export default async function MoodboardDetailPage({
   params,
 }: {
@@ -29,12 +58,56 @@ export default async function MoodboardDetailPage({
   const { data, error } = await supabase
     .from("moodboards")
     .select(
-      "id,title,slug,image_path,source_url,source_site,domain,direction,color_notes,print_pattern_notes,created_at,palette_hex,palette_names,season"
+      "id,title,slug,image_path,source_url,source_site,domain,direction,color_notes,print_pattern_notes,created_at,palette_hex,palette_names,season,macro_key"
     )
     .eq("slug", slug)
     .single();
 
   if (error || !data) return notFound();
+
+  const directionTerms = parseTerms(data.direction ?? null);
+  const colorTerms = parseTerms(data.color_notes ?? null);
+  const printTerms = parseTerms(data.print_pattern_notes ?? null);
+
+  const seasonValue = (data.season ?? "").trim();
+  const macroKeyValue = (data.macro_key ?? "").trim();
+
+  const { data: supportingBoards } = await supabase
+    .from("moodboard_supporting_boards")
+    .select(
+      "id, board_type, match_value, image_path, context_line, season, macro_key, sort_order"
+    )
+    .eq("season", seasonValue)
+    .eq("macro_key", macroKeyValue)
+    .order("sort_order", { ascending: true });
+
+  const groupedBoards: Record<string, SupportingBoard[]> = {
+    cultural_behavior: [],
+    color: [],
+    print_pattern: [],
+  };
+
+  (supportingBoards ?? []).forEach((board) => {
+    if (groupedBoards[board.board_type]) {
+      groupedBoards[board.board_type].push(board as SupportingBoard);
+    }
+  });
+
+  const selectedBoards = [
+    findBestMatch(groupedBoards.cultural_behavior, directionTerms),
+    findBestMatch(groupedBoards.color, colorTerms),
+    findBestMatch(groupedBoards.print_pattern, printTerms),
+  ].filter(Boolean) as SupportingBoard[];
+
+  const sortedSupportingBoards = [...selectedBoards].sort((a, b) => {
+    const orderMap: Record<string, number> = {
+      cultural_behavior: 1,
+      color: 2,
+      print_pattern: 3,
+    };
+
+    return (orderMap[a.board_type] ?? 99) - (orderMap[b.board_type] ?? 99);
+  });
 
   const { data: previousBoard } = await supabase
     .from("moodboards")
@@ -112,6 +185,18 @@ export default async function MoodboardDetailPage({
         ) : null}
 
         <div className="pt-6 space-y-3 text-center">
+          {pdfHref ? (
+            <div className="flex justify-center pt-2">
+              <a
+                href={pdfHref}
+                className="inline-flex items-center px-3 h-8 text-xs uppercase tracking-wider border border-zinc-300 bg-zinc-100 text-zinc-600 rounded-full"
+                style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+              >
+                Download PDF
+              </a>
+            </div>
+          ) : null}
+
           {Array.isArray(data.palette_hex) && data.palette_hex.length > 0 ? (
             <div className="pt-8 pb-6">
               <div className="mx-auto flex w-full max-w-[900px] justify-center gap-4">
@@ -140,14 +225,13 @@ export default async function MoodboardDetailPage({
             </div>
           ) : null}
 
-                    <p className="text-xs text-zinc-400">
-            Mood board and color palette shown for editorial and educational purposes. Colors are approximate and may not exactly match the original source. Reference imagery used only for visual analysis; editorial research context, commentary and color direction.
-          </p>
+
+          <div className="mt-12">
+  <SupportingBoardsGallery boards={sortedSupportingBoards} />
+</div>
 
           {data.source_site ? (
-            <p className="text-sm text-zinc-500">
-              sources: {data.source_site}
-            </p>
+            <p className="text-sm text-zinc-500">sources: {data.source_site}</p>
           ) : null}
 
           {data.source_url ? (
@@ -162,20 +246,13 @@ export default async function MoodboardDetailPage({
               </a>
             </p>
           ) : null}
+          
+<div className="mt-12"></div>
+          <p className="text-xs text-zinc-400">
+            Mood board and color palette shown for editorial and educational purposes. Colors are approximate and may not exactly match the original source. Reference imagery used only for visual analysis; editorial research context, commentary and color direction.
+          </p>
 
-          {pdfHref ? (
-            <div className="flex justify-center pt-2">
-              <a
-                href={pdfHref}
-                className="inline-flex items-center px-3 h-8 text-xs uppercase tracking-wider border border-zinc-300 bg-zinc-100 text-zinc-600 rounded-full"
-                style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
-              >
-                Download PDF
-              </a>
-            </div>
-          ) : null}
-
-          {(previousBoard?.slug || nextBoard?.slug) ? (
+          {previousBoard?.slug || nextBoard?.slug ? (
             <div className="pt-6">
               <div
                 className="flex items-center justify-between gap-6"
@@ -209,20 +286,20 @@ export default async function MoodboardDetailPage({
 
         {data.season ? (
           <div className="pt-6 text-left">
-    <p
-      className="text-[11px] uppercase tracking-[0.12em] text-zinc-400"
-      style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
-    >
-      Season
-    </p>
-    <Link
-      href={`/season/${encodeURIComponent(data.season)}`}
-      className="inline-block pt-1 text-sm text-zinc-600 underline underline-offset-4 hover:opacity-80"
-    >
-      {data.season}
-    </Link>
-  </div>
-) : null}
+            <p
+              className="text-[11px] uppercase tracking-[0.12em] text-zinc-400"
+              style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+            >
+              Season
+            </p>
+            <Link
+              href={`/season/${encodeURIComponent(data.season)}`}
+              className="inline-block pt-1 text-sm text-zinc-600 underline underline-offset-4 hover:opacity-80"
+            >
+              {data.season}
+            </Link>
+          </div>
+        ) : null}
 
         <ApplicationQuery
           boardTitle={data.title}
