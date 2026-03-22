@@ -18,33 +18,15 @@ function publicMoodboardUrl(path: string | null) {
   return `${base}/storage/v1/object/public/moodboards/${encoded}`;
 }
 
-function parseTerms(value: string | null) {
-  if (!value) return [];
-
-  return value
-    .split(/,|\/|\||&|\n/)
-    .map((term) => term.trim().toLowerCase())
-    .filter(Boolean);
-}
-
 type SupportingBoard = {
   id: string;
   board_type: string;
-  match_value: string | null;
+  board_key: string | null;
   image_path: string | null;
   context_line: string | null;
   season: string | null;
-  macro_key: string | null;
   sort_order: number | null;
 };
-
-function findBestMatch(boards: SupportingBoard[], terms: string[]) {
-  const exactMatch = boards.find((board) =>
-    terms.includes((board.match_value ?? "").trim().toLowerCase())
-  );
-
-  return exactMatch || boards[0] || null;
-}
 
 export default async function MoodboardDetailPage({
   params,
@@ -58,56 +40,35 @@ export default async function MoodboardDetailPage({
   const { data, error } = await supabase
     .from("moodboards")
     .select(
-      "id,title,slug,image_path,source_url,source_site,domain,direction,color_notes,print_pattern_notes,created_at,palette_hex,palette_names,season,macro_key"
+      "id,title,slug,image_path,source_url,source_site,domain,direction,color_notes,print_pattern_notes,created_at,palette_hex,palette_names,season,cultural_board_key,color_board_key,print_board_key"
     )
     .eq("slug", slug)
     .single();
 
   if (error || !data) return notFound();
 
-  const directionTerms = parseTerms(data.direction ?? null);
-  const colorTerms = parseTerms(data.color_notes ?? null);
-  const printTerms = parseTerms(data.print_pattern_notes ?? null);
+  const wantedBoardKeys = [
+    data.cultural_board_key,
+    data.color_board_key,
+    data.print_board_key,
+  ].filter(Boolean) as string[];
 
-  const seasonValue = (data.season ?? "").trim();
-  const macroKeyValue = (data.macro_key ?? "").trim();
+  const { data: supportingBoards } = wantedBoardKeys.length
+    ? await supabase
+        .from("moodboard_supporting_boards")
+        .select("id, board_type, board_key, image_path, context_line, season, sort_order")
+        .in("board_key", wantedBoardKeys)
+    : { data: [] as SupportingBoard[] };
 
-  const { data: supportingBoards } = await supabase
-    .from("moodboard_supporting_boards")
-    .select(
-      "id, board_type, match_value, image_path, context_line, season, macro_key, sort_order"
-    )
-    .eq("season", seasonValue)
-    .eq("macro_key", macroKeyValue)
-    .order("sort_order", { ascending: true });
+  const boardMap = new Map(
+    (supportingBoards ?? []).map((board) => [board.board_key, board as SupportingBoard])
+  );
 
-  const groupedBoards: Record<string, SupportingBoard[]> = {
-    cultural_behavior: [],
-    color: [],
-    print_pattern: [],
-  };
-
-  (supportingBoards ?? []).forEach((board) => {
-    if (groupedBoards[board.board_type]) {
-      groupedBoards[board.board_type].push(board as SupportingBoard);
-    }
-  });
-
-  const selectedBoards = [
-    findBestMatch(groupedBoards.cultural_behavior, directionTerms),
-    findBestMatch(groupedBoards.color, colorTerms),
-    findBestMatch(groupedBoards.print_pattern, printTerms),
+  const orderedSupportingBoards = [
+    data.cultural_board_key ? boardMap.get(data.cultural_board_key) : null,
+    data.color_board_key ? boardMap.get(data.color_board_key) : null,
+    data.print_board_key ? boardMap.get(data.print_board_key) : null,
   ].filter(Boolean) as SupportingBoard[];
-
-  const sortedSupportingBoards = [...selectedBoards].sort((a, b) => {
-    const orderMap: Record<string, number> = {
-      cultural_behavior: 1,
-      color: 2,
-      print_pattern: 3,
-    };
-
-    return (orderMap[a.board_type] ?? 99) - (orderMap[b.board_type] ?? 99);
-  });
 
   const { data: previousBoard } = await supabase
     .from("moodboards")
@@ -225,10 +186,13 @@ export default async function MoodboardDetailPage({
             </div>
           ) : null}
 
+          <p className="text-xs text-zinc-400">
+            Mood board and color palette shown for editorial and educational purposes. Colors are approximate and may not exactly match the original source. Reference imagery used only for visual analysis; editorial research context, commentary and color direction.
+          </p>
 
-          <div className="mt-12">
-  <SupportingBoardsGallery boards={sortedSupportingBoards} />
-</div>
+          <div className="mt-8">
+            <SupportingBoardsGallery boards={orderedSupportingBoards} />
+          </div>
 
           {data.source_site ? (
             <p className="text-sm text-zinc-500">sources: {data.source_site}</p>
@@ -246,11 +210,6 @@ export default async function MoodboardDetailPage({
               </a>
             </p>
           ) : null}
-          
-<div className="mt-12"></div>
-          <p className="text-xs text-zinc-400">
-            Mood board and color palette shown for editorial and educational purposes. Colors are approximate and may not exactly match the original source. Reference imagery used only for visual analysis; editorial research context, commentary and color direction.
-          </p>
 
           {previousBoard?.slug || nextBoard?.slug ? (
             <div className="pt-6">
