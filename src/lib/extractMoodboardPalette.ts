@@ -256,7 +256,7 @@ const combinationsByFamily: Record<string, string[]> = {
   ],
 };
 
-function buildName(r: number, g: number, b: number) {
+export function buildName(r: number, g: number, b: number) {
   const { h, l } = rgbToHsl(r, g, b);
   const family = classifyFamily(r, g, b, h, l);
 
