@@ -143,9 +143,9 @@ export default async function SeasonPage({
           ))}
         </div>
 
-        <div>
-          <h1 className="text-[22px] text-zinc-800">{buildSeasonTitle(decodedSeason)}</h1>
-        </div>
+        <h1 className="text-[22px] text-zinc-800">
+          {buildSeasonTitle(decodedSeason)}
+        </h1>
 
         <SeasonSupportingSection
           label="Macro"

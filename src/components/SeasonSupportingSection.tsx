@@ -31,6 +31,30 @@ function firstLine(text?: string | null) {
   return match ? match[0].trim() : clean;
 }
 
+async function trackSeasonClick() {
+  try {
+    const email =
+      typeof window !== "undefined"
+        ? window.localStorage.getItem("pc_ci_email")
+        : null;
+
+    if (!email) return;
+
+    await fetch("/api/usage", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        action: "view_season",
+      }),
+    });
+  } catch {
+    // fail silently
+  }
+}
+
 export default function SeasonSupportingSection({
   label,
   title,
@@ -50,11 +74,6 @@ export default function SeasonSupportingSection({
     variant === "large"
       ? "grid grid-cols-1 gap-8 md:grid-cols-3"
       : "grid grid-cols-2 gap-5 md:grid-cols-4 lg:grid-cols-7";
-
-  const imageClass =
-    variant === "large"
-      ? "block w-full border border-zinc-200"
-      : "block w-full border border-zinc-200";
 
   return (
     <>
@@ -79,31 +98,37 @@ export default function SeasonSupportingSection({
                 {img ? (
                   <button
                     type="button"
-                    onClick={() => setActiveBoard(board)}
+                    onClick={async () => {
+                      await trackSeasonClick();
+                      setActiveBoard(board);
+                    }}
                     className="block w-full text-left"
                   >
                     <img
                       src={img}
                       alt={title}
-                      className={`${imageClass} transition-opacity duration-200 hover:opacity-80 cursor-pointer`}
+                      className="block w-full cursor-pointer border border-zinc-200 transition-opacity duration-200 hover:opacity-80"
                     />
                   </button>
                 ) : null}
 
                 {variant === "large" && shortLine ? (
-  <div className="space-y-1">
-    <p className="text-xs leading-5 text-zinc-500">{shortLine}</p>
+                  <div className="space-y-1">
+                    <p className="text-xs leading-5 text-zinc-500">{shortLine}</p>
 
-    <button
-      type="button"
-      onClick={() => setActiveBoard(board)}
-      className="text-[11px] uppercase tracking-[0.12em] text-zinc-500 underline underline-offset-4"
-      style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
-    >
-      Read more
-    </button>
-  </div>
-) : null}
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await trackSeasonClick();
+                        setActiveBoard(board);
+                      }}
+                      className="text-[11px] uppercase tracking-[0.12em] text-zinc-500 underline underline-offset-4"
+                      style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+                    >
+                      Read more
+                    </button>
+                  </div>
+                ) : null}
               </div>
             );
           })}

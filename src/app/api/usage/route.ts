@@ -29,6 +29,7 @@ const COUNTED_ACTIONS = new Set([
   "view_moodboard",
   "view_asset",
   "view_post",
+  "view_season",
 ]);
 
 function normalizeAction(raw: any) {
