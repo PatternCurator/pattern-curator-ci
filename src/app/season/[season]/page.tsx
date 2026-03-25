@@ -35,10 +35,6 @@ function formatSeasonLabel(season: string) {
   return season.replace(/_/g, "/");
 }
 
-function buildSeasonTitle(season: string) {
-  return `${formatSeasonLabel(season)} Trend Research`;
-}
-
 function publicColorChipUrl(path: string | null) {
   if (!path) return null;
 
@@ -106,46 +102,48 @@ export default async function SeasonPage({
   const colorChips = (seasonColorChips ?? []) as SeasonColorChip[];
 
   return (
-    <main className="mx-auto max-w-[1400px] px-6 py-12">
-      <div className="mx-auto max-w-6xl space-y-24">
-        <div className="flex justify-end">
-          <Link
-            href="/moodboards"
-            className="inline-flex h-9 items-center rounded-full px-4 text-sm"
-            style={{
-              fontFamily: "Arial, Helvetica, sans-serif",
-              fontStyle: "italic",
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              border: "1px solid #B8B9B6",
-              color: "#707376ff",
-              background: "#f4f4f4",
-            }}
-          >
-            Back to Boards
-          </Link>
-        </div>
-
-        <div className="flex flex-wrap gap-4">
-          {uniqueSeasons.map((s) => (
-            <Link
-              key={s}
-              href={`/season/${encodeURIComponent(s)}`}
-              className={`inline-flex items-center rounded-full px-6 py-3 text-sm uppercase tracking-[0.12em] border ${
-                s === decodedSeason
-                  ? "bg-black text-white border-black"
-                  : "border-zinc-300 text-zinc-600"
-              }`}
-              style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+    <main className="mx-auto max-w-[1400px] px-6 pt-12 pb-16">
+      <div className="mx-auto max-w-5xl space-y-16">
+        <section className="space-y-5">
+          <div className="space-y-2">
+            <h1
+              className="text-[22px] uppercase tracking-[0.24em] text-neutral-900"
+              style={{ fontFamily: "Arial, Helvetica, sans-serif", fontWeight: 300 }}
             >
-              {formatSeasonLabel(s)}
-            </Link>
-          ))}
-        </div>
+              Seasonal Trend Research
+            </h1>
 
-        <h1 className="text-[22px] text-zinc-800">
-          {buildSeasonTitle(decodedSeason)}
-        </h1>
+            <p
+              className="text-[13px] italic text-neutral-500"
+              style={{ fontFamily: "var(--font-libre), Libre Baskerville, serif" }}
+            >
+              Trend-forward insights and signals that support curatorial intelligence for design.
+            </p>
+
+            <p className="max-w-3xl text-[12px] leading-[1.7] text-neutral-700">
+              A visual interpretation of cultural behaviors, color combinations, global color palette and print stories
+              that are shaping upcoming seasons, using curatorial intelligence to
+              highlight macro trends that are inspiring and directional.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-3 pt-1">
+            {uniqueSeasons.map((s) => (
+              <Link
+                key={s}
+                href={`/season/${encodeURIComponent(s)}`}
+                className={`inline-flex items-center border px-3 py-1.5 text-[11px] uppercase tracking-[0.12em] ${
+                  s === decodedSeason
+                    ? "border-black bg-black text-white"
+                    : "border-neutral-300 text-neutral-600"
+                }`}
+                style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+              >
+                {formatSeasonLabel(s)}
+              </Link>
+            ))}
+          </div>
+        </section>
 
         <SeasonSupportingSection
           label="Macro"
@@ -169,15 +167,16 @@ export default async function SeasonPage({
         />
 
         {colorChips.length ? (
-          <section className="space-y-10 pt-8">
-            <div>
+          <section className="space-y-10 pt-2">
+            <div className="space-y-2">
               <p
-                className="text-[11px] uppercase tracking-[0.12em] text-zinc-400"
+                className="text-[11px] uppercase tracking-[0.18em] text-neutral-500"
                 style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
               >
                 Key Color Palette
               </p>
-              <h2 className="text-xl text-zinc-800">Seasonal Palette</h2>
+
+              <h2 className="text-xl text-neutral-900">Seasonal Palette</h2>
             </div>
 
             <div className="grid grid-cols-2 gap-x-4 gap-y-6 md:grid-cols-6 lg:grid-cols-9">
@@ -193,18 +192,18 @@ export default async function SeasonPage({
                         className="block w-full"
                       />
                     ) : (
-                      <div className="h-14 w-full bg-zinc-100" />
+                      <div className="h-14 w-full bg-neutral-100" />
                     )}
 
                     {chip.name ? (
-                      <p className="text-xs uppercase tracking-[0.08em] text-zinc-600">
+                      <p className="text-xs uppercase tracking-[0.08em] text-neutral-600">
                         {chip.name}
                       </p>
                     ) : null}
 
                     {chip.hex ? (
                       <p
-                        className="text-[11px] text-zinc-500"
+                        className="text-[11px] text-neutral-500"
                         style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
                       >
                         {chip.hex}

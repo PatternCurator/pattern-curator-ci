@@ -25,7 +25,7 @@ export default function AboutPage() {
                 fontFamily: "var(--font-libre), Libre Baskerville, serif",
               }}
             >
-              Curatorial framework connecting visual exploration to applied design direction
+              General information including membership/ subscription and payment information
             </p>
           </div>
         </section>
