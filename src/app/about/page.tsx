@@ -4,20 +4,34 @@ const BRAND_GREY = "#5f6368";
 
 export default function AboutPage() {
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8">
-      <div className="space-y-12">
-        {/* HEADER */}
-        <header className="max-w-3xl space-y-4">
-          <div
-            className="text-[20px] font-bold uppercase tracking-widest"
-            style={{
-              fontFamily: "Arial, Helvetica, sans-serif",
-              color: BRAND_GREY,
-            }}
-          >
-            About and Methodology
-          </div>
+    <main className="mx-auto max-w-[1400px] px-6 pt-12 pb-16">
+      <div className="mx-auto max-w-5xl space-y-16">
+        {/* HEADER — MATCH MOODBOARDS / SEASONS */}
+        <section className="space-y-4">
+          <div className="space-y-2">
+            <h1
+              className="text-[22px] uppercase tracking-[0.24em] text-neutral-900"
+              style={{
+                fontFamily: "Arial, Helvetica, sans-serif",
+                fontWeight: 300,
+              }}
+            >
+              About and Methodology
+            </h1>
 
+            <p
+              className="text-[14px] italic text-neutral-500"
+              style={{
+                fontFamily: "var(--font-libre), Libre Baskerville, serif",
+              }}
+            >
+              Curatorial framework connecting visual exploration to applied design direction
+            </p>
+          </div>
+        </section>
+
+        {/* INTRO */}
+        <section className="max-w-4xl space-y-4">
           <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
             Pattern Curator Curatorial Intelligence™ (CI) is a curated visual
             research platform designed to help designers move from visual
@@ -36,22 +50,26 @@ export default function AboutPage() {
             decision-making, and help translate visual signals into more usable
             design direction.
           </p>
-        </header>
+        </section>
 
         {/* WHAT IS CI */}
-        <section className="max-w-3xl space-y-4">
+        <section className="max-w-4xl space-y-4">
           <h2
             className="text-[15px] font-bold uppercase tracking-wide"
             style={{ color: BRAND_GREY }}
           >
-            What is Curatorial Intelligence?
+            What is Curatorial Intelligence
           </h2>
 
-          <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
-            Curatorial Intelligence combines a curated collection of editorial
-            moodboards with an interpretation layer powered by AI.Curation is not about predicting or chasing trends. It is about paying close attention and knowing what story you want to tell that feels relevant, inspiring, and evolutionary.
+          <p className="text-sm leading-relaxed whitespace-pre-line" style={{ color: BRAND_GREY }}>
+{`Curatorial Intelligence combines a curated collection of editorial
+moodboards with an interpretation layer powered by AI. Curation is not about
+predicting or chasing trends. It is about paying close attention and knowing
+what story you want to tell that feels relevant, inspiring, and evolutionary.
 
-Pattern Curator has always been rooted in the practice of curation — observing visual shifts, analyzing human behaviors, collecting fragments of culture, and identifying the details that begin to shape creative direction.
+Pattern Curator has always been rooted in the practice of curation — observing
+visual shifts, analyzing human behaviors, collecting fragments of culture, and
+identifying the details that begin to shape creative direction.`}
           </p>
 
           <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
@@ -67,7 +85,7 @@ Pattern Curator has always been rooted in the practice of curation — observing
         </section>
 
         {/* METHODOLOGY */}
-        <section className="max-w-3xl space-y-6">
+        <section className="max-w-4xl space-y-6">
           <h2
             className="text-[15px] font-bold uppercase tracking-wide"
             style={{ color: BRAND_GREY }}
@@ -86,14 +104,15 @@ Pattern Curator has always been rooted in the practice of curation — observing
             style={{ color: BRAND_GREY }}
           >
             <p>
-              <strong>1) Curate</strong>
-              <br />A focused collection of editorial moodboards built and
-              maintained with a strong point of view — selective, relevant, and
-              designed to reduce noise.
+              <strong>1 Curate</strong>
+              <br />
+              A focused collection of editorial moodboards built and maintained
+              with a strong point of view — selective, relevant, and designed to
+              reduce noise.
             </p>
 
             <p>
-              <strong>2) Interpret</strong>
+              <strong>2 Interpret</strong>
               <br />
               Translate visual references into structured insight through
               Curatorial Intelligence notes, including directional context,
@@ -101,7 +120,7 @@ Pattern Curator has always been rooted in the practice of curation — observing
             </p>
 
             <p>
-              <strong>3) Apply</strong>
+              <strong>3 Apply</strong>
               <br />
               Use Application Query to translate a board’s direction into
               specific product or category thinking, such as swim, lounge, knit
@@ -111,7 +130,7 @@ Pattern Curator has always been rooted in the practice of curation — observing
         </section>
 
         {/* COLOR INTELLIGENCE */}
-        <section className="max-w-3xl space-y-4">
+        <section className="max-w-4xl space-y-4">
           <h2
             className="text-[15px] font-bold uppercase tracking-wide"
             style={{ color: BRAND_GREY }}
@@ -145,7 +164,7 @@ Pattern Curator has always been rooted in the practice of curation — observing
         </section>
 
         {/* IMAGE USAGE */}
-        <section className="max-w-3xl space-y-4">
+        <section className="max-w-4xl space-y-4">
           <h2
             className="text-[15px] font-bold uppercase tracking-wide"
             style={{ color: BRAND_GREY }}
@@ -155,14 +174,14 @@ Pattern Curator has always been rooted in the practice of curation — observing
 
           <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
             Images within CI are curated as editorial references selected to
-            support context, methodology, and interpretation. They are
-            presented as part of a visual research and analysis system, not as
-            standalone downloadable assets or image ownership.
+            support context, methodology, and interpretation. They are presented
+            as part of a visual research and analysis system, not as standalone
+            downloadable assets or image ownership.
           </p>
         </section>
 
         {/* HOW TO USE */}
-        <section className="max-w-3xl space-y-4">
+        <section className="max-w-4xl space-y-4">
           <h2
             className="text-[15px] font-bold uppercase tracking-wide"
             style={{ color: BRAND_GREY }}
@@ -191,7 +210,7 @@ Pattern Curator has always been rooted in the practice of curation — observing
         </section>
 
         {/* APPLICATION */}
-        <section className="max-w-3xl space-y-4">
+        <section className="max-w-4xl space-y-4">
           <h2
             className="text-[15px] font-bold uppercase tracking-wide"
             style={{ color: BRAND_GREY }}
@@ -223,7 +242,7 @@ Pattern Curator has always been rooted in the practice of curation — observing
         </section>
 
         {/* SUBSCRIPTION */}
-        <section className="max-w-3xl space-y-4">
+        <section className="max-w-4xl space-y-4">
           <h2
             className="text-[15px] font-bold uppercase tracking-wide"
             style={{ color: BRAND_GREY }}
@@ -244,7 +263,7 @@ Pattern Curator has always been rooted in the practice of curation — observing
         </section>
 
         {/* WHAT YOU ARE PAYING FOR */}
-        <section className="max-w-3xl space-y-4">
+        <section className="max-w-4xl space-y-4">
           <h2
             className="text-[15px] font-bold uppercase tracking-wide"
             style={{ color: BRAND_GREY }}
@@ -267,7 +286,7 @@ Pattern Curator has always been rooted in the practice of curation — observing
         </section>
 
         {/* CONTACT */}
-        <section className="max-w-3xl space-y-4">
+        <section className="max-w-4xl space-y-4">
           <h2
             className="text-[15px] font-bold uppercase tracking-wide"
             style={{ color: BRAND_GREY }}
@@ -292,13 +311,8 @@ Pattern Curator has always been rooted in the practice of curation — observing
         <div className="pt-6">
           <Link
             href="/"
-            className="inline-flex h-10 items-center justify-center px-8 text-xs uppercase tracking-[0.15em]"
-            style={{
-              fontFamily: "Arial, Helvetica, sans-serif",
-              border: "1px solid #B8B9B6",
-              color: BRAND_GREY,
-              background: "#f4f4f4",
-            }}
+            className="inline-flex h-10 items-center justify-center px-6 text-[11px] uppercase tracking-[0.12em] border border-neutral-300 text-neutral-600"
+            style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
           >
             Back to Home
           </Link>
