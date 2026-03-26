@@ -159,9 +159,7 @@ export default async function CiLandingPage() {
 
 <p className="mx-auto max-w-4xl text-[16px] leading-[1.8] text-neutral-600">
   Curatorial Intelligence™ pairs curated visual discovery with AI interpretation —
-  turning visual exploration into clear design direction. A simple way to explore
-  emerging trends in a visual way with curatorial context notes and an option to ask how a
-  mood translates into product, category, or direction.
+  turning visual exploration into clear design direction. A simple way to explore macro trends, moodboards, color stories and print direction — and ask how a mood translates into product, category, or design.
 </p>
 
         </section>

@@ -164,17 +164,17 @@ export default async function MoodboardDetailPage({
                 {data.palette_hex.map((hex: string, index: number) => (
                   <div key={`${hex}-${index}`} className="min-w-0 flex-1">
                     <div
-                      className="h-14 w-full border border-zinc-300"
+                      className="h-14 w-full border border-neutral-300"
                       style={{ backgroundColor: hex }}
                     />
                     <div className="pt-2 text-center">
                       {Array.isArray(data.palette_names) && data.palette_names[index] ? (
-                        <p className="text-xs uppercase tracking-[0.08em] text-zinc-600">
+                        <p className="text-xs uppercase tracking-[0.08em] text-neutral-600">
                           {data.palette_names[index]}
                         </p>
                       ) : null}
                       <p
-                        className="text-[11px] text-zinc-500"
+                        className="text-[11px] text-neutral-500"
                         style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
                       >
                         {hex}
@@ -186,7 +186,7 @@ export default async function MoodboardDetailPage({
             </div>
           ) : null}
 
-          <p className="text-xs text-zinc-400">
+          <p className="text-xs text-neutral-400">
             Mood board and color palette shown for editorial and educational purposes. Colors are approximate and may not exactly match the original source. Reference imagery used only for visual analysis; editorial research context, commentary and color direction.
           </p>
 
@@ -195,11 +195,11 @@ export default async function MoodboardDetailPage({
           </div>
 
           {data.source_site ? (
-            <p className="text-sm text-zinc-500">sources: {data.source_site}</p>
+            <p className="text-sm text-neutral-500">sources: {data.source_site}</p>
           ) : null}
 
           {data.source_url ? (
-            <p className="text-sm text-zinc-500">
+            <p className="text-sm text-neutral-500">
               <a
                 className="underline hover:opacity-80"
                 href={data.source_url}
@@ -253,7 +253,7 @@ export default async function MoodboardDetailPage({
             </p>
             <Link
               href={`/season/${encodeURIComponent(data.season)}`}
-              className="inline-block pt-1 text-sm text-zinc-600 underline underline-offset-4 hover:opacity-80"
+              className="inline-block pt-1 text-sm text-neutral-600 underline underline-offset-4 hover:opacity-80"
             >
               {data.season}
             </Link>
