@@ -73,7 +73,7 @@ export default function SeasonSupportingSection({
   const gridClass =
     variant === "large"
       ? "grid grid-cols-1 gap-8 md:grid-cols-3"
-      : "grid grid-cols-2 gap-5 md:grid-cols-4 lg:grid-cols-7";
+      : "grid grid-cols-2 gap-5 md:grid-cols-3 lg:grid-cols-5";
 
   return (
     <>

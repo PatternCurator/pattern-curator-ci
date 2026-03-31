@@ -86,14 +86,21 @@ export default async function SeasonPage({
     .eq("season", decodedSeason)
     .order("sort_order", { ascending: true });
 
-  const group = (type: string, limit: number) =>
-    ((boards ?? []) as SupportingBoard[])
-      .filter((b) => b.board_type === type)
-      .slice(0, limit);
+  const group = (type: string) =>
+    ((boards ?? []) as SupportingBoard[]).filter(
+      (b) => b.board_type === type
+    );
 
-  const cultural = group("cultural_behavior", 3);
-  const color = group("color", 7);
-  const print = group("print_pattern", 7);
+  const cultural = group("cultural_behavior").slice(0, 3);
+
+  const allColor = group("color");
+  const allPrint = group("print_pattern");
+
+  const color = allColor.slice(0, 5);
+  const print = allPrint.slice(0, 5);
+
+  const extraColor = allColor.slice(5);
+  const extraPrint = allPrint.slice(5);
 
   const moodboards = ((seasonMoodboards ?? []) as SeasonMoodboard[]).filter(
     (board) => board.slug
@@ -165,7 +172,17 @@ export default async function SeasonPage({
           boards={print}
           variant="small"
         />
-
+        {extraColor.length || extraPrint.length ? (
+  <div className="pt-2">
+    <Link
+      href={`/season/${encodeURIComponent(decodedSeason)}/more`}
+      className="text-[11px] uppercase tracking-[0.12em] text-zinc-500 underline underline-offset-4"
+      style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+    >
+      More Color, Print + Pattern
+    </Link>
+  </div>
+) : null}
         {colorChips.length ? (
           <section className="space-y-10 pt-2">
             <div className="space-y-2">
