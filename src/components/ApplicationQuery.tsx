@@ -51,7 +51,7 @@ export default function ApplicationQuery({
   }
 
   return (
-    <section className="mt-8 border-t border-neutral-200 pt-6">
+    <section className="pt-8">
       <div className="space-y-3">
 
         <div className="text-[11px] uppercase tracking-widest text-neutral-600">

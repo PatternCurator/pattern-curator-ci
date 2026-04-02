@@ -260,12 +260,28 @@ export default async function MoodboardDetailPage({
           </div>
         ) : null}
 
-        <ApplicationQuery
-          boardTitle={data.title}
-          boardNotes={[data.direction, data.color_notes, data.print_pattern_notes]
-            .filter(Boolean)
-            .join("\n\n")}
-        />
+                <div className="pt-10 border-t border-neutral-200">
+          <h2
+            className="text-[22px] uppercase tracking-[0.24em] text-neutral-900 mb-4"
+            style={{ fontFamily: "Arial, Helvetica, sans-serif", fontWeight: 300 }}
+          >
+            Translate This Direction Into Product
+          </h2>
+
+          <p
+            className="text-[13px] italic text-neutral-500"
+            style={{ fontFamily: "var(--font-libre), Libre Baskerville, serif" }}
+          >
+            Apply the mood board into product, category, design, or print direction.
+          </p>
+
+          <ApplicationQuery
+            boardTitle={data.title}
+            boardNotes={[data.direction, data.color_notes, data.print_pattern_notes]
+              .filter(Boolean)
+              .join("\n\n")}
+          />
+        </div>
       </div>
     </main>
   );
