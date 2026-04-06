@@ -48,18 +48,25 @@ export default function SiteHeader() {
               Home
             </Link>
 
-             <Link
-    href="/season/FW27%2F28"
-    className="text-[12px] sm:text-[13px] underline underline-offset-4 decoration-[0.5px] hover:opacity-70"
-  >
-    Seasons
-  </Link>
+            <Link
+              href="/season/FW27%2F28"
+              className="text-[12px] sm:text-[13px] underline underline-offset-4 decoration-[0.5px] hover:opacity-70"
+            >
+              Seasons
+            </Link>
 
             <Link
               href="/moodboards"
               className="text-[12px] sm:text-[13px] underline underline-offset-4 decoration-[0.5px] hover:opacity-70"
             >
               Boards
+            </Link>
+
+            <Link
+              href="/pricing"
+              className="text-[12px] sm:text-[13px] underline underline-offset-4 decoration-[0.5px] hover:opacity-70"
+            >
+              Subscribe
             </Link>
 
             <Link

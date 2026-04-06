@@ -14,14 +14,21 @@ export default function PricingClient() {
     let alive = true;
 
     (async () => {
-      const { data } = await supabase.auth.getSession();
-      const sessionEmail = data?.session?.user?.email ?? "";
-      if (!alive) return;
-      setEmail(sessionEmail);
+      try {
+        const { data } = await supabase.auth.getSession();
+        const sessionEmail = data?.session?.user?.email ?? "";
+        if (!alive) return;
+        setEmail(sessionEmail);
+      } catch {
+        if (!alive) return;
+        setEmail("");
+      }
     })();
 
     const { data: sub } = supabase.auth.onAuthStateChange((_evt, session) => {
       setEmail(session?.user?.email ?? "");
+      setStatus("idle");
+      setError("");
     });
 
     return () => {
@@ -36,8 +43,7 @@ export default function PricingClient() {
       setError("");
 
       if (!email) {
-        setStatus("error");
-        setError("Please verify your email first.");
+        window.location.href = "/pricing?verify=1";
         return;
       }
 
@@ -128,7 +134,7 @@ export default function PricingClient() {
               <li>Curatorial interpretations using AI with Pattern Curator (direction, color, print, application)</li>
               <li>Editorial moodboards, Curatorial Intelligence notes, application-based design insight, and color hex codes</li>
               <li>New references added continuously</li>
-              </ul>
+            </ul>
           </div>
 
           <button

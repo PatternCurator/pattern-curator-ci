@@ -39,9 +39,7 @@ export default function EmailGate({
   const supabase = useMemo(() => supabaseBrowser(), []);
 
   const q = useMemo(() => (searchParams?.get("q") ?? "").trim(), [searchParams]);
-
-  // Decide public routes (but DO NOT early-return yet — must keep hooks order stable)
-  const isLegalRoute = pathname === "/legal" || pathname?.startsWith("/legal");
+  const openEmailPromptFromQuery = searchParams?.get("verify") === "1";
 
   const [email, setEmail] = useState<string>("");
   const [input, setInput] = useState<string>("");
@@ -57,11 +55,21 @@ export default function EmailGate({
   const [checkoutStatus, setCheckoutStatus] = useState<"idle" | "loading" | "error">("idle");
   const [checkoutError, setCheckoutError] = useState<string>("");
 
-  // prevents "Verify your email" flash on navigation/search
   const [authChecked, setAuthChecked] = useState<boolean>(false);
+  const [showEmailPrompt, setShowEmailPrompt] = useState<boolean>(false);
 
   const hasEmail = Boolean(email);
   const limitReached = hasEmail && remaining === 0;
+
+  const isLegalRoute = pathname === "/legal" || pathname?.startsWith("/legal");
+  const isHomeRoute = pathname === "/ci";
+  const isSubscribeRoute = pathname === "/pricing";
+  const isAboutRoute = pathname === "/about";
+  const isPublicRoute = isLegalRoute || isHomeRoute || isSubscribeRoute || isAboutRoute;
+
+  const shouldGateWithoutEmail = !hasEmail && !isPublicRoute;
+  const shouldShowGate =
+    shouldGateWithoutEmail || limitReached || (showEmailPrompt && !hasEmail) || (openEmailPromptFromQuery && !hasEmail);
 
   async function refreshRemaining(forEmail: string) {
     try {
@@ -103,6 +111,7 @@ export default function EmailGate({
     setError("");
     setCheckoutStatus("idle");
     setCheckoutError("");
+    setShowEmailPrompt(false);
 
     try {
       await supabase.auth.signOut();
@@ -128,21 +137,34 @@ export default function EmailGate({
     setCode("");
     setStatus("idle");
     setError("");
+    setCheckoutStatus("idle");
+    setCheckoutError("");
   }
 
-  // Restore session + restore pending email (for convenience)
+  function closeEmailPrompt() {
+    setShowEmailPrompt(false);
+    setStep("email");
+    setCode("");
+    setStatus("idle");
+    setError("");
+    setCheckoutStatus("idle");
+    setCheckoutError("");
+
+    if (pathname === "/pricing" && searchParams?.get("verify") === "1") {
+      window.history.replaceState({}, "", "/pricing");
+    }
+  }
+
   useEffect(() => {
     let alive = true;
 
     (async () => {
       try {
-        // NOTE: sometimes supabase can throw if refresh token is missing/stale
         let sessionEmail = "";
         try {
           const { data } = await supabase.auth.getSession();
           sessionEmail = data?.session?.user?.email ?? "";
         } catch (err: any) {
-          // Quietly recover from stale/missing refresh token
           const code = err?.code || err?.error_code;
           if (code === "refresh_token_not_found") {
             await clearLocalAuthArtifacts();
@@ -194,6 +216,12 @@ export default function EmailGate({
         setStep("email");
         setStatus("idle");
         setError("");
+        setShowEmailPrompt(false);
+
+        if (pathname === "/pricing" && searchParams?.get("verify") === "1") {
+          window.history.replaceState({}, "", "/pricing");
+        }
+
         await refreshRemaining(clean);
       } else {
         setEmail("");
@@ -206,7 +234,7 @@ export default function EmailGate({
       alive = false;
       sub?.subscription?.unsubscribe();
     };
-  }, [supabase]);
+  }, [supabase, pathname, searchParams]);
 
   async function sendCode(e: React.FormEvent) {
     e.preventDefault();
@@ -294,6 +322,11 @@ export default function EmailGate({
       setStep("email");
       setCode("");
       setStatus("idle");
+      setShowEmailPrompt(false);
+
+      if (pathname === "/pricing" && searchParams?.get("verify") === "1") {
+        window.history.replaceState({}, "", "/pricing");
+      }
 
       await refreshRemaining(finalEmail);
     } catch {
@@ -308,8 +341,10 @@ export default function EmailGate({
       setCheckoutError("");
 
       if (!email) {
-        setCheckoutStatus("error");
-        setCheckoutError("Missing email. Please refresh and try again.");
+        setShowEmailPrompt(true);
+        setStep("email");
+        setCheckoutStatus("idle");
+        setCheckoutError("");
         return;
       }
 
@@ -334,7 +369,6 @@ export default function EmailGate({
     }
   }
 
-  // Consume a free search when q changes and update counter
   useEffect(() => {
     if (!email) return;
     if (!q) return;
@@ -370,7 +404,6 @@ export default function EmailGate({
           console.error("Usage logging failed:", { status: res.status, data });
         }
 
-        // Always sync from server truth
         await refreshRemaining(email);
       } catch (err) {
         console.error("Usage logging error:", err);
@@ -378,7 +411,6 @@ export default function EmailGate({
     })();
   }, [email, q, pathname]);
 
-  // Consume a free view when user lands on a detail page (counts clicks + direct URL visits).
   useEffect(() => {
     if (!email) return;
 
@@ -424,58 +456,80 @@ export default function EmailGate({
     })();
   }, [email, pathname]);
 
-  // Keep the counter accurate when user navigates
   useEffect(() => {
     if (!email) return;
     refreshRemaining(email);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [email, pathname]);
 
-  // ✅ IMPORTANT: bypass happens AFTER hooks, so hook order never changes
   if (isLegalRoute) {
     return <>{children}</>;
   }
 
   return (
     <div className="relative">
-      {/* Always render background content */}
-      <div className={hasEmail && !limitReached ? "" : "pointer-events-none select-none"}>
-        <div className={hasEmail && !limitReached ? "" : "blur-[1.5px] opacity-60"}>{children}</div>
+      <div className={shouldGateWithoutEmail || limitReached ? "pointer-events-none select-none" : ""}>
+        <div className={shouldGateWithoutEmail || limitReached ? "blur-[1.5px] opacity-60" : ""}>
+          {children}
+        </div>
       </div>
 
-      {/* Top status strip */}
-      {hasEmail ? (
+      {authChecked ? (
         <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between border-b border-neutral-200 bg-white/80 px-4 py-2 text-xs text-neutral-600 backdrop-blur">
           <div className="flex items-center gap-4">
-            <span>{email}</span>
-            <button type="button" onClick={hardLogoutAndGoHome} className="underline hover:opacity-70">
-              Log out
-            </button>
+            {hasEmail ? (
+              <>
+                <span>{email}</span>
+                <button type="button" onClick={hardLogoutAndGoHome} className="underline hover:opacity-70">
+                  Log out
+                </button>
+              </>
+            ) : (
+              <span>Preview access</span>
+            )}
           </div>
 
-          {typeof remaining === "number" ? <span>{remaining} free views left</span> : <span />}
+          {hasEmail && typeof remaining === "number" ? <span>{remaining} free views left</span> : <span />}
         </div>
       ) : null}
 
-      {/* Gate overlay only AFTER authChecked to prevent flash */}
-      {authChecked && (!hasEmail || limitReached) ? (
+      {authChecked && shouldShowGate ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-6">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
 
           <div className="relative w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-6 shadow-xl">
             {!hasEmail ? (
               <>
-                <h1 className="text-xl font-semibold">
-                  {step === "email" ? "Verify your email" : "Enter your code"}
-                </h1>
+                <div className="flex items-start justify-between gap-4">
+                  <h1 className="text-xl font-semibold">
+                    {step === "email" ? "Continue exploring with CI" : "Enter your code"}
+                  </h1>
+
+                  {(showEmailPrompt || openEmailPromptFromQuery) ? (
+                    <button
+                      type="button"
+                      onClick={closeEmailPrompt}
+                      className="text-xs text-neutral-600 underline hover:opacity-70"
+                    >
+                      Back
+                    </button>
+                  ) : null}
+                </div>
 
                 <p className="mt-2 text-sm text-neutral-600">
-                  Get 5 free views. No password.
+                  Enter your email to continue exploring full boards inside CI. This is a curated
+                  subscriber experience, with 5 previews before subscription.
                   <br />
                   <span className="italic text-neutral-500">
                     We’ll send a one-time code to confirm it’s really you.
                   </span>
                 </p>
+
+                {(showEmailPrompt || openEmailPromptFromQuery) && isSubscribeRoute ? (
+                  <p className="mt-3 text-xs text-neutral-500">
+                    Verify your email to continue with subscription.
+                  </p>
+                ) : null}
 
                 {step === "email" ? (
                   <form onSubmit={sendCode} className="mt-5 space-y-3">
@@ -581,7 +635,8 @@ export default function EmailGate({
                 <p className="mt-4 text-sm text-neutral-600">You’ve used all 5 free views.</p>
 
                 <p className="mt-3 text-sm text-neutral-600">
-                  To continue exploring the Pattern Curator CI library, full access is available by subscription.
+                  To continue exploring the Pattern Curator CI library, full access is available by
+                  subscription.
                 </p>
 
                 <div className="mt-6 space-y-3">
