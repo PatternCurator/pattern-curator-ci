@@ -62,7 +62,7 @@ export default function EmailGate({
   const limitReached = hasEmail && remaining === 0;
 
   const isLegalRoute = pathname === "/legal" || pathname?.startsWith("/legal");
-  const isHomeRoute = pathname === "/ci";
+  const isHomeRoute = pathname === "/" || pathname === "/ci";
   const isSubscribeRoute = pathname === "/pricing";
   const isAboutRoute = pathname === "/about";
   const isPublicRoute = isLegalRoute || isHomeRoute || isSubscribeRoute || isAboutRoute;
