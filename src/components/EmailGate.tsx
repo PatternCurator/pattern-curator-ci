@@ -55,7 +55,7 @@ export default function EmailGate({
   const [checkoutStatus, setCheckoutStatus] = useState<"idle" | "loading" | "error">("idle");
   const [checkoutError, setCheckoutError] = useState<string>("");
 
-  const [authChecked, setAuthChecked] = useState<boolean>(false);
+  const [authChecked, setAuthChecked] = useState<boolean>(true);
   const [showEmailPrompt, setShowEmailPrompt] = useState<boolean>(false);
 
   const hasEmail = Boolean(email);
