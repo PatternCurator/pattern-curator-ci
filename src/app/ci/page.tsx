@@ -350,7 +350,7 @@ export default async function CiLandingPage() {
 
             <div>
               <a
-                href="https://www.patterncurator.com/contact"
+                href="https://www.patterncurator.com/scheduling"
                 className="inline-flex items-center border border-neutral-300 px-5 py-3 text-[12px] uppercase tracking-[0.16em] text-neutral-700"
                 style={{
                   fontFamily: "Arial, Helvetica, sans-serif",
