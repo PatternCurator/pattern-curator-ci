@@ -505,10 +505,10 @@ export default function EmailGate({
                     {step === "email" ? "Continue exploring with CI" : "Enter your code"}
                   </h1>
 
-                  {(showEmailPrompt || openEmailPromptFromQuery) ? (
+                  {(showEmailPrompt || openEmailPromptFromQuery || shouldGateWithoutEmail) ? (
                     <button
                       type="button"
-                      onClick={closeEmailPrompt}
+                      onClick={isSubscribeRoute ? closeEmailPrompt : hardLogoutAndGoHome}
                       className="text-xs text-neutral-600 underline hover:opacity-70"
                     >
                       Back
