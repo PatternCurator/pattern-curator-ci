@@ -64,15 +64,17 @@ export default function SeasonSupportingSection({
   label: string;
   title: string;
   boards: SupportingBoard[];
-  variant?: "large" | "small";
+    variant?: "large" | "small" | "landscape";
 }) {
   const [activeBoard, setActiveBoard] = useState<SupportingBoard | null>(null);
 
   if (!boards.length) return null;
 
-  const gridClass =
+    const gridClass =
     variant === "large"
       ? "grid grid-cols-1 gap-8 md:grid-cols-3"
+      : variant === "landscape"
+      ? "grid grid-cols-1 gap-6 md:grid-cols-3"
       : "grid grid-cols-2 gap-5 md:grid-cols-3 lg:grid-cols-5";
 
   return (
@@ -107,7 +109,9 @@ export default function SeasonSupportingSection({
                     <img
                       src={img}
                       alt={title}
-                      className="block w-full cursor-pointer border border-zinc-200 transition-opacity duration-200 hover:opacity-80"
+                      className={`block w-full cursor-pointer border border-zinc-200 transition-opacity duration-200 hover:opacity-80 ${
+  variant === "landscape" ? "aspect-[4/3] object-cover" : ""
+}`}
                     />
                   </button>
                 ) : null}

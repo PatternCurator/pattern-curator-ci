@@ -93,6 +93,10 @@ export default async function SeasonPage({
 
   const cultural = group("cultural_behavior").slice(0, 3);
 
+  const allConcept = group("concept");
+  const concept = allConcept.slice(0, 3);
+  const extraConcept = allConcept.slice(3);
+
   const allColor = group("color");
   const allPrint = group("print_pattern");
 
@@ -158,6 +162,27 @@ export default async function SeasonPage({
           boards={cultural}
           variant="large"
         />
+
+        <section className="space-y-8">
+  <SeasonSupportingSection
+    label="Concept"
+    title="Concept"
+    boards={concept}
+    variant="landscape"
+  />
+
+  {allConcept.length ? (
+    <div className="pt-2">
+      <Link
+        href={`/season/${encodeURIComponent(decodedSeason)}/more-concept`}
+        className="text-[11px] uppercase tracking-[0.12em] text-zinc-500 underline underline-offset-4"
+        style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+      >
+        More Concept
+      </Link>
+    </div>
+  ) : null}
+</section>
 
         <SeasonSupportingSection
           label="Color"

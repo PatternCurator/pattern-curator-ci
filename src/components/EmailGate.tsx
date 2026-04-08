@@ -56,6 +56,7 @@ export default function EmailGate({
   const [checkoutError, setCheckoutError] = useState<string>("");
 
   const [authChecked, setAuthChecked] = useState<boolean>(true);
+  const [gateReady, setGateReady] = useState<boolean>(false);
   const [showEmailPrompt, setShowEmailPrompt] = useState<boolean>(false);
 
   const hasEmail = Boolean(email);
@@ -199,7 +200,10 @@ export default function EmailGate({
           }
         }
       } finally {
-        if (alive) setAuthChecked(true);
+        if (alive) {
+          setAuthChecked(true);
+          setGateReady(true);
+        }
       }
     })();
 
@@ -228,6 +232,7 @@ export default function EmailGate({
         setRemaining(null);
       }
       setAuthChecked(true);
+      setGateReady(true);
     });
 
     return () => {
@@ -493,7 +498,7 @@ export default function EmailGate({
         </div>
       ) : null}
 
-      {authChecked && shouldShowGate ? (
+      {gateReady && shouldShowGate ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-6">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
 
