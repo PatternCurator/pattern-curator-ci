@@ -44,7 +44,7 @@ export default async function MoodboardsPage({
     .eq("status", "ready")
     .eq("catalog_state", "current")
     .order("season_order", { ascending: false })
-    .order("created_at", { ascending: false });
+    .order("board_order", { ascending: true });
 
   const terms = tokenize(q);
 
@@ -59,7 +59,6 @@ export default async function MoodboardsPage({
     query = query.or(orConditions);
   }
 
-  query = query.order("created_at", { ascending: false });
 
   const { data: moodboards = [], error } = await query.limit(limit + 1);
 
