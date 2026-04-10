@@ -68,9 +68,14 @@ export default function EmailGate({
   const isAboutRoute = pathname === "/about";
   const isPublicRoute = isLegalRoute || isHomeRoute || isSubscribeRoute || isAboutRoute;
 
-  const shouldGateWithoutEmail = !hasEmail && !isPublicRoute;
+  const shouldGateWithoutEmail =
+  gateReady && authChecked && !hasEmail && !isPublicRoute;
+
   const shouldShowGate =
-    shouldGateWithoutEmail || limitReached || (showEmailPrompt && !hasEmail) || (openEmailPromptFromQuery && !hasEmail);
+    shouldGateWithoutEmail ||
+    limitReached ||
+    (showEmailPrompt && !hasEmail) ||
+    (openEmailPromptFromQuery && !hasEmail);
 
   async function refreshRemaining(forEmail: string) {
     try {
