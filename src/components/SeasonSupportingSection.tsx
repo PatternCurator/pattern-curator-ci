@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 type SupportingBoard = {
   id: string;
   board_type: string;
+  board_key?: string | null;
   match_value?: string | null;
   image_path?: string | null;
   context_line?: string | null;
@@ -64,13 +66,13 @@ export default function SeasonSupportingSection({
   label: string;
   title: string;
   boards: SupportingBoard[];
-    variant?: "large" | "small" | "landscape";
+  variant?: "large" | "small" | "landscape";
 }) {
   const [activeBoard, setActiveBoard] = useState<SupportingBoard | null>(null);
 
   if (!boards.length) return null;
 
-    const gridClass =
+  const gridClass =
     variant === "large"
       ? "grid grid-cols-1 gap-8 md:grid-cols-3"
       : variant === "landscape"
@@ -94,43 +96,90 @@ export default function SeasonSupportingSection({
           {boards.map((board) => {
             const img = publicSupportingBoardUrl(board.image_path ?? null);
             const shortLine = firstLine(board.context_line);
+            const isConcept =
+              board.board_type === "concept" && !!board.board_key;
 
             return (
               <div key={board.id} className="space-y-3">
                 {img ? (
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      await trackSeasonClick();
-                      setActiveBoard(board);
-                    }}
-                    className="block w-full text-left"
-                  >
-                    <img
-                      src={img}
-                      alt={title}
-                      className={`block w-full cursor-pointer border border-zinc-200 transition-opacity duration-200 hover:opacity-80 ${
-  variant === "landscape" ? "aspect-[4/3] object-cover" : ""
-}`}
-                    />
-                  </button>
-                ) : null}
-
-                {variant === "large" && shortLine ? (
-                  <div className="space-y-1">
-                    <p className="text-xs leading-5 text-zinc-500">{shortLine}</p>
-
+                  isConcept ? (
+                    <Link
+                      href={`/concept/${encodeURIComponent(
+                        board.board_key as string
+                      )}`}
+                      onClick={() => {
+                        void trackSeasonClick();
+                      }}
+                      className="block w-full text-left"
+                    >
+                      <img
+                        src={img}
+                        alt={title}
+                        className={`block w-full cursor-pointer border border-zinc-200 transition-opacity duration-200 hover:opacity-80 ${
+                          variant === "landscape"
+                            ? "aspect-[4/3] object-cover"
+                            : ""
+                        }`}
+                      />
+                    </Link>
+                  ) : (
                     <button
                       type="button"
                       onClick={async () => {
                         await trackSeasonClick();
                         setActiveBoard(board);
                       }}
-                      className="text-[11px] uppercase tracking-[0.12em] text-zinc-500 underline underline-offset-4"
-                      style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+                      className="block w-full text-left"
                     >
-                      Read more
+                      <img
+                        src={img}
+                        alt={title}
+                        className={`block w-full cursor-pointer border border-zinc-200 transition-opacity duration-200 hover:opacity-80 ${
+                          variant === "landscape"
+                            ? "aspect-[4/3] object-cover"
+                            : ""
+                        }`}
+                      />
                     </button>
+                  )
+                ) : null}
+
+                {variant === "large" && shortLine ? (
+                  <div className="space-y-1">
+                    <p className="text-xs leading-5 text-zinc-500">
+                      {shortLine}
+                    </p>
+
+                    {isConcept ? (
+                      <Link
+                        href={`/concept/${encodeURIComponent(
+                          board.board_key as string
+                        )}`}
+                        onClick={() => {
+                          void trackSeasonClick();
+                        }}
+                        className="text-[11px] uppercase tracking-[0.12em] text-zinc-500 underline underline-offset-4"
+                        style={{
+                          fontFamily: "Arial, Helvetica, sans-serif",
+                        }}
+                      >
+                        Read more
+                      </Link>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await trackSeasonClick();
+                          setActiveBoard(board);
+                        }}
+                        className="text-[11px] uppercase tracking-[0.12em] text-zinc-500 underline underline-offset-4"
+                        style={{
+                          fontFamily: "Arial, Helvetica, sans-serif",
+                        }}
+                      >
+                        Read more
+                      </button>
+                    )}
                   </div>
                 ) : null}
               </div>
@@ -160,7 +209,11 @@ export default function SeasonSupportingSection({
             <div className="space-y-4 pt-6">
               {publicSupportingBoardUrl(activeBoard.image_path ?? null) ? (
                 <img
-                  src={publicSupportingBoardUrl(activeBoard.image_path ?? null) ?? ""}
+                  src={
+                    publicSupportingBoardUrl(
+                      activeBoard.image_path ?? null
+                    ) ?? ""
+                  }
                   alt={title}
                   className="mx-auto block max-h-[75vh] w-auto max-w-full border border-zinc-200"
                 />

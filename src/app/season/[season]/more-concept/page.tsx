@@ -30,7 +30,7 @@ export default async function SeasonMoreConceptPage({
 
   const { data: boards } = await supabase
     .from("moodboard_supporting_boards")
-    .select("id, board_type, match_value, image_path, context_line, season, sort_order")
+    .select("id, board_type, board_key, match_value, image_path, context_line, season, sort_order")
     .eq("season", decodedSeason)
     .eq("board_type", "concept")
     .order("sort_order", { ascending: true });
