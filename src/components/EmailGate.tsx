@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import React, { useEffect, useMemo, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
@@ -66,10 +67,11 @@ export default function EmailGate({
   const isHomeRoute = pathname === "/" || pathname === "/ci";
   const isSubscribeRoute = pathname === "/pricing";
   const isAboutRoute = pathname === "/about";
-  const isPublicRoute = isLegalRoute || isHomeRoute || isSubscribeRoute || isAboutRoute;
+  const isPreviewRoute = pathname === "/preview";
+  const isPublicRoute =
+    isLegalRoute || isHomeRoute || isSubscribeRoute || isAboutRoute || isPreviewRoute;
 
-  const shouldGateWithoutEmail =
-  gateReady && authChecked && !hasEmail && !isPublicRoute;
+  const shouldGateWithoutEmail = gateReady && authChecked && !hasEmail && !isPublicRoute;
 
   const shouldShowGate =
     shouldGateWithoutEmail ||
@@ -485,7 +487,7 @@ export default function EmailGate({
       </div>
 
       {authChecked ? (
-        <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between border-b border-neutral-200 bg-white/80 px-4 py-2 text-xs text-neutral-600 backdrop-blur">
+        <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between border-b border-neutral-200 bg-white/80 px-4 py-3 text-sm text-neutral-600 backdrop-blur">
           <div className="flex items-center gap-4">
             {hasEmail ? (
               <>
@@ -495,11 +497,37 @@ export default function EmailGate({
                 </button>
               </>
             ) : (
-              <span>Preview access</span>
+              <span>Subscriber access</span>
             )}
           </div>
 
-          {hasEmail && typeof remaining === "number" ? <span>{remaining} free views left</span> : <span />}
+          <div className="flex items-center gap-4">
+  {!hasEmail ? (
+    <button
+      type="button"
+      onClick={() => {
+        setShowEmailPrompt(true);
+        setStep("email");
+        setCode("");
+        setStatus("idle");
+        setError("");
+        setCheckoutStatus("idle");
+        setCheckoutError("");
+      }}
+      className="underline hover:opacity-70"
+    >
+      Log in
+    </button>
+  ) : null}
+
+  <Link href="/preview" className="underline hover:opacity-70">
+    Preview
+  </Link>
+
+  <Link href="/ci" className="underline hover:opacity-70">
+    CI Home
+  </Link>
+</div>
         </div>
       ) : null}
 
@@ -507,12 +535,12 @@ export default function EmailGate({
         <div className="fixed inset-0 z-50 flex items-center justify-center px-6">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
 
-          <div className="relative w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-6 shadow-xl">
+          <div className="relative w-full max-w-[560px] border border-neutral-200 bg-white px-8 py-8 shadow-xl">
             {!hasEmail ? (
               <>
                 <div className="flex items-start justify-between gap-4">
-                  <h1 className="text-xl font-semibold">
-                    {step === "email" ? "Continue exploring with CI" : "Enter your code"}
+                  <h1 className="text-[24px] font-semibold leading-tight text-neutral-900">
+                    {step === "email" ? "Subscriber Log In or Continue with CI" : "Enter your code"}
                   </h1>
 
                   {(showEmailPrompt || openEmailPromptFromQuery || shouldGateWithoutEmail) ? (
@@ -526,34 +554,34 @@ export default function EmailGate({
                   ) : null}
                 </div>
 
-                <p className="mt-2 text-sm text-neutral-600">
-                  Enter your email to continue exploring full boards inside CI. This is a curated
-                  subscriber experience, with 5 previews before subscription.
-                  <br />
-                  <span className="italic text-neutral-500">
-                    We’ll send a one-time code to confirm it’s really you.
-                  </span>
+                <p className="mt-3 max-w-[460px] text-[15px] leading-7 text-neutral-600">
+                  Enter your email to continue. If you already subscribe, use your subscription
+                  email to log in. CI uses email-only login with a one-time code.
+                </p>
+
+                <p className="mt-2 text-sm italic text-neutral-500">
+                  We’ll send a one-time code to confirm it’s really you.
                 </p>
 
                 {(showEmailPrompt || openEmailPromptFromQuery) && isSubscribeRoute ? (
-                  <p className="mt-3 text-xs text-neutral-500">
+                  <p className="mt-4 text-xs text-neutral-500">
                     Verify your email to continue with subscription.
                   </p>
                 ) : null}
 
                 {step === "email" ? (
-                  <form onSubmit={sendCode} className="mt-5 space-y-3">
+                  <form onSubmit={sendCode} className="mt-6 space-y-4">
                     <input
                       type="email"
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       placeholder="you@example.com"
-                      className="w-full rounded-xl border border-neutral-300 px-4 py-3 text-sm outline-none focus:border-neutral-500"
+                      className="w-full border border-neutral-300 px-4 py-3 text-[15px] outline-none focus:border-neutral-500"
                       autoComplete="email"
                     />
 
-                    <p className="text-center text-xs text-neutral-500">
-                      Already subscribed? Use the same email to unlock unlimited access.
+                    <p className="text-center text-sm text-neutral-500">
+                      Already subscribed? Use the same email tied to your membership.
                     </p>
 
                     {status === "error" ? <p className="text-sm text-red-600">{error}</p> : null}
@@ -561,14 +589,23 @@ export default function EmailGate({
                     <button
                       type="submit"
                       disabled={status === "saving"}
-                      className="w-full rounded-xl bg-neutral-900 px-4 py-3 text-sm font-medium text-white disabled:opacity-60"
+                      className="w-full bg-neutral-900 px-4 py-3 text-[15px] font-medium text-white disabled:opacity-60"
                     >
-                      {status === "saving" ? "Sending…" : "Send code"}
+                      {status === "saving" ? "Sending…" : "Send log in code"}
                     </button>
+
+                    <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 pt-1 text-sm text-neutral-600">
+                      <Link href="/preview" className="underline hover:opacity-70">
+                        View Preview
+                      </Link>
+                      <Link href="/ci" className="underline hover:opacity-70">
+                        Back to CI Home
+                      </Link>
+                    </div>
                   </form>
                 ) : (
-                  <form onSubmit={verifyCode} className="mt-5 space-y-3">
-                    <div className="text-xs text-neutral-600">
+                  <form onSubmit={verifyCode} className="mt-6 space-y-4">
+                    <div className="text-sm text-neutral-600">
                       Code sent to <span className="font-medium">{normalizeEmail(input)}</span>
                     </div>
 
@@ -578,7 +615,7 @@ export default function EmailGate({
                       value={code}
                       onChange={(e) => setCode(e.target.value)}
                       placeholder="6-digit code"
-                      className="w-full rounded-xl border border-neutral-300 px-4 py-3 text-sm tracking-widest outline-none focus:border-neutral-500"
+                      className="w-full border border-neutral-300 px-4 py-3 text-[15px] tracking-widest outline-none focus:border-neutral-500"
                       autoComplete="one-time-code"
                     />
 
@@ -587,12 +624,12 @@ export default function EmailGate({
                     <button
                       type="submit"
                       disabled={status === "saving"}
-                      className="w-full rounded-xl bg-neutral-900 px-4 py-3 text-sm font-medium text-white disabled:opacity-60"
+                      className="w-full bg-neutral-900 px-4 py-3 text-[15px] font-medium text-white disabled:opacity-60"
                     >
-                      {status === "saving" ? "Verifying…" : "Verify"}
+                      {status === "saving" ? "Verifying…" : "Verify and continue"}
                     </button>
 
-                    <div className="flex items-center justify-between pt-1">
+                    <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 pt-1 text-sm text-neutral-600">
                       <button
                         type="button"
                         onClick={() => {
@@ -601,7 +638,7 @@ export default function EmailGate({
                           setStatus("idle");
                           setError("");
                         }}
-                        className="text-xs text-neutral-600 underline hover:opacity-70"
+                        className="underline hover:opacity-70"
                       >
                         Change email
                       </button>
@@ -612,23 +649,34 @@ export default function EmailGate({
                           sendCode({ preventDefault: () => {} } as any);
                         }}
                         disabled={status === "saving"}
-                        className="text-xs text-neutral-600 underline hover:opacity-70 disabled:opacity-50"
+                        className="underline hover:opacity-70 disabled:opacity-50"
                       >
                         Resend code
                       </button>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 pt-1 text-sm text-neutral-600">
+                      <Link href="/preview" className="underline hover:opacity-70">
+                        View Preview
+                      </Link>
+                      <Link href="/ci" className="underline hover:opacity-70">
+                        Back to CI Home
+                      </Link>
                     </div>
                   </form>
                 )}
               </>
             ) : (
               <>
-                <h1 className="text-xl font-semibold">Subscription required</h1>
+                <h1 className="text-[24px] font-semibold leading-tight text-neutral-900">
+                  Subscription required
+                </h1>
 
-                <div className="mt-2 flex items-center justify-between">
+                <div className="mt-3 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-neutral-600 sm:justify-start">
                   <button
                     type="button"
                     onClick={hardLogoutAndGoHome}
-                    className="text-xs text-neutral-600 underline hover:opacity-70"
+                    className="underline hover:opacity-70"
                   >
                     Log out
                   </button>
@@ -636,25 +684,23 @@ export default function EmailGate({
                   <button
                     type="button"
                     onClick={changeEmailOnly}
-                    className="text-xs text-neutral-600 underline hover:opacity-70"
+                    className="underline hover:opacity-70"
                   >
                     Change email
                   </button>
                 </div>
 
-                <p className="mt-4 text-sm text-neutral-600">You’ve used all 5 free views.</p>
-
-                <p className="mt-3 text-sm text-neutral-600">
-                  To continue exploring the Pattern Curator CI library, full access is available by
+                <p className="mt-4 max-w-[460px] text-[15px] leading-7 text-neutral-600">
+                  Full access to CI boards, notes, and application insight is available by
                   subscription.
                 </p>
 
-                <div className="mt-6 space-y-3">
-                  <div className="flex gap-2">
+                <div className="mt-6 space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
                     <button
                       type="button"
                       onClick={() => setPlan("monthly")}
-                      className={`flex-1 rounded-xl border px-4 py-2 text-sm ${
+                      className={`border px-4 py-3 text-[15px] ${
                         plan === "monthly"
                           ? "border-neutral-900 bg-neutral-900 text-white"
                           : "border-neutral-300 bg-white text-neutral-800"
@@ -666,7 +712,7 @@ export default function EmailGate({
                     <button
                       type="button"
                       onClick={() => setPlan("annual")}
-                      className={`flex-1 rounded-xl border px-4 py-2 text-sm ${
+                      className={`border px-4 py-3 text-[15px] ${
                         plan === "annual"
                           ? "border-neutral-900 bg-neutral-900 text-white"
                           : "border-neutral-300 bg-white text-neutral-800"
@@ -680,21 +726,30 @@ export default function EmailGate({
                     type="button"
                     onClick={startCheckout}
                     disabled={checkoutStatus === "loading"}
-                    className="w-full rounded-xl bg-neutral-900 px-4 py-3 text-sm font-medium text-white disabled:opacity-60"
+                    className="w-full bg-neutral-900 px-4 py-3 text-[15px] font-medium text-white disabled:opacity-60"
                   >
                     {checkoutStatus === "loading" ? "Redirecting…" : "Subscribe to continue"}
                   </button>
 
                   {checkoutStatus === "error" ? <p className="text-sm text-red-600">{checkoutError}</p> : null}
 
-                  <p className="text-center text-xs text-neutral-500">
+                  <p className="text-center text-sm text-neutral-500">
                     {plan === "monthly" ? "$29/month" : "$290/year"}
                   </p>
+
+                  <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 pt-1 text-sm text-neutral-600">
+                    <Link href="/preview" className="underline hover:opacity-70">
+                      View Preview
+                    </Link>
+                    <Link href="/ci" className="underline hover:opacity-70">
+                      Back to CI Home
+                    </Link>
+                  </div>
                 </div>
               </>
             )}
 
-            <p className="mt-4 text-xs text-neutral-500">
+            <p className="mt-6 text-xs leading-6 text-neutral-500">
               By continuing, you agree to our{" "}
               <a className="underline underline-offset-4" href="/legal#terms">
                 Terms and Conditions

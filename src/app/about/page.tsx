@@ -190,23 +190,30 @@ identifying the details that begin to shape creative direction.`}
           </h2>
 
           <div
-            className="space-y-2 text-sm leading-relaxed"
-            style={{ color: BRAND_GREY }}
-          >
-            <p>• Explore the boards to identify emerging visual direction.</p>
-            <p>
-              • Open an individual board to view Curatorial Intelligence notes,
-              extracted palette data, and contextual interpretation.
-            </p>
-            <p>
-              • Use Application Query to translate visual direction into
-              product, category, or concept-specific thinking.
-            </p>
-            <p>
-              • Move through boards sequentially to compare signals, themes, and
-              evolving direction.
-            </p>
-          </div>
+  className="space-y-2 text-sm leading-relaxed"
+  style={{ color: BRAND_GREY }}
+>
+  <p>
+    • Start with the Preview page to understand the CI framework and
+    methodology.
+  </p>
+  <p>
+    • Browse boards to identify emerging visual direction across concept,
+    color, print, and cultural context.
+  </p>
+  <p>
+    • Open an individual board to access Curatorial Intelligence notes,
+    extracted palette data, and contextual interpretation.
+  </p>
+  <p>
+    • Use Application Query to translate visual direction into product,
+    category, or concept-specific thinking.
+  </p>
+  <p>
+    • Move through boards sequentially to compare signals, themes, and
+    evolving direction.
+  </p>
+</div>
         </section>
 
         {/* APPLICATION */}

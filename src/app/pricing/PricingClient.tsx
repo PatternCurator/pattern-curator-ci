@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 
@@ -98,7 +99,7 @@ export default function PricingClient() {
           </p>
         </div>
 
-        <div className="px-6 py-6 space-y-4">
+        <div className="space-y-4 px-6 py-6">
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
@@ -125,11 +126,11 @@ export default function PricingClient() {
             </button>
           </div>
 
-          <div className="border border-neutral-200 p-5 text-sm text-neutral-700 space-y-2">
+          <div className="space-y-2 border border-neutral-200 p-5 text-sm text-neutral-700">
             <p className="text-xs tracking-[0.18em] uppercase text-neutral-900">
               What you get
             </p>
-            <ul className="list-disc pl-5 space-y-1">
+            <ul className="list-disc space-y-1 pl-5">
               <li>Unlimited browsing + full content access</li>
               <li>Curatorial interpretations using AI with Pattern Curator (direction, color, print, application)</li>
               <li>Editorial moodboards, Curatorial Intelligence notes, application-based design insight, and color hex codes</li>
@@ -137,18 +138,33 @@ export default function PricingClient() {
             </ul>
           </div>
 
+          <div className="border border-neutral-200 px-5 py-4 text-center">
+            <p className="text-xs uppercase tracking-[0.18em] text-neutral-900">
+              New to CI
+            </p>
+            <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-neutral-600">
+              View a guided preview of the CI framework before subscribing.
+            </p>
+            <Link
+              href="/preview"
+              className="mt-4 inline-flex h-11 items-center justify-center border border-neutral-300 px-6 text-sm text-neutral-900 transition hover:border-neutral-900"
+            >
+              View Preview
+            </Link>
+          </div>
+
           <button
             type="button"
             onClick={startCheckout}
             disabled={status === "loading"}
-            className="w-full h-11 border border-neutral-900 bg-neutral-900 text-white text-sm disabled:opacity-60"
+            className="h-11 w-full border border-neutral-900 bg-neutral-900 text-sm text-white disabled:opacity-60"
           >
             {status === "loading" ? "Redirecting…" : "Subscribe"}
           </button>
 
           {status === "error" ? <p className="text-sm text-red-600">{error}</p> : null}
 
-          <p className="text-xs text-neutral-500 text-center">
+          <p className="text-center text-xs text-neutral-500">
             {plan === "monthly" ? "$29/month" : "$290/year"}
           </p>
         </div>
