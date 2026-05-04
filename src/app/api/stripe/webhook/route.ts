@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { getReportDownloadUrl } from "@/lib/reports";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,7 +25,11 @@ function toIsoFromUnixSeconds(sec: unknown) {
 function getId(val: unknown): string | null {
   if (!val) return null;
   if (typeof val === "string") return val;
-  if (typeof val === "object" && "id" in (val as any) && typeof (val as any).id === "string") {
+  if (
+    typeof val === "object" &&
+    "id" in (val as any) &&
+    typeof (val as any).id === "string"
+  ) {
     return (val as any).id;
   }
   return null;
@@ -42,10 +47,15 @@ function pickEmailFromSession(session: Stripe.Checkout.Session): string {
 function isMissingColumnError(err: any, colName: string) {
   const code = err?.code;
   const msg = String(err?.message || "");
-  return code === "42703" || new RegExp(`column .*${colName}.* does not exist`, "i").test(msg);
+  return (
+    code === "42703" ||
+    new RegExp(`column .*${colName}.* does not exist`, "i").test(msg)
+  );
 }
 
-function getPlanIntervalFromPriceId(priceId: string | null): "monthly" | "annual" | null {
+function getPlanIntervalFromPriceId(
+  priceId: string | null
+): "monthly" | "annual" | null {
   if (!priceId) return null;
   if (priceId === CI_MONTHLY_PRICE_ID) return "monthly";
   if (priceId === CI_ANNUAL_PRICE_ID) return "annual";
@@ -61,7 +71,10 @@ export async function POST(req: Request) {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
   if (!stripeSecretKey || !webhookSecret) {
-    return NextResponse.json({ error: "Stripe is not configured yet" }, { status: 503 });
+    return NextResponse.json(
+      { error: "Stripe is not configured yet" },
+      { status: 503 }
+    );
   }
 
   const stripe = new Stripe(stripeSecretKey, {
@@ -73,7 +86,10 @@ export async function POST(req: Request) {
   try {
     const signature = req.headers.get("stripe-signature");
     if (!signature) {
-      return NextResponse.json({ error: "Missing stripe-signature" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing stripe-signature" },
+        { status: 400 }
+      );
     }
 
     const rawBody = await req.text();
@@ -118,11 +134,7 @@ export async function POST(req: Request) {
           error = retry.error;
         }
 
-        if (error) {
-          console.error("❌ ci_billing update by stripe_customer_id error:", error);
-          throw error;
-        }
-
+        if (error) throw error;
         if (data && data.length > 0) updated = true;
       }
 
@@ -147,11 +159,7 @@ export async function POST(req: Request) {
           error = retry.error;
         }
 
-        if (error) {
-          console.error("❌ ci_billing update by stripe_subscription_id error:", error);
-          throw error;
-        }
-
+        if (error) throw error;
         if (data && data.length > 0) updated = true;
       }
 
@@ -204,27 +212,24 @@ export async function POST(req: Request) {
       if (error && isMissingColumnError(error, "plan_interval")) {
         const { plan_interval: _omit, ...fallbackPayload } = payload;
 
-        const retry = await supabaseAdmin.from("ci_billing").upsert(fallbackPayload, {
-          onConflict: "email_normalized",
-        });
+        const retry = await supabaseAdmin
+          .from("ci_billing")
+          .upsert(fallbackPayload, {
+            onConflict: "email_normalized",
+          });
 
         error = retry.error;
       }
 
-      if (error) {
-        console.error("❌ ci_billing upsert by email_normalized error:", error);
-        throw error;
-      }
+      if (error) throw error;
     }
 
     async function getEmailFromCustomerId(customerId: string | null): Promise<string> {
       if (!customerId) return "";
       try {
         const customer = await stripe.customers.retrieve(customerId);
-        const email = (customer as any)?.email;
-        return normalizeEmail(email);
-      } catch (e: any) {
-        console.warn("⚠️ Could not retrieve customer email:", e?.message || e);
+        return normalizeEmail((customer as any)?.email);
+      } catch {
         return "";
       }
     }
@@ -233,47 +238,98 @@ export async function POST(req: Request) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
 
+        if (session.metadata?.product_type === "report") {
+          const email = normalizeEmail(pickEmailFromSession(session));
+          const reportSlug = session.metadata?.report_slug || "ss-27";
+
+          if (!email) {
+            console.warn("⚠️ Report purchase completed but no email found", {
+              sessionId: session.id,
+              reportSlug,
+            });
+            break;
+          }
+
+          const { error: purchaseInsertError } = await supabaseAdmin
+            .from("report_purchases")
+            .insert({
+              stripe_session_id: session.id,
+              email,
+              report_slug: reportSlug,
+            });
+
+          if (purchaseInsertError) {
+            if (purchaseInsertError.code === "23505") {
+              console.log("Skipping duplicate report email", {
+                sessionId: session.id,
+                email,
+                reportSlug,
+              });
+              break;
+            }
+
+            console.error("❌ report purchase insert error", purchaseInsertError);
+            break;
+          }
+
+          const downloadUrl = await getReportDownloadUrl("ss-27-trend-report.pdf");
+
+          if (!downloadUrl) {
+            console.error("❌ Could not create report download URL", {
+              sessionId: session.id,
+              reportSlug,
+              email,
+            });
+            break;
+          }
+
+          const { sendReportEmail } = await import("@/lib/sendReportEmail");
+
+          await sendReportEmail({
+            to: email,
+            downloadUrl,
+          });
+
+          console.log("📩 REPORT EMAIL SENT", {
+            email,
+            reportSlug,
+          });
+
+          break;
+        }
+
         const customerId = getId(session.customer);
         const subscriptionId = getId(session.subscription);
 
         const emailFromSession = normalizeEmail(pickEmailFromSession(session));
-        const emailFromCustomer = emailFromSession ? "" : await getEmailFromCustomerId(customerId);
+        const emailFromCustomer = emailFromSession
+          ? ""
+          : await getEmailFromCustomerId(customerId);
         const email_normalized = emailFromSession || emailFromCustomer;
 
         let stripeStatus: string | null = null;
         let currentPeriodEnd: string | null = null;
         let stripePriceId: string | null =
-          (typeof session.metadata?.stripe_price_id === "string" && session.metadata.stripe_price_id) ||
+          (typeof session.metadata?.stripe_price_id === "string" &&
+            session.metadata.stripe_price_id) ||
           null;
 
         if (subscriptionId) {
           try {
             const sub = await stripe.subscriptions.retrieve(subscriptionId);
             stripeStatus = sub.status ?? null;
+            currentPeriodEnd = toIsoFromUnixSeconds(
+              (sub as any).current_period_end ?? null
+            );
 
-            const currentPeriodEndSec = (sub as any).current_period_end ?? null;
-            currentPeriodEnd = toIsoFromUnixSeconds(currentPeriodEndSec);
-
-            const priceFromSub =
+            stripePriceId =
               (sub.items?.data?.[0] as any)?.price?.id ??
               (sub.items?.data?.[0] as any)?.plan?.id ??
-              null;
-
-            stripePriceId = priceFromSub || stripePriceId;
-          } catch (e: any) {
-            console.warn("⚠️ Could not retrieve subscription for checkout session:", e?.message || e);
-          }
+              stripePriceId;
+          } catch {}
         }
 
-        if (stripePriceId && !isCiPriceId(stripePriceId)) {
-          console.warn("⚠️ Skipping non-CI checkout session", {
-            sessionId: session.id,
-            customerId,
-            subscriptionId,
-            stripePriceId,
-          });
-          break;
-        }
+        if (stripePriceId && !isCiPriceId(stripePriceId)) break;
 
         const statusToWrite = stripeStatus || "active";
         const planInterval = getPlanIntervalFromPriceId(stripePriceId);
@@ -302,9 +358,7 @@ export async function POST(req: Request) {
             stripe_subscription_id: subscriptionId,
             payload: updatePayload,
           });
-        } catch {
-          // already logged inside helper
-        }
+        } catch {}
 
         if (!updated && email_normalized) {
           await upsertBillingByEmail({
@@ -323,12 +377,6 @@ export async function POST(req: Request) {
               stripe_status: stripeStatus,
             },
           });
-        } else if (!updated && !email_normalized) {
-          console.warn("⚠️ checkout.session.completed: no billing row updated (no match + no email)", {
-            customerId,
-            subscriptionId,
-            sessionId: session.id,
-          });
         }
 
         break;
@@ -341,43 +389,29 @@ export async function POST(req: Request) {
 
         const subId = sub.id;
         const customerId = getId(sub.customer);
-
         const stripeStatus = sub.status;
         const normalizedStatus =
           event.type === "customer.subscription.deleted" ? "inactive" : stripeStatus;
-
-        const cancelAtPeriodEnd = !!sub.cancel_at_period_end;
-
-        const currentPeriodEndSec = (sub as any).current_period_end ?? null;
-        const currentPeriodEnd = toIsoFromUnixSeconds(currentPeriodEndSec);
 
         const stripePriceId =
           (sub.items?.data?.[0] as any)?.price?.id ??
           (sub.items?.data?.[0] as any)?.plan?.id ??
           null;
 
+        if (stripePriceId && !isCiPriceId(stripePriceId)) break;
+
         const planInterval = getPlanIntervalFromPriceId(stripePriceId);
 
-        if (stripePriceId && !isCiPriceId(stripePriceId)) {
-          console.warn("⚠️ Skipping non-CI subscription event", {
-            eventType: event.type,
-            subId,
-            customerId,
-            stripePriceId,
-          });
-          break;
-        }
-
-        const email_normalized = await getEmailFromCustomerId(customerId);
-
-        const updatePayload = {
+        const payload = {
           status: normalizedStatus,
           stripe_customer_id: customerId,
           stripe_subscription_id: subId,
           stripe_price_id: stripePriceId,
           plan_interval: planInterval,
-          cancel_at_period_end: cancelAtPeriodEnd,
-          current_period_end: currentPeriodEnd,
+          cancel_at_period_end: !!sub.cancel_at_period_end,
+          current_period_end: toIsoFromUnixSeconds(
+            (sub as any).current_period_end ?? null
+          ),
           updated_at: now,
           meta: {
             source: event.type,
@@ -388,8 +422,10 @@ export async function POST(req: Request) {
         const updated = await updateBillingByStripeIds({
           stripe_customer_id: customerId,
           stripe_subscription_id: subId,
-          payload: updatePayload,
+          payload,
         });
+
+        const email_normalized = await getEmailFromCustomerId(customerId);
 
         if (!updated && email_normalized) {
           await upsertBillingByEmail({
@@ -399,19 +435,10 @@ export async function POST(req: Request) {
             stripe_subscription_id: subId,
             stripe_price_id: stripePriceId,
             status: normalizedStatus,
-            cancel_at_period_end: cancelAtPeriodEnd,
-            current_period_end: currentPeriodEnd,
+            cancel_at_period_end: !!sub.cancel_at_period_end,
+            current_period_end: payload.current_period_end,
             plan_interval: planInterval,
-            meta: {
-              source: event.type,
-              stripe_status: stripeStatus,
-            },
-          });
-        } else if (!updated) {
-          console.warn("⚠️ subscription event: no billing row updated (no match + no email)", {
-            customerId,
-            subId,
-            eventType: event.type,
+            meta: payload.meta,
           });
         }
 
@@ -425,27 +452,17 @@ export async function POST(req: Request) {
         const customerId = getId(invoice.customer);
         const subscriptionId = getId((invoice as any).subscription);
 
-        const statusToWrite = event.type === "invoice.payment_succeeded" ? "active" : "past_due";
+        const statusToWrite =
+          event.type === "invoice.payment_succeeded" ? "active" : "past_due";
 
         const stripePriceId =
           (invoice.lines?.data?.[0] as any)?.price?.id ??
           (invoice.lines?.data?.[0] as any)?.plan?.id ??
           null;
 
+        if (stripePriceId && !isCiPriceId(stripePriceId)) break;
+
         const planInterval = getPlanIntervalFromPriceId(stripePriceId);
-
-        if (stripePriceId && !isCiPriceId(stripePriceId)) {
-          console.warn("⚠️ Skipping non-CI invoice event", {
-            eventType: event.type,
-            invoiceId: invoice.id,
-            customerId,
-            subscriptionId,
-            stripePriceId,
-          });
-          break;
-        }
-
-        const email_normalized = await getEmailFromCustomerId(customerId);
 
         const payload = {
           status: statusToWrite,
@@ -466,6 +483,8 @@ export async function POST(req: Request) {
           payload,
         });
 
+        const email_normalized = await getEmailFromCustomerId(customerId);
+
         if (!updated && email_normalized) {
           await upsertBillingByEmail({
             email_raw: email_normalized,
@@ -475,17 +494,7 @@ export async function POST(req: Request) {
             stripe_price_id: stripePriceId,
             status: statusToWrite,
             plan_interval: planInterval,
-            meta: {
-              source: event.type,
-              invoice_id: invoice.id,
-            },
-          });
-        } else if (!updated) {
-          console.warn("⚠️ invoice event: no billing row updated (no match + no email)", {
-            customerId,
-            subscriptionId,
-            eventType: event.type,
-            invoiceId: invoice.id,
+            meta: payload.meta,
           });
         }
 
@@ -497,7 +506,10 @@ export async function POST(req: Request) {
     }
   } catch (err: any) {
     console.error("❌ webhook handler error:", err?.message || err);
-    return NextResponse.json({ error: "Webhook handler failed" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Webhook handler failed" },
+      { status: 500 }
+    );
   }
 
   return NextResponse.json({ received: true });
