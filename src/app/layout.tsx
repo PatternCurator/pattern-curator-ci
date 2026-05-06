@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { Libre_Baskerville } from "next/font/google";
 import { Suspense } from "react";
 import SiteHeader from "@/components/SiteHeader";
-import EmailGate from "@/components/EmailGate";
+import RouteEmailGate from "@/components/RouteEmailGate";
 import SiteFooter from "@/components/SiteFooter";
 
 const libre = Libre_Baskerville({
@@ -29,7 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Reserve the vertical space so footer doesn't jump */}
         <main className="flex-1">
           <Suspense fallback={null}>
-            <EmailGate>{children}</EmailGate>
+            <RouteEmailGate>{children}</RouteEmailGate>
           </Suspense>
         </main>
 
