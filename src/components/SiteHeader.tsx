@@ -88,6 +88,13 @@ export default function SiteHeader() {
             >
               Advisory
             </Link>
+
+            <Link
+              href="/account"
+              className="text-[12px] sm:text-[13px] underline underline-offset-4 decoration-[0.5px] hover:opacity-70"
+      >
+           Account
+      </Link>
           </nav>
         </div>
       </div>
