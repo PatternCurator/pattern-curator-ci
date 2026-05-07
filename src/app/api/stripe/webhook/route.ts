@@ -8,10 +8,10 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const CI_MONTHLY_PRICE_ID =
-  process.env.STRIPE_CI_MONTHLY_PRICE_ID || "price_1T0RQCK3OxyriLPq00F52CRG";
+  process.env.STRIPE_CI_MONTHLY || "price_1T0RQCK3OxyriLPq00F52CRG";
 
 const CI_ANNUAL_PRICE_ID =
-  process.env.STRIPE_CI_ANNUAL_PRICE_ID || "price_1T0RSoK3OxyriLPq4ZYS59dq";
+  process.env.STRIPE_CI_ANNUAL || "price_1T0RSoK3OxyriLPq4ZYS59dq";
 
 function normalizeEmail(email: unknown) {
   const s = typeof email === "string" ? email : "";
