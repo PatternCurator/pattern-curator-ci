@@ -1,10 +1,14 @@
 import Link from "next/link";
+import HeaderAuth from "@/components/HeaderAuth";
 
 export default function SiteHeader() {
   return (
     <header className="relative z-10 mt-6 w-full border-b border-black/5 bg-white">
       <div className="mx-auto max-w-[1400px] px-4 pt-4 pb-3 sm:px-6 sm:pt-6 sm:pb-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="w-full flex justify-end">
+            <HeaderAuth />
+          </div>
           {/* Brand Lockup */}
           <Link href="/ci" className="block leading-tight">
             <div
