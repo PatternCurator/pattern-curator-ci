@@ -39,7 +39,7 @@ export async function POST() {
           quantity: 1,
         },
       ],
-      success_url: `${appUrl}/reports/success`,
+      success_url: `${appUrl}/reports/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl}/reports`,
       metadata: {
         product_type: "report",
