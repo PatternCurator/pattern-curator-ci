@@ -1,18 +1,32 @@
 import Link from "next/link";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
-const reports = [
-  {
-    slug: "ss-27",
-    season: "SS27",
-    title: "Spring / Summer 27 Trend Report",
-    price: "$250",
-    coverLabel: "Report Cover",
-    description:
-      "A visual seasonal report exploring consumer sentiment, macro direction, color, print, and pattern.",
-  },
-];
+export const dynamic = "force-dynamic";
 
-export default function ReportsPage() {
+type Report = {
+  slug: string;
+  title: string;
+  season_label: string | null;
+  description: string | null;
+  price: number;
+  cover_image: string | null;
+};
+
+export default async function ReportsPage() {
+  const supabase = getSupabaseAdmin();
+
+  const { data: reports, error } = await supabase
+    .from("reports")
+    .select("slug, title, season_label, description, price, cover_image")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true });
+
+  if (error) {
+    console.error("reports page error", error);
+  }
+
+  const activeReports = (reports ?? []) as Report[];
+
   return (
     <main className="mx-auto max-w-[1400px] px-6 pt-12 pb-16">
       <div className="mx-auto max-w-5xl space-y-16">
@@ -59,40 +73,47 @@ export default function ReportsPage() {
           </div>
 
           <div className="grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
-            {reports.map((report) => (
+            {activeReports.map((report) => (
               <Link
                 key={report.slug}
                 href={`/reports/${report.slug}`}
                 className="group block"
               >
-              <div className="p-1"></div>  
-                <img
-                    src="/reports/ss-27/cover.jpg"
+                {report.cover_image ? (
+                  <img
+                    src={report.cover_image}
                     alt={`${report.title} cover`}
                     className="aspect-square w-full border border-neutral-200 object-cover"
-            />
+                  />
+                ) : (
+                  <div className="aspect-square w-full border border-neutral-200 bg-neutral-100" />
+                )}
 
                 <div className="mt-4 space-y-2">
-                  <p
-                    className="text-[11px] uppercase tracking-[0.16em] text-neutral-500"
-                    style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
-                  >
-                    {report.season}
-                  </p>
+                  {report.season_label ? (
+                    <p
+                      className="text-[11px] uppercase tracking-[0.16em] text-neutral-500"
+                      style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+                    >
+                      {report.season_label}
+                    </p>
+                  ) : null}
 
                   <h3 className="text-base font-normal text-neutral-950 group-hover:opacity-70">
                     {report.title}
                   </h3>
 
-                  <p className="max-w-sm text-[12px] leading-[1.7] text-neutral-600">
-                    {report.description}
-                  </p>
+                  {report.description ? (
+                    <p className="max-w-sm text-[12px] leading-[1.7] text-neutral-600">
+                      {report.description}
+                    </p>
+                  ) : null}
 
                   <p
                     className="pt-1 text-[11px] uppercase tracking-[0.14em] text-neutral-900"
                     style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
                   >
-                    {report.price} · Purchase + Download
+                    ${report.price} · Purchase + Download
                   </p>
                 </div>
               </Link>

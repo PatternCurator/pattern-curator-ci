@@ -1,165 +1,164 @@
-"use client";
+import ReportPurchaseButton from "@/components/ReportPurchaseButton";
+import { notFound } from "next/navigation";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
-import { useState } from "react";
 
-const previewImages = [
-  {
-    src: "/reports/ss-27/hero.jpg",
-    alt: "SS 27 Trend Report Hero Preview",
-  },
-  {
-    src: "/reports/ss-27/concept.jpg",
-    alt: "SS 27 Trend Report Concept Page Preview",
-  },
-  {
-    src: "/reports/ss-27/spread-3.jpg",
-    alt: "SS 27 Trend Report Spread Preview",
-  },
-  {
-    src: "/reports/ss-27/spread-2.jpg",
-    alt: "SS 27 Trend Report Spread Preview",
-  },
-  {
-  src: "/reports/ss-27/spread-1.jpg",
-    alt: "SS 27 Trend Report Spread Preview",
-  },
-];
+export const dynamic = "force-dynamic";
 
-export default function ReportPage() {
-  const [activeImage, setActiveImage] = useState<string | null>(null);
+type Report = {
+  slug: string;
+  title: string;
+  season_label: string | null;
+  description: string | null;
+  contents: string | null;
+  page_count: number | null;
+  price: number;
+  hero_image: string | null;
+  preview_1: string | null;
+  preview_2: string | null;
+  preview_3: string | null;
+  preview_4: string | null;
+};
+
+export default async function ReportSlugPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+
+  const supabase = getSupabaseAdmin();
+
+  const { data: report, error } = await supabase
+    .from("reports")
+    .select("*")
+    .eq("slug", slug)
+    .eq("is_active", true)
+    .single();
+
+  if (error || !report) {
+    notFound();
+  }
+
+  const r = report as Report;
+
+  const previewImages = [
+    r.preview_1,
+    r.preview_2,
+    r.preview_3,
+    r.preview_4,
+  ].filter(Boolean) as string[];
 
   return (
-    <main className="mx-auto max-w-[1400px] px-6 pt-12 pb-16">
-      <div className="mx-auto max-w-5xl space-y-12">
-        <section className="space-y-3">
-          <h1
-            className="text-[22px] uppercase tracking-[0.24em] text-neutral-900"
-            style={{
-              fontFamily: "Arial, Helvetica, sans-serif",
-              fontWeight: 300,
-            }}
-          >
-            Spring / Summer 2027 Trend Report
-          </h1>
-        </section>
+    <main className="mx-auto max-w-[1400px] px-6 pt-12 pb-20">
+      <div className="grid gap-14 lg:grid-cols-[1.1fr_420px]">
+        <section className="space-y-4">
+          {r.hero_image ? (
+            <img
+              src={r.hero_image}
+              alt={r.title}
+              className="aspect-[13.33/7.5] w-full border border-neutral-200 object-cover"
+            />
+          ) : null}
 
-        <section className="grid gap-10 md:grid-cols-[1fr_320px]">
-          <div className="space-y-6">
-            <button
-              type="button"
-              onClick={() => setActiveImage(previewImages[0].src)}
-              className="block w-full cursor-zoom-in"
-              aria-label="Enlarge hero preview"
-            >
-              <img
-                src={previewImages[0].src}
-                alt={previewImages[0].alt}
-                className="aspect-[16/9] w-full border border-neutral-200 object-cover"
-              />
-            </button>
-
-            <div className="mx-auto grid max-w-[78%] gap-5 sm:grid-cols-2">
-              {previewImages.slice(1).map((image) => (
-                <button
-                  key={image.src}
-                  type="button"
-                  onClick={() => setActiveImage(image.src)}
-                  className="block w-full cursor-zoom-in"
-                  aria-label="Enlarge spread preview"
+          {previewImages.length > 0 ? (
+            <div className="grid grid-cols-4 gap-2">
+              {previewImages.map((image, index) => (
+                <a
+                  key={image}
+                  href={image}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block"
                 >
                   <img
-                    src={image.src}
-                    alt={image.alt}
-                    className="aspect-[16/9] w-full border border-neutral-200 object-cover"
+                    src={image}
+                    alt={`${r.title} preview ${index + 1}`}
+                    className="aspect-[13.33/7.5] w-full border border-neutral-200 object-cover transition-opacity hover:opacity-80"
                   />
-                </button>
+                </a>
               ))}
             </div>
-          </div>
+          ) : null}
+        </section>
 
-          <div className="space-y-6">
+        <aside className="max-w-[420px] space-y-8">
+          <div className="space-y-4">
+            {r.season_label ? (
+              <p
+                className="text-[11px] uppercase tracking-[0.18em] text-neutral-500"
+                style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+              >
+                {r.season_label}
+              </p>
+            ) : null}
+
             <div className="space-y-3">
-              <p className="text-[12px] leading-[1.7] text-neutral-700">
-                A visual seasonal report exploring consumer sentiment, macro
-                direction, color, print, and pattern shaping the Spring Summer
-                27 season.
-              </p>
+              <h1
+                className="text-[24px] uppercase tracking-[0.12em] text-neutral-950"
+                style={{
+                  fontFamily: "Arial, Helvetica, sans-serif",
+                  fontWeight: 300,
+                }}
+              >
+                {r.title}
+              </h1>
 
-              <p className="text-[12px] leading-[1.7] text-neutral-700">
-                Includes consumer behavior insights, macro trend direction,
-                concept development, color palettes, and print and pattern
-                stories.
+              <p className="text-[13px] leading-[1.8] text-neutral-700">
+                {r.description}
               </p>
+            </div>
 
+            <div className="space-y-2 border-t border-neutral-200 pt-5">
               <p
                 className="text-[11px] uppercase tracking-[0.14em] text-neutral-500"
                 style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
               >
-                85 Pages · Digital PDF
+                Report Details
+              </p>
+
+              <p className="text-[13px] leading-[1.8] text-neutral-700">
+                {r.contents}
+              </p>
+
+              <p className="pt-1 text-[12px] text-neutral-500">
+                {r.page_count} Pages · Digital PDF
               </p>
             </div>
 
-            <div className="space-y-4 pt-2">
-              <p
-                className="text-[14px] text-neutral-900"
-                style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
-              >
-                $250
-              </p>
+            <div className="space-y-4 border-t border-neutral-200 pt-6">
+              <div className="space-y-1">
+                <p
+                  className="text-[11px] uppercase tracking-[0.16em] text-neutral-500"
+                  style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+                >
+                  Purchase
+                </p>
 
-              <button
-                type="button"
-                onClick={async () => {
-                  const res = await fetch("/api/reports/checkout", {
-                    method: "POST",
-                  });
+                <p className="text-[28px] font-light tracking-tight text-neutral-950">
+                  ${r.price}
+                </p>
+              </div>
 
-                  const data = await res.json();
-
-                  if (data.url) {
-                    window.location.href = data.url;
-                  }
-                }}
-                className="w-full border border-black px-4 py-2 text-[11px] uppercase tracking-[0.16em] hover:bg-black hover:text-white"
-                style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
-              >
-                Purchase + Download
-              </button>
+              <ReportPurchaseButton slug={r.slug} />
 
               <p className="text-[11px] leading-[1.6] text-neutral-500">
-                Includes a one-month Curatorial Intelligence access code, delivered with your report download.
+                Includes a one-month Curatorial Intelligence access code,
+                delivered with your report download.
+              </p>
+
+              <p className="text-[11px] leading-[1.6] text-neutral-500">
+                Student and freelancer rates available by request.
+              </p>
+
+              <p className="pt-2 text-[11px] text-neutral-500">
+                Digital download for individual use. Team and studio licenses
+                available by request.
               </p>
             </div>
-
-            <p className="pt-4 text-[11px] text-neutral-500">
-              Digital download for individual use. Team and studio licenses
-              available by request.
-            </p>
           </div>
-        </section>
+        </aside>
       </div>
-
-      {activeImage ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-white/95 px-6 py-10"
-          onClick={() => setActiveImage(null)}
-        >
-          <button
-            type="button"
-            className="absolute right-6 top-6 text-[11px] uppercase tracking-[0.16em] text-neutral-500 hover:text-neutral-900"
-            onClick={() => setActiveImage(null)}
-          >
-            Close
-          </button>
-
-          <img
-            src={activeImage}
-            alt="Expanded report preview"
-            className="max-h-[88vh] max-w-[92vw] border border-neutral-200 object-contain"
-            onClick={(event) => event.stopPropagation()}
-          />
-        </div>
-      ) : null}
     </main>
   );
 }
