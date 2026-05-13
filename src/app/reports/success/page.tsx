@@ -1,3 +1,4 @@
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import Stripe from "stripe";
 import { getReportDownloadUrl } from "@/lib/reports";
 
@@ -34,8 +35,9 @@ export default async function ReportSuccessPage({
 
   const isPaid = session.payment_status === "paid";
   const isReport = session.metadata?.product_type === "report";
+  const reportSlug = session.metadata?.report_slug;
 
-  if (!isPaid || !isReport) {
+  if (!isPaid || !isReport || !reportSlug) {
     return (
       <main className="mx-auto max-w-[1400px] px-6 pt-12 pb-16">
         <div className="mx-auto max-w-5xl space-y-4">
@@ -50,7 +52,25 @@ export default async function ReportSuccessPage({
     );
   }
 
-  const downloadUrl = await getReportDownloadUrl("ss-27-trend-report.pdf");
+  const supabase = getSupabaseAdmin();
+
+  const { data: report, error: reportError } = await supabase
+    .from("reports")
+    .select("pdf_path")
+    .eq("slug", reportSlug)
+    .eq("is_active", true)
+    .single();
+
+  if (reportError || !report?.pdf_path) {
+    console.error("❌ report lookup failed", {
+      reportSlug,
+      reportError,
+    });
+  }
+
+  const downloadUrl = report?.pdf_path
+    ? await getReportDownloadUrl(report.pdf_path)
+    : null;
 
   if (!downloadUrl) {
     return (

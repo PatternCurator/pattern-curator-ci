@@ -240,7 +240,7 @@ export async function POST(req: Request) {
 
         if (session.metadata?.product_type === "report") {
           const email = normalizeEmail(pickEmailFromSession(session));
-          const reportSlug = session.metadata?.report_slug || "ss-27";
+          const reportSlug = session.metadata?.report_slug;
 
           if (!email) {
             console.warn("⚠️ Report purchase completed but no email found", {
@@ -272,7 +272,23 @@ export async function POST(req: Request) {
             break;
           }
 
-          const downloadUrl = await getReportDownloadUrl("ss-27-trend-report.pdf");
+          const { data: report, error: reportError } = await supabaseAdmin
+            .from("reports")
+            .select("pdf_path")
+            .eq("slug", reportSlug)
+            .eq("is_active", true)
+            .single();
+
+          if (reportError || !report?.pdf_path) {
+              console.error("❌ report lookup failed", {
+               sessionId: session.id,
+               reportSlug,
+               reportError,
+        });
+        break;
+    }
+
+    const downloadUrl = await getReportDownloadUrl(report.pdf_path);
 
           if (!downloadUrl) {
             console.error("❌ Could not create report download URL", {
