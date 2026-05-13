@@ -79,19 +79,6 @@ export default function SiteHeader() {
               Subscribe
             </Link>
 
-            <Link
-              href="/about"
-              className="text-[12px] sm:text-[13px] underline underline-offset-4 decoration-[0.5px] hover:opacity-70"
-            >
-              About
-            </Link>
-
-            <Link
-              href="https://www.patterncurator.com/scheduling"
-              className="text-[12px] sm:text-[13px] underline underline-offset-4 decoration-[0.5px] hover:opacity-70"
-            >
-              Advisory
-            </Link>
 
             <Link
               href="/account"

@@ -17,6 +17,9 @@ export default function SiteFooter() {
         </div>
 
         <nav className="flex flex-wrap gap-x-4 gap-y-2 text-xs">
+          <Link className="underline underline-offset-4" href="/about">
+            About
+          </Link>
           <Link className="underline underline-offset-4" href="/legal#terms">
             Terms and Conditions
           </Link>
