@@ -14,14 +14,8 @@ export default function RouteEmailGate({
     pathname === "/" ||
     pathname === "/ci" ||
     pathname === "/about" ||
-    pathname === "/moodboards" ||
-    pathname.startsWith("/moodboard/") ||
     pathname === "/reports" ||
-    pathname.startsWith("/reports/") ||
-    pathname === "/pricing" ||
-    pathname === "/account" ||
-    pathname.startsWith("/legal") ||
-    pathname.startsWith("/season/");
+    pathname.startsWith("/reports/");
 
   if (isPublicRoute) {
     return <>{children}</>;

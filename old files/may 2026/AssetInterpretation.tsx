@@ -72,16 +72,13 @@ export default function AssetInterpretation({
   }, [payload]);
 
   return (
-    <div className="mt-6">
+    <div className="mt-6 rounded-2xl border border-black/5 bg-white p-4">
       {/* top row: label (left) + toggle (right) */}
       <div className="flex items-center justify-between gap-4">
         {showMeta ? (
-          <h2
-  className="text-[22px] uppercase tracking-[0.24em] text-neutral-900 mb-4"
-  style={{ fontFamily: "Arial, Helvetica, sans-serif", fontWeight: 300 }}
->
-  Curatorial Context
-</h2>
+          <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+            Curatorial Intelligence Notes
+          </div>
         ) : (
           <div />
         )}

@@ -4,7 +4,6 @@ import { supabaseServer } from "@/lib/supabaseServer";
 import AssetInterpretation from "@/components/AssetInterpretation";
 import ApplicationQuery from "@/components/ApplicationQuery";
 import SupportingBoardsGallery from "@/components/SupportingBoardsGallery";
-import SubscriberOnly from "@/components/SubscriberOnly";
 
 export const dynamic = "force-dynamic";
 
@@ -132,18 +131,70 @@ export default async function MoodboardDetailPage({
       </div>
 
       <div className="mx-auto w-full max-w-6xl space-y-6">
-  {img ? (
-    <a href={img} target="_blank" rel="noreferrer" className="block">
-      <div className="bg-white py-6">
-        <img
-          src={img}
-          alt={data.title ?? "Moodboard"}
-          className="mx-auto block h-auto w-full max-w-[640px]"
-        />
-      </div>
-    </a>
-  ) : null}
-  {data.source_site ? (
+        <AssetInterpretation asset={interpretationAsset as any} showMeta />
+
+        {img ? (
+          <a href={img} target="_blank" rel="noreferrer" className="block">
+            <div className="bg-white py-6">
+              <img
+                src={img}
+                alt={data.title ?? "Moodboard"}
+                className="mx-auto block h-auto w-full max-w-[900px]"
+              />
+            </div>
+          </a>
+        ) : null}
+
+        <div className="pt-6 space-y-3 text-center">
+          {pdfHref ? (
+            <div className="flex justify-center pt-2">
+              <a
+                href={pdfHref}
+                className="inline-flex items-center px-3 h-8 text-xs uppercase tracking-wider border border-zinc-300 bg-zinc-100 text-zinc-600 rounded-full"
+                style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+              >
+                Download PDF
+              </a>
+            </div>
+          ) : null}
+
+          {Array.isArray(data.palette_hex) && data.palette_hex.length > 0 ? (
+            <div className="pt-8 pb-6">
+              <div className="mx-auto flex w-full max-w-[900px] justify-center gap-4">
+                {data.palette_hex.map((hex: string, index: number) => (
+                  <div key={`${hex}-${index}`} className="min-w-0 flex-1">
+                    <div
+                      className="h-14 w-full border border-neutral-300"
+                      style={{ backgroundColor: hex }}
+                    />
+                    <div className="pt-2 text-center">
+                      {Array.isArray(data.palette_names) && data.palette_names[index] ? (
+                        <p className="text-xs uppercase tracking-[0.08em] text-neutral-600">
+                          {data.palette_names[index]}
+                        </p>
+                      ) : null}
+                      <p
+                        className="text-[11px] text-neutral-500"
+                        style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+                      >
+                        {hex}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          <p className="text-xs text-neutral-400">
+            Mood board and color palette shown for editorial and educational purposes. Colors are approximate and may not exactly match the original source. Reference imagery used only for visual analysis; editorial research context, commentary and color direction.
+          </p>
+
+          <div className="mt-8">
+            <SupportingBoardsGallery boards={orderedSupportingBoards} />
+          </div>
+
+          {data.source_site ? (
             <p className="text-sm text-neutral-500">sources: {data.source_site}</p>
           ) : null}
 
@@ -190,111 +241,47 @@ export default async function MoodboardDetailPage({
               </div>
             </div>
           ) : null}
-
-  <SubscriberOnly>
-<div className="border-t border-neutral-200 pt-12 text-center">
-  <h2
-    className="text-[22px] uppercase tracking-[0.24em] text-neutral-900"
-    style={{ fontFamily: "Arial, Helvetica, sans-serif", fontWeight: 300 }}
-  >
-    Subscriber Access
-  </h2>
-</div>
-
-  <div className="pt-6 space-y-8 text-center">
-    {pdfHref ? (
-      <div className="flex justify-center pt-2">
-        <a
-          href={pdfHref}
-          className="inline-flex items-center px-3 h-8 text-xs uppercase tracking-wider border border-zinc-300 bg-zinc-100 text-zinc-600 rounded-full"
-          style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
-        >
-          Download Moodboard
-        </a>
-      </div>
-    ) : null}
-
-    {Array.isArray(data.palette_hex) && data.palette_hex.length > 0 ? (
-      <div className="pt-4 pb-6">
-        <div className="mx-auto flex w-full max-w-[640px] justify-center gap-4">
-          {data.palette_hex.map((hex: string, index: number) => (
-            <div key={`${hex}-${index}`} className="min-w-0 flex-1">
-              <div
-                className="h-14 w-full border border-neutral-300"
-                style={{ backgroundColor: hex }}
-              />
-              <div className="pt-2 text-center">
-                {Array.isArray(data.palette_names) && data.palette_names[index] ? (
-                  <p className="text-xs uppercase tracking-[0.08em] text-neutral-600">
-                    {data.palette_names[index]}
-                  </p>
-                ) : null}
-                <p
-                  className="text-[11px] text-neutral-500"
-                  style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
-                >
-                  {hex}
-                </p>
-              </div>
-            </div>
-          ))}
         </div>
-      </div>
-    ) : null}
-  </div>
 
-  <div className="mt-16">
-    <SupportingBoardsGallery boards={orderedSupportingBoards} />
-  </div>
+        {data.season ? (
+          <div className="pt-6 text-left">
+            <p
+              className="text-[11px] uppercase tracking-[0.12em] text-zinc-400"
+              style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+            >
+              Season
+            </p>
+            <Link
+              href={`/season/${encodeURIComponent(data.season)}`}
+              className="inline-block pt-1 text-sm text-neutral-600 underline underline-offset-4 hover:opacity-80"
+            >
+              {data.season}
+            </Link>
+          </div>
+        ) : null}
 
-  <div className="pt-12">
-  <AssetInterpretation asset={interpretationAsset as any} showMeta />
-</div>
+                <div className="pt-10 border-t border-neutral-200">
+          <h2
+            className="text-[22px] uppercase tracking-[0.24em] text-neutral-900 mb-4"
+            style={{ fontFamily: "Arial, Helvetica, sans-serif", fontWeight: 300 }}
+          >
+            Translate This Direction Into Product
+          </h2>
 
+          <p
+            className="text-[13px] italic text-neutral-500"
+            style={{ fontFamily: "var(--font-libre), Libre Baskerville, serif" }}
+          >
+            Apply the mood board into product, category, design, or print direction.
+          </p>
 
-  <div className="mt-16 pt-10 border-t border-neutral-200">
-    <h2
-      className="text-[22px] uppercase tracking-[0.24em] text-neutral-900 mb-4"
-      style={{ fontFamily: "Arial, Helvetica, sans-serif", fontWeight: 300 }}
-    >
-      Applied Insight
-    </h2>
-
-    <p className="max-w-2xl pt-3 text-[14px] leading-7 text-neutral-500">
-
-  Enter a category to explore how this visual direction could translate across
-  color, print, material, assortment, and product context.
-</p>
-
-    <ApplicationQuery
-      boardTitle={data.title}
-      boardNotes={[data.direction, data.color_notes, data.print_pattern_notes]
-        .filter(Boolean)
-        .join("\n\n")}
-    />
-  </div>
-
-  {data.season ? (
-    <div className="pt-16 text-left">
-      <p
-        className="text-[11px] uppercase tracking-[0.12em] text-zinc-400"
-        style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
-      >
-        Season
-      </p>
-      <Link
-        href={`/season/${encodeURIComponent(data.season)}`}
-        className="inline-block pt-1 text-sm text-neutral-600 underline underline-offset-4 hover:opacity-80"
-      >
-        {data.season}
-      </Link>
-    </div>
-  ) : null}
-
-  <p className="pt-16 text-xs text-neutral-400">
-    Mood board and color palette shown for editorial and educational purposes. Colors are approximate and may not exactly match the original source. Reference imagery used only for visual analysis; editorial research context, commentary and color direction.
-  </p>
-</SubscriberOnly>
+          <ApplicationQuery
+            boardTitle={data.title}
+            boardNotes={[data.direction, data.color_notes, data.print_pattern_notes]
+              .filter(Boolean)
+              .join("\n\n")}
+          />
+        </div>
       </div>
     </main>
   );

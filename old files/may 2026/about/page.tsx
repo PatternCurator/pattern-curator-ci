@@ -33,21 +33,23 @@ export default function AboutPage() {
         {/* INTRO */}
         <section className="max-w-4xl space-y-4">
           <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
-  Pattern Curator Curatorial Intelligence™ (CI) is a curated visual research
-  platform centered around moodboards, color direction, trend signals, and
-  applied design insight.
-</p>
+            Pattern Curator Curatorial Intelligence™ (CI) is a curated visual
+            research platform designed to help designers move from visual
+            exploration to clearer creative direction.
+          </p>
 
-<p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
-  CI pairs editorial visual research with contextual interpretation to support
-  creative development across fashion, interiors, print, color, and product
-  direction.
-</p>
+          <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
+            Curatorial Intelligence builds on the foundation of Pattern Curator,
+            evolving it into a more focused editorial system that pairs curated
+            moodboards with AI-assisted interpretation.
+          </p>
 
-<p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
-  Rather than trend prediction, CI is designed as a visual intelligence system
-  focused on observation, interpretation, and creative application.
-</p>
+          <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
+            CI sits at the intersection of editorial direction and structured
+            insight. It is designed to support creative thinking, sharpen
+            decision-making, and help translate visual signals into more usable
+            design direction.
+          </p>
         </section>
 
         {/* WHAT IS CI */}
@@ -56,14 +58,19 @@ export default function AboutPage() {
             className="text-[15px] font-bold uppercase tracking-wide"
             style={{ color: BRAND_GREY }}
           >
-            What is Curatorial Intelligence (CI)
+            What is Curatorial Intelligence
           </h2>
 
           <p className="text-sm leading-relaxed whitespace-pre-line" style={{ color: BRAND_GREY }}>
-{`Pattern Curator has always been rooted in the practice of curation — observing visual shifts, analyzing cultural behaviors, collecting references, and identifying the details that begin to shape creative direction.
+{`Curatorial Intelligence combines a curated collection of editorial
+moodboards with an interpretation layer powered by AI. Curation is not about
+predicting or chasing trends. It is about paying close attention and knowing
+what story you want to tell that feels relevant, inspiring, and evolutionary.
 
-CI organizes those signals into a visual research system built around moodboards, seasonal direction, color relationships, print stories, and contextual interpretation.`}
-</p>
+Pattern Curator has always been rooted in the practice of curation — observing
+visual shifts, analyzing human behaviors, collecting fragments of culture, and
+identifying the details that begin to shape creative direction.`}
+          </p>
 
           <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
             Each board is selected and organized to highlight emerging visual
@@ -97,7 +104,7 @@ CI organizes those signals into a visual research system built around moodboards
             style={{ color: BRAND_GREY }}
           >
             <p>
-              <strong>1 Visual Research</strong>
+              <strong>1 Curate</strong>
               <br />
               A focused collection of editorial moodboards built and maintained
               with a strong point of view — selective, relevant, and designed to
@@ -105,7 +112,7 @@ CI organizes those signals into a visual research system built around moodboards
             </p>
 
             <p>
-              <strong>2 Curatorial Context</strong>
+              <strong>2 Interpret</strong>
               <br />
               Translate visual references into structured insight through
               Curatorial Intelligence notes, including directional context,
@@ -113,7 +120,7 @@ CI organizes those signals into a visual research system built around moodboards
             </p>
 
             <p>
-              <strong>3 Applied Insight</strong>
+              <strong>3 Apply</strong>
               <br />
               Use Application Query to translate a board’s direction into
               specific product or category thinking, such as swim, lounge, knit
@@ -195,10 +202,11 @@ CI organizes those signals into a visual research system built around moodboards
     color, print, and cultural context.
   </p>
   <p>
-    • Open an individual board to access subscriber-only color direction, trend signals, curatorial context, and applied insight.
+    • Open an individual board to access Curatorial Intelligence notes,
+    extracted palette data, and contextual interpretation.
   </p>
   <p>
-    • Use Applied Insight to translate visual direction into product,
+    • Use Application Query to translate visual direction into product,
     category, or concept-specific thinking.
   </p>
   <p>
@@ -214,19 +222,13 @@ CI organizes those signals into a visual research system built around moodboards
             className="text-[15px] font-bold uppercase tracking-wide"
             style={{ color: BRAND_GREY }}
           >
-            Applied Insight
+            Application Query
           </h2>
 
           <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
-  Applied Insight translates visual direction into category-specific design
-  thinking across color, print, material, assortment, and product context.
-</p>
-
-<p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
-  Enter a category such as womenswear, menswear, kidswear, home, swim, or
-  accessories to generate directional interpretation through the Pattern
-  Curator lens.
-</p>
+            Application Query extends CI from visual exploration into applied
+            design thinking.
+          </p>
 
           <div
             className="space-y-2 text-sm leading-relaxed"
@@ -256,7 +258,8 @@ CI organizes those signals into a visual research system built around moodboards
           </h2>
 
           <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
-            CI allows public access to seasonal direction and moodboard browsing. Subscriber access unlocks additional color direction, trend signals, curatorial context, and applied insight.
+            CI includes five free views. Full access requires a paid
+            subscription.
           </p>
 
           <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
@@ -278,7 +281,7 @@ CI organizes those signals into a visual research system built around moodboards
           <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
             Your subscription provides access to the Curatorial Intelligence
             system — including editorial moodboards, extracted color palettes,
-            curatorial context, and application-based design insight.
+            AI-assisted interpretation, and application-based design insight.
           </p>
 
           <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>

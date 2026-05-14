@@ -54,10 +54,14 @@ export default function ApplicationQuery({
     <section className="pt-8">
       <div className="space-y-3">
 
+        <div className="text-[11px] uppercase tracking-widest text-neutral-600">
+          Enter the category you want to apply this board to
+        </div>
+
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Example: womenswear"
+          placeholder="e.g. swim, lounge, knit tops"
           className="w-full border border-neutral-300 px-3 py-2 text-sm outline-none"
         />
 
@@ -68,73 +72,11 @@ export default function ApplicationQuery({
           {loading ? "Generating..." : "Generate"}
         </button>
 
-        {!result && (
-          <div className="mt-8 border-t border-neutral-200 pt-6 text-left">
-            
-
-            <div className="pt-4 space-y-4 text-[13px] leading-7 text-neutral-500">
-
-              <div>
-                <p className="font-semibold text-neutral-600">
-                  Direction Translation
-                </p>
-                <p>
-                  How the visual direction translates into the selected category.
-                </p>
-              </div>
-
-              <div>
-                <p className="font-semibold text-neutral-600">
-                  Color Strategy
-                </p>
-                <p>
-                  How the palette can evolve through color use and tonal direction.
-                </p>
-              </div>
-
-              <div>
-                <p className="font-semibold text-neutral-600">
-                  Print and Surface Application
-                </p>
-                <p>
-                  How print, texture, or surface detail can be interpreted.
-                </p>
-              </div>
-
-              <div>
-                <p className="font-semibold text-neutral-600">
-                  Fabric and Construction
-                </p>
-                <p>
-                  How the direction may influence material, silhouette, or build.
-                </p>
-              </div>
-
-              <div>
-                <p className="font-semibold text-neutral-600">
-                  Assortment Strategy
-                </p>
-                <p>
-                  How the idea can support a broader product or collection story.
-                </p>
-              </div>
-
-              <div>
-                <p className="font-semibold text-neutral-600">
-                  Commercial Read
-                </p>
-                <p>
-                  How the direction may connect to consumer relevance or market use.
-                </p>
-              </div>
-
-            </div>
-          </div>
-        )}
-
+        {/* RESULT BLOCK */}
         {result && (
           <div className="mt-6 text-sm leading-relaxed text-neutral-600">
 
+            {/* Preview Container */}
             <div className="relative overflow-hidden">
 
               <div className="space-y-3">
@@ -162,6 +104,7 @@ export default function ApplicationQuery({
                 })}
               </div>
 
+              {/* Soft fade only if preview */}
               {preview && (
                 <>
                   <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white via-white/80 to-transparent" />
@@ -173,6 +116,7 @@ export default function ApplicationQuery({
               )}
             </div>
 
+            {/* Upgrade Section */}
             {preview && (
               <div className="pt-10 space-y-4">
                 <div>
