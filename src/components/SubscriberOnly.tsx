@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-
-const STORAGE_KEY = "pc_ci_email";
+import { useEffect, useMemo, useState } from "react";
+import { supabaseBrowser } from "@/lib/supabaseBrowser";
 
 function hasSubscriberAccess(data: any): boolean {
   if (data?.requires_subscription === true) return false;
@@ -11,13 +10,15 @@ function hasSubscriberAccess(data: any): boolean {
 }
 
 export default function SubscriberOnly({ children }: { children: React.ReactNode }) {
+  const supabase = useMemo(() => supabaseBrowser(), []);
   const [ready, setReady] = useState(false);
   const [hasAccess, setHasAccess] = useState(false);
 
   useEffect(() => {
     async function checkAccess() {
       try {
-        const email = window.localStorage.getItem(STORAGE_KEY);
+        const { data: sessionData } = await supabase.auth.getSession();
+        const email = sessionData?.session?.user?.email?.trim().toLowerCase();
 
         if (!email) {
           setHasAccess(false);
@@ -46,7 +47,7 @@ export default function SubscriberOnly({ children }: { children: React.ReactNode
     }
 
     checkAccess();
-  }, []);
+  }, [supabase]);
 
   if (!ready) return null;
 
@@ -55,7 +56,7 @@ export default function SubscriberOnly({ children }: { children: React.ReactNode
       <section className="border-t border-neutral-200 pt-10">
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-[11px] uppercase tracking-[0.18em] text-neutral-400">
-             Curatorial Intelligence™
+            Curatorial Intelligence™
           </p>
 
           <h2
@@ -66,8 +67,7 @@ export default function SubscriberOnly({ children }: { children: React.ReactNode
           </h2>
 
           <p className="mx-auto mt-4 max-w-xl text-[14px] leading-7 text-neutral-600">
-             Subscribers can access color interpretation, supporting direction, and applied
-              insight.
+            Subscribers can access color interpretation, supporting direction, and applied insight.
           </p>
 
           <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
