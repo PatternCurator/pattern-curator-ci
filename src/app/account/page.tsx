@@ -63,6 +63,11 @@ export default function AccountPage() {
     }
   }
 
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  }
+
   return (
     <main className="mx-auto max-w-2xl px-6 pt-20 pb-20">
       <div className="border border-neutral-200 bg-white">
@@ -81,7 +86,7 @@ export default function AccountPage() {
             </p>
           ) : (
             <p className="mt-3 text-sm text-neutral-500">
-              Verify your email to manage your subscription.
+              Log in with your subscription email to manage your account.
             </p>
           )}
         </div>
@@ -93,8 +98,22 @@ export default function AccountPage() {
             disabled={loading}
             className="h-11 border border-neutral-900 bg-neutral-900 px-6 text-sm text-white disabled:opacity-60"
           >
-            {loading ? "Opening…" : "Manage Subscription"}
+            {loading
+              ? "Opening…"
+              : email
+                ? "Manage Subscription"
+                : "Log In to Manage Subscription"}
           </button>
+
+          {email ? (
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="ml-3 mt-4 h-10 border border-neutral-300 px-6 text-sm text-neutral-600 hover:opacity-80"
+            >
+              Log Out
+            </button>
+          ) : null}
 
           {error ? (
             <p className="mt-4 text-sm text-red-600">
