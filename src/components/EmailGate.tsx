@@ -486,51 +486,6 @@ export default function EmailGate({
         </div>
       </div>
 
-      {authChecked ? (
-        <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between border-b border-neutral-200 bg-white/80 px-4 py-3 text-sm text-neutral-600 backdrop-blur">
-          <div className="flex items-center gap-4">
-            {hasEmail ? (
-              <>
-                <span>{email}</span>
-                <button type="button" onClick={hardLogoutAndGoHome} className="underline hover:opacity-70">
-                  Log out
-                </button>
-              </>
-            ) : (
-              <span>Subscriber access</span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-4">
-  {!hasEmail ? (
-    <button
-      type="button"
-      onClick={() => {
-        setShowEmailPrompt(true);
-        setStep("email");
-        setCode("");
-        setStatus("idle");
-        setError("");
-        setCheckoutStatus("idle");
-        setCheckoutError("");
-      }}
-      className="underline hover:opacity-70"
-    >
-      Log in
-    </button>
-  ) : null}
-
-  <Link href="/preview" className="underline hover:opacity-70">
-    Preview
-  </Link>
-
-  <Link href="/ci" className="underline hover:opacity-70">
-    CI Home
-  </Link>
-</div>
-        </div>
-      ) : null}
-
       {gateReady && shouldShowGate ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-6">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
