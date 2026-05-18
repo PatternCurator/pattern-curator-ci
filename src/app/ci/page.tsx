@@ -43,7 +43,7 @@ function firstSentence(text: string | null | undefined) {
 
 async function getFeaturedBoardAiSentence(board: Moodboard | null) {
   if (!board) {
-    return "AI interpretation highlights the broader context behind this featured moodboard.";
+    return "Curatorial context highlights the broader context behind this featured moodboard.";
   }
 
   try {
@@ -68,7 +68,7 @@ async function getFeaturedBoardAiSentence(board: Moodboard | null) {
     });
 
     if (!res.ok) {
-      return "AI interpretation highlights the broader context behind this featured moodboard.";
+      return "Curatorial context highlights the broader context behind this featured moodboard.";
     }
 
     const data = await res.json();
@@ -76,11 +76,11 @@ async function getFeaturedBoardAiSentence(board: Moodboard | null) {
 
     return (
       summary ||
-      "AI interpretation highlights the broader context behind this featured moodboard."
+      "Curatorial context  highlights the broader context behind this featured moodboard."
     );
   } catch (error) {
     console.error("Failed to load featured board AI interpretation:", error);
-    return "AI interpretation highlights the broader context behind this featured moodboard.";
+    return "Curatorial context  highlights the broader context behind this featured moodboard.";
   }
 }
 
@@ -158,7 +158,7 @@ export default async function CiLandingPage() {
 </p>
 
 <p className="mx-auto max-w-4xl text-[16px] leading-[1.8] text-neutral-600">
-  Curatorial Intelligence™ pairs curated visual discovery with AI interpretation —
+  Curatorial Intelligence™ pairs curated visual discovery with context interpretation —
   turning visual exploration into clear design direction. A simple way to explore macro trends, moodboards, color stories and print direction — and ask how a mood translates into product, category, or design.
 </p>
 
@@ -259,7 +259,7 @@ export default async function CiLandingPage() {
   }}
 >
   What we call trend today can often reflect repetition. CI offers a more
-  intentional approach, using AI to support interpretation and expand creative perspective.
+  intentional approach, using curatorial context to support interpretation and expand creative perspective.
 </p>
           </div>
         </section>
