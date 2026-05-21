@@ -3,7 +3,6 @@
 import Link from "next/link";
 import React, { useEffect, useMemo, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { supabaseBrowser } from "@/lib/supabaseBrowser";
 
 const STORAGE_KEY = "pc_ci_email";
 const PENDING_EMAIL_KEY = "pc_ci_pending_email";
@@ -26,7 +25,14 @@ function extractRemaining(data: any): number | null {
   return null;
 }
 
-type GateStep = "email" | "code";
+function hasUnlockedAccess(data: any): boolean {
+  return (
+    data?.is_unlocked === true ||
+    data?.is_unlimited === true ||
+    data?.is_subscriber === true ||
+    data?.requires_subscription === false
+  );
+}
 
 export default function EmailGate({
   source = "ci",
@@ -37,15 +43,12 @@ export default function EmailGate({
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const supabase = useMemo(() => supabaseBrowser(), []);
 
   const q = useMemo(() => (searchParams?.get("q") ?? "").trim(), [searchParams]);
   const openEmailPromptFromQuery = searchParams?.get("verify") === "1";
 
   const [email, setEmail] = useState<string>("");
   const [input, setInput] = useState<string>("");
-  const [step, setStep] = useState<GateStep>("email");
-  const [code, setCode] = useState<string>("");
 
   const [status, setStatus] = useState<"idle" | "saving" | "error">("idle");
   const [error, setError] = useState<string>("");
@@ -112,20 +115,12 @@ export default function EmailGate({
 
     setEmail("");
     setInput("");
-    setStep("email");
-    setCode("");
     setRemaining(null);
     setStatus("idle");
     setError("");
     setCheckoutStatus("idle");
     setCheckoutError("");
     setShowEmailPrompt(false);
-
-    try {
-      await supabase.auth.signOut();
-    } catch {
-      // ignore
-    }
 
     window.location.href = "/";
   }
@@ -140,9 +135,8 @@ export default function EmailGate({
     }
 
     setEmail("");
+    setInput("");
     setRemaining(null);
-    setStep("email");
-    setCode("");
     setStatus("idle");
     setError("");
     setCheckoutStatus("idle");
@@ -151,8 +145,6 @@ export default function EmailGate({
 
   function closeEmailPrompt() {
     setShowEmailPrompt(false);
-    setStep("email");
-    setCode("");
     setStatus("idle");
     setError("");
     setCheckoutStatus("idle");
@@ -168,43 +160,41 @@ export default function EmailGate({
 
     (async () => {
       try {
-        let sessionEmail = "";
-        try {
-          const { data } = await supabase.auth.getSession();
-          sessionEmail = data?.session?.user?.email ?? "";
-        } catch (err: any) {
-          const code = err?.code || err?.error_code;
-          if (code === "refresh_token_not_found") {
-            await clearLocalAuthArtifacts();
-            try {
-              await supabase.auth.signOut();
-            } catch {
-              // ignore
-            }
-          }
-          sessionEmail = "";
-        }
+        const saved = window.localStorage.getItem(STORAGE_KEY);
+        const pending = window.localStorage.getItem(PENDING_EMAIL_KEY);
+
+        const savedEmail = saved ? normalizeEmail(saved) : "";
+        const pendingEmail = pending ? normalizeEmail(pending) : "";
 
         if (!alive) return;
 
-        if (sessionEmail) {
-          const clean = normalizeEmail(sessionEmail);
-          setEmail(clean);
-          try {
-            window.localStorage.setItem(STORAGE_KEY, clean);
-          } catch {
-            // ignore
+        if (savedEmail) {
+          const res = await fetch("/api/usage", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            cache: "no-store",
+            body: JSON.stringify({
+              email: savedEmail,
+              action: "status",
+              count: 1,
+            }),
+          });
+
+          const data = await res.json().catch(() => ({}));
+
+          if (hasUnlockedAccess(data)) {
+            setEmail(savedEmail);
+            setInput(savedEmail);
+            const rem = extractRemaining(data);
+            if (typeof rem === "number") setRemaining(rem);
+          } else {
+            await clearLocalAuthArtifacts();
+            setEmail("");
+            setInput(savedEmail);
+            setRemaining(null);
           }
-          await refreshRemaining(clean);
-        } else {
-          try {
-            const pending = window.localStorage.getItem(PENDING_EMAIL_KEY);
-            const saved = window.localStorage.getItem(STORAGE_KEY);
-            if (pending) setInput(pending);
-            else if (saved) setInput(saved);
-          } catch {
-            // ignore
-          }
+        } else if (pendingEmail) {
+          setInput(pendingEmail);
         }
       } finally {
         if (alive) {
@@ -214,46 +204,18 @@ export default function EmailGate({
       }
     })();
 
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_evt, session) => {
-      const sessionEmail = session?.user?.email ?? "";
-      if (sessionEmail) {
-        const clean = normalizeEmail(sessionEmail);
-        setEmail(clean);
-        try {
-          window.localStorage.setItem(STORAGE_KEY, clean);
-        } catch {
-          // ignore
-        }
-        setStep("email");
-        setStatus("idle");
-        setError("");
-        setShowEmailPrompt(false);
-
-        if (pathname === "/pricing" && searchParams?.get("verify") === "1") {
-          window.history.replaceState({}, "", "/pricing");
-        }
-
-        await refreshRemaining(clean);
-      } else {
-        setEmail("");
-        setRemaining(null);
-      }
-      setAuthChecked(true);
-      setGateReady(true);
-    });
-
     return () => {
       alive = false;
-      sub?.subscription?.unsubscribe();
     };
-  }, [supabase, pathname, searchParams]);
+  }, []);
 
-  async function sendCode(e: React.FormEvent) {
+  async function submitEmail(e: React.FormEvent) {
     e.preventDefault();
     setStatus("saving");
     setError("");
 
     const clean = normalizeEmail(input);
+
     if (!clean || !clean.includes("@")) {
       setStatus("error");
       setError("Please enter a valid email.");
@@ -267,80 +229,55 @@ export default function EmailGate({
         body: JSON.stringify({ email: clean, source }),
       }).catch(() => null);
 
-      try {
-        window.localStorage.setItem(PENDING_EMAIL_KEY, clean);
-      } catch {
-        // ignore
-      }
-
-      const { error: otpErr } = await supabase.auth.signInWithOtp({
-        email: clean,
-        options: { shouldCreateUser: true },
+      const res = await fetch("/api/usage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify({
+          email: clean,
+          action: "status",
+          count: 1,
+        }),
       });
 
-      if (otpErr) {
+      const data = await res.json().catch(() => ({}));
+      const unlocked = hasUnlockedAccess(data);
+
+      if (!unlocked) {
+        try {
+          window.localStorage.setItem(PENDING_EMAIL_KEY, clean);
+          window.localStorage.removeItem(STORAGE_KEY);
+        } catch {
+          // ignore
+        }
+
+        setEmail("");
+        setRemaining(null);
         setStatus("error");
-        setError(otpErr.message || "Could not send code. Please try again.");
+        setError("We could not find an active CI subscription for this email.");
         return;
       }
 
-      setStatus("idle");
-      setStep("code");
-    } catch {
-      setStatus("error");
-      setError("Network error. Please try again.");
-    }
-  }
-
-  async function verifyCode(e: React.FormEvent) {
-    e.preventDefault();
-    setStatus("saving");
-    setError("");
-
-    const clean = normalizeEmail(input);
-    const token = code.trim();
-
-    if (!token || token.length < 6) {
-      setStatus("error");
-      setError("Please enter the 6-digit code.");
-      return;
-    }
-
-    try {
-      const { data, error: vErr } = await supabase.auth.verifyOtp({
-        email: clean,
-        token,
-        type: "email",
-      });
-
-      if (vErr) {
-        setStatus("error");
-        setError(vErr.message || "Incorrect code. Please try again.");
-        return;
-      }
-
-      const verifiedEmail = data?.user?.email ?? clean;
-      const finalEmail = normalizeEmail(verifiedEmail);
-
       try {
-        window.localStorage.setItem(STORAGE_KEY, finalEmail);
+        window.localStorage.setItem(STORAGE_KEY, clean);
         window.localStorage.removeItem(PENDING_EMAIL_KEY);
         window.localStorage.removeItem(LAST_Q_KEY);
       } catch {
         // ignore
       }
 
-      setEmail(finalEmail);
-      setStep("email");
-      setCode("");
+      const rem = extractRemaining(data);
+      if (typeof rem === "number") setRemaining(rem);
+
+      setEmail(clean);
+      setInput(clean);
       setStatus("idle");
+      setError("");
       setShowEmailPrompt(false);
 
       if (pathname === "/pricing" && searchParams?.get("verify") === "1") {
         window.history.replaceState({}, "", "/pricing");
       }
-
-      await refreshRemaining(finalEmail);
     } catch {
       setStatus("error");
       setError("Network error. Please try again.");
@@ -352,9 +289,10 @@ export default function EmailGate({
       setCheckoutStatus("loading");
       setCheckoutError("");
 
-      if (!email) {
+      const checkoutEmail = email || normalizeEmail(input);
+
+      if (!checkoutEmail || !checkoutEmail.includes("@")) {
         setShowEmailPrompt(true);
-        setStep("email");
         setCheckoutStatus("idle");
         setCheckoutError("");
         return;
@@ -363,7 +301,7 @@ export default function EmailGate({
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, plan }),
+        body: JSON.stringify({ email: checkoutEmail, plan }),
       });
 
       const data = (await res.json()) as { url?: string; error?: string };
@@ -495,7 +433,7 @@ export default function EmailGate({
               <>
                 <div className="flex items-start justify-between gap-4">
                   <h1 className="text-[24px] font-semibold leading-tight text-neutral-900">
-                    {step === "email" ? "Subscriber Log In or Continue with CI" : "Enter your code"}
+                    Subscriber Access
                   </h1>
 
                   {(showEmailPrompt || openEmailPromptFromQuery || shouldGateWithoutEmail) ? (
@@ -510,116 +448,52 @@ export default function EmailGate({
                 </div>
 
                 <p className="mt-3 max-w-[460px] text-[15px] leading-7 text-neutral-600">
-                  Enter your email to continue. If you already subscribe, use your subscription
-                  email to log in. CI uses email-only login with a one-time code.
+                  Enter the email used for your CI subscription to access the platform.
                 </p>
 
                 <p className="mt-2 text-sm italic text-neutral-500">
-                  We’ll send a one-time code to confirm it’s really you.
+                  No code is required.
                 </p>
 
                 {(showEmailPrompt || openEmailPromptFromQuery) && isSubscribeRoute ? (
                   <p className="mt-4 text-xs text-neutral-500">
-                    Verify your email to continue with subscription.
+                    Enter your subscription email to continue.
                   </p>
                 ) : null}
 
-                {step === "email" ? (
-                  <form onSubmit={sendCode} className="mt-6 space-y-4">
-                    <input
-                      type="email"
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      placeholder="you@example.com"
-                      className="w-full border border-neutral-300 px-4 py-3 text-[15px] outline-none focus:border-neutral-500"
-                      autoComplete="email"
-                    />
+                <form onSubmit={submitEmail} className="mt-6 space-y-4">
+                  <input
+                    type="email"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="you@example.com"
+                    className="w-full border border-neutral-300 px-4 py-3 text-[15px] outline-none focus:border-neutral-500"
+                    autoComplete="email"
+                  />
 
-                    <p className="text-center text-sm text-neutral-500">
-                      Already subscribed? Use the same email tied to your membership.
-                    </p>
+                  <p className="text-center text-sm text-neutral-500">
+                    Already subscribed? Use the same email tied to your membership.
+                  </p>
 
-                    {status === "error" ? <p className="text-sm text-red-600">{error}</p> : null}
+                  {status === "error" ? <p className="text-sm text-red-600">{error}</p> : null}
 
-                    <button
-                      type="submit"
-                      disabled={status === "saving"}
-                      className="w-full bg-neutral-900 px-4 py-3 text-[15px] font-medium text-white disabled:opacity-60"
-                    >
-                      {status === "saving" ? "Sending…" : "Send log in code"}
-                    </button>
+                  <button
+                    type="submit"
+                    disabled={status === "saving"}
+                    className="w-full bg-neutral-900 px-4 py-3 text-[15px] font-medium text-white disabled:opacity-60"
+                  >
+                    {status === "saving" ? "Checking…" : "Continue"}
+                  </button>
 
-                    <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 pt-1 text-sm text-neutral-600">
-                      <Link href="/preview" className="underline hover:opacity-70">
-                        View Preview
-                      </Link>
-                      <Link href="/ci" className="underline hover:opacity-70">
-                        Back to CI Home
-                      </Link>
-                    </div>
-                  </form>
-                ) : (
-                  <form onSubmit={verifyCode} className="mt-6 space-y-4">
-                    <div className="text-sm text-neutral-600">
-                      Code sent to <span className="font-medium">{normalizeEmail(input)}</span>
-                    </div>
-
-                    <input
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      value={code}
-                      onChange={(e) => setCode(e.target.value)}
-                      placeholder="6-digit code"
-                      className="w-full border border-neutral-300 px-4 py-3 text-[15px] tracking-widest outline-none focus:border-neutral-500"
-                      autoComplete="one-time-code"
-                    />
-
-                    {status === "error" ? <p className="text-sm text-red-600">{error}</p> : null}
-
-                    <button
-                      type="submit"
-                      disabled={status === "saving"}
-                      className="w-full bg-neutral-900 px-4 py-3 text-[15px] font-medium text-white disabled:opacity-60"
-                    >
-                      {status === "saving" ? "Verifying…" : "Verify and continue"}
-                    </button>
-
-                    <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 pt-1 text-sm text-neutral-600">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setStep("email");
-                          setCode("");
-                          setStatus("idle");
-                          setError("");
-                        }}
-                        className="underline hover:opacity-70"
-                      >
-                        Change email
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          sendCode({ preventDefault: () => {} } as any);
-                        }}
-                        disabled={status === "saving"}
-                        className="underline hover:opacity-70 disabled:opacity-50"
-                      >
-                        Resend code
-                      </button>
-                    </div>
-
-                    <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 pt-1 text-sm text-neutral-600">
-                      <Link href="/preview" className="underline hover:opacity-70">
-                        View Preview
-                      </Link>
-                      <Link href="/ci" className="underline hover:opacity-70">
-                        Back to CI Home
-                      </Link>
-                    </div>
-                  </form>
-                )}
+                  <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 pt-1 text-sm text-neutral-600">
+                    <Link href="/preview" className="underline hover:opacity-70">
+                      View Preview
+                    </Link>
+                    <Link href="/ci" className="underline hover:opacity-70">
+                      Back to CI Home
+                    </Link>
+                  </div>
+                </form>
               </>
             ) : (
               <>
