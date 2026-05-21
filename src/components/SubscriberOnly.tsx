@@ -5,8 +5,12 @@ import { useEffect, useMemo, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 
 function hasSubscriberAccess(data: any): boolean {
-  if (data?.requires_subscription === true) return false;
-  return true;
+  return (
+    data?.is_unlocked === true ||
+    data?.is_unlimited === true ||
+    data?.is_subscriber === true ||
+    data?.requires_subscription === false
+  );
 }
 
 export default function SubscriberOnly({ children }: { children: React.ReactNode }) {
@@ -18,13 +22,18 @@ export default function SubscriberOnly({ children }: { children: React.ReactNode
     async function checkAccess() {
       try {
         const { data: sessionData } = await supabase.auth.getSession();
-        const email = sessionData?.session?.user?.email?.trim().toLowerCase();
 
-        if (!email) {
-          setHasAccess(false);
-          setReady(true);
-          return;
-        }
+let email = sessionData?.session?.user?.email?.trim().toLowerCase() || "";
+
+if (!email && typeof window !== "undefined") {
+  email = window.localStorage.getItem("pc_ci_email")?.trim().toLowerCase() || "";
+}
+
+if (!email) {
+  setHasAccess(false);
+  setReady(true);
+  return;
+}
 
         const res = await fetch("/api/usage", {
           method: "POST",
