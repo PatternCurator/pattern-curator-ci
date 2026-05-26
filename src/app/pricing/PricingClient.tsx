@@ -3,14 +3,17 @@
 import Link from "next/link";
 import { useState } from "react";
 
+type Plan = "monthly" | "annual";
+
 export default function PricingClient() {
   const [email, setEmail] = useState<string>("");
-  const [plan, setPlan] = useState<"monthly" | "annual">("monthly");
+  const [plan, setPlan] = useState<Plan | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [error, setError] = useState<string>("");
 
-  async function startCheckout() {
+  async function startCheckout(selectedPlan: Plan) {
     try {
+      setPlan(selectedPlan);
       setStatus("loading");
       setError("");
 
@@ -18,14 +21,17 @@ export default function PricingClient() {
 
       if (!checkoutEmail) {
         setStatus("error");
-        setError("Please enter your email to continue.");
+        setError("Please enter your email before selecting a plan.");
         return;
       }
 
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: checkoutEmail, plan }),
+        body: JSON.stringify({
+          email: checkoutEmail,
+          plan: selectedPlan,
+        }),
       });
 
       const data = (await res.json().catch(() => ({}))) as {
@@ -91,35 +97,59 @@ export default function PricingClient() {
 
           <div>
             <p className="mb-3 text-xs tracking-[0.18em] uppercase text-neutral-900">
-              Choose a plan
+              Select a plan
             </p>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <button
                 type="button"
-                onClick={() => setPlan("monthly")}
-                className={`h-11 border text-sm ${
-                  plan === "monthly"
-                    ? "border-neutral-900 bg-neutral-900 text-white"
-                    : "border-neutral-300 bg-white text-neutral-900"
-                }`}
+                onClick={() => startCheckout("monthly")}
+                disabled={status === "loading"}
+                className="border border-neutral-900 bg-neutral-900 px-5 py-5 text-left text-white disabled:opacity-60"
               >
-                $29 / month
+                <span className="block text-xs uppercase tracking-[0.18em]">
+                  Monthly
+                </span>
+                <span className="mt-2 block text-2xl">$29</span>
+                <span className="mt-1 block text-sm text-neutral-300">
+                  per month
+                </span>
+                <span className="mt-4 block text-sm">
+                  {status === "loading" && plan === "monthly"
+                    ? "Redirecting…"
+                    : "Subscribe monthly"}
+                </span>
               </button>
 
               <button
                 type="button"
-                onClick={() => setPlan("annual")}
-                className={`h-11 border text-sm ${
-                  plan === "annual"
-                    ? "border-neutral-900 bg-neutral-900 text-white"
-                    : "border-neutral-300 bg-white text-neutral-900"
-                }`}
+                onClick={() => startCheckout("annual")}
+                disabled={status === "loading"}
+                className="border border-neutral-300 bg-white px-5 py-5 text-left text-neutral-900 transition hover:border-neutral-900 disabled:opacity-60"
               >
-                $290 / year
+                <span className="block text-xs uppercase tracking-[0.18em]">
+                  Annual
+                </span>
+                <span className="mt-2 block text-2xl">$290</span>
+                <span className="mt-1 block text-sm text-neutral-500">
+                  per year
+                </span>
+                <span className="mt-4 block text-sm">
+                  {status === "loading" && plan === "annual"
+                    ? "Redirecting…"
+                    : "Subscribe annually"}
+                </span>
               </button>
             </div>
           </div>
+
+          {status === "error" ? (
+            <p className="text-sm text-red-600">{error}</p>
+          ) : null}
+
+          <p className="text-center text-xs leading-5 text-neutral-500">
+            You will complete payment securely through Stripe.
+          </p>
 
           <div className="space-y-2 border border-neutral-200 p-5 text-sm text-neutral-700">
             <p className="text-xs tracking-[0.18em] uppercase text-neutral-900">
@@ -134,23 +164,6 @@ export default function PricingClient() {
               <li>New references added continuously</li>
             </ul>
           </div>
-
-          <button
-            type="button"
-            onClick={startCheckout}
-            disabled={status === "loading"}
-            className="h-11 w-full border border-neutral-900 bg-neutral-900 text-sm text-white disabled:opacity-60"
-          >
-            {status === "loading" ? "Redirecting…" : "Continue to Checkout"}
-          </button>
-
-          {status === "error" ? (
-            <p className="text-sm text-red-600">{error}</p>
-          ) : null}
-
-          <p className="text-center text-xs leading-5 text-neutral-500">
-            You will complete payment securely through Stripe.
-          </p>
         </div>
       </section>
 
