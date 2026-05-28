@@ -26,10 +26,13 @@ function getReportAssetUrl(path: string | null) {
     return path;
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!supabaseUrl) return path;
+  const cleanPath = path.replace(/^\/+/, "");
 
-  return `${supabaseUrl}/storage/v1/object/public/paid-reports/${path}`;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  if (!supabaseUrl) return cleanPath;
+
+  return `${supabaseUrl}/storage/v1/object/public/paid-report-images/${cleanPath}`;
 }
 
 export default async function ReportSlugPage({

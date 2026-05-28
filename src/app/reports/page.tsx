@@ -12,6 +12,21 @@ type Report = {
   cover_image: string | null;
 };
 
+function getReportAssetUrl(path: string | null) {
+  if (!path) return null;
+
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
+  }
+
+  const cleanPath = path.replace(/^\/+/, "");
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  if (!supabaseUrl) return cleanPath;
+
+  return `${supabaseUrl}/storage/v1/object/public/paid-report-images/${cleanPath}`;
+}
+
 export default async function ReportsPage() {
   const supabase = getSupabaseAdmin();
 
@@ -81,7 +96,7 @@ export default async function ReportsPage() {
               >
                 {report.cover_image ? (
                   <img
-                    src={report.cover_image}
+                    src={getReportAssetUrl(report.cover_image) ?? ""}
                     alt={`${report.title} cover`}
                     className="aspect-square w-full border border-neutral-200 object-cover"
                   />
