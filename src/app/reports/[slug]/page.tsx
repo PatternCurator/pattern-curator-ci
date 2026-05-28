@@ -2,7 +2,6 @@ import ReportPurchaseButton from "@/components/ReportPurchaseButton";
 import { notFound } from "next/navigation";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
-
 export const dynamic = "force-dynamic";
 
 type Report = {
@@ -19,6 +18,19 @@ type Report = {
   preview_3: string | null;
   preview_4: string | null;
 };
+
+function getReportAssetUrl(path: string | null) {
+  if (!path) return null;
+
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
+  }
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!supabaseUrl) return path;
+
+  return `${supabaseUrl}/storage/v1/object/public/paid-reports/${path}`;
+}
 
 export default async function ReportSlugPage({
   params,
@@ -42,20 +54,24 @@ export default async function ReportSlugPage({
 
   const r = report as Report;
 
+  const heroImage = getReportAssetUrl(r.hero_image);
+
   const previewImages = [
     r.preview_1,
     r.preview_2,
     r.preview_3,
     r.preview_4,
-  ].filter(Boolean) as string[];
+  ]
+    .map(getReportAssetUrl)
+    .filter(Boolean) as string[];
 
   return (
     <main className="mx-auto max-w-[1400px] px-6 pt-12 pb-20">
       <div className="grid gap-14 lg:grid-cols-[1.1fr_420px]">
         <section className="space-y-4">
-          {r.hero_image ? (
+          {heroImage ? (
             <img
-              src={r.hero_image}
+              src={heroImage}
               alt={r.title}
               className="aspect-[13.33/7.5] w-full border border-neutral-200 object-cover"
             />
@@ -143,9 +159,8 @@ export default async function ReportSlugPage({
               <ReportPurchaseButton slug={r.slug} />
 
               <p className="text-[11px] leading-[1.6] text-neutral-500">
-                Includes a one-month Curatorial Intelligence access code,
-                delivered with your report download.
-              </p>
+  Digital PDF download delivered immediately after purchase.
+</p>
 
               <p className="text-[11px] leading-[1.6] text-neutral-500">
                 Student and freelancer rates available by request.
