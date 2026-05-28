@@ -43,39 +43,25 @@ export default function SiteHeader() {
             }}
           >
             <Link
-              href="/ci"
-              className="text-[12px] sm:text-[13px] underline underline-offset-4 decoration-[0.5px] hover:opacity-70"
-            >
-              Home
-            </Link>
+  href="/moodboards"
+  className="text-[12px] sm:text-[13px] underline underline-offset-4 decoration-[0.5px] hover:opacity-70"
+>
+  Moodboards
+</Link>
 
-            <Link
-              href="/season/FW27%2F28"
-              className="text-[12px] sm:text-[13px] underline underline-offset-4 decoration-[0.5px] hover:opacity-70"
-            >
-              Seasons
-            </Link>
+<Link
+  href="/pricing"
+  className="text-[12px] sm:text-[13px] underline underline-offset-4 decoration-[0.5px] hover:opacity-70"
+>
+  Intelligence
+</Link>
 
-            <Link
-              href="/moodboards"
-              className="text-[12px] sm:text-[13px] underline underline-offset-4 decoration-[0.5px] hover:opacity-70"
-            >
-              Boards
-            </Link>
-
-            <Link
-              href="/reports"
-              className="text-[12px] sm:text-[13px] underline underline-offset-4 decoration-[0.5px] hover:opacity-70"
-            >
-              Reports
-            </Link>
-
-            <Link
-              href="/pricing"
-              className="text-[12px] sm:text-[13px] underline underline-offset-4 decoration-[0.5px] hover:opacity-70"
-            >
-              Subscribe
-            </Link>
+<Link
+  href="/reports"
+  className="text-[12px] sm:text-[13px] underline underline-offset-4 decoration-[0.5px] hover:opacity-70"
+>
+  Forecasts
+</Link>
 
 
             <AccountNavLink />

@@ -254,7 +254,7 @@ export default function EmailGate({
         setEmail("");
         setRemaining(null);
         setStatus("error");
-        setError("We could not find an active CI subscription for this email.");
+        setError("We could not find active Curatorial Intelligence access for this email.");
         return;
       }
 
@@ -433,7 +433,7 @@ export default function EmailGate({
               <>
                 <div className="flex items-start justify-between gap-4">
                   <h1 className="text-[24px] font-semibold leading-tight text-neutral-900">
-                    Subscriber Access
+                    Curatorial Intelligence Access
                   </h1>
 
                   {(showEmailPrompt || openEmailPromptFromQuery || shouldGateWithoutEmail) ? (
@@ -448,7 +448,7 @@ export default function EmailGate({
                 </div>
 
                 <p className="mt-3 max-w-[460px] text-[15px] leading-7 text-neutral-600">
-                  Enter the email used for your CI subscription to access the platform.
+                  Enter the email associated with your Curatorial Intelligence access.
                 </p>
 
                 <p className="mt-2 text-sm italic text-neutral-500">
@@ -457,7 +457,7 @@ export default function EmailGate({
 
                 {(showEmailPrompt || openEmailPromptFromQuery) && isSubscribeRoute ? (
                   <p className="mt-4 text-xs text-neutral-500">
-                    Enter your subscription email to continue.
+                    Enter your access email to continue.
                   </p>
                 ) : null}
 
@@ -472,7 +472,7 @@ export default function EmailGate({
                   />
 
                   <p className="text-center text-sm text-neutral-500">
-                    Already subscribed? Use the same email tied to your membership.
+                    Already have access? Use the email tied to your Curatorial Intelligence access.
                   </p>
 
                   {status === "error" ? <p className="text-sm text-red-600">{error}</p> : null}
@@ -490,7 +490,7 @@ export default function EmailGate({
                       View Preview
                     </Link>
                     <Link href="/ci" className="underline hover:opacity-70">
-                      Back to CI Home
+                      Back to Home
                     </Link>
                   </div>
                 </form>
@@ -498,7 +498,7 @@ export default function EmailGate({
             ) : (
               <>
                 <h1 className="text-[24px] font-semibold leading-tight text-neutral-900">
-                  Subscription required
+                  Curatorial Intelligence required
                 </h1>
 
                 <div className="mt-3 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-neutral-600 sm:justify-start">
@@ -520,8 +520,8 @@ export default function EmailGate({
                 </div>
 
                 <p className="mt-4 max-w-[460px] text-[15px] leading-7 text-neutral-600">
-                  Full access to CI boards, notes, and application insight is available by
-                  subscription.
+                  Curatorial Intelligence unlocks full context, inquiry, and applied insight for curated moodboards.
+                  
                 </p>
 
                 <div className="mt-6 space-y-4">
@@ -557,7 +557,7 @@ export default function EmailGate({
                     disabled={checkoutStatus === "loading"}
                     className="w-full bg-neutral-900 px-4 py-3 text-[15px] font-medium text-white disabled:opacity-60"
                   >
-                    {checkoutStatus === "loading" ? "Redirecting…" : "Subscribe to continue"}
+                    {checkoutStatus === "loading" ? "Redirecting…" : "Unlock Intelligence"}
                   </button>
 
                   {checkoutStatus === "error" ? <p className="text-sm text-red-600">{checkoutError}</p> : null}

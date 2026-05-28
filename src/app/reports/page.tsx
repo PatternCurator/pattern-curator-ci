@@ -54,7 +54,7 @@ export default async function ReportsPage() {
                 fontWeight: 300,
               }}
             >
-              Trend Reports
+              Seasonal Forecasts
             </h1>
 
             <p
@@ -63,14 +63,11 @@ export default async function ReportsPage() {
                 fontFamily: "var(--font-libre), Libre Baskerville, serif",
               }}
             >
-              Seasonal visual reports designed to support creative direction,
-              concept development, color, print and pattern.
+              Complete seasonal direction for concept development, color, print, pattern, and product application.
             </p>
 
             <p className="max-w-3xl text-[12px] leading-[1.7] text-neutral-700">
-              Pattern Curator trend reports are available as separate digital
-              purchases. Each report is delivered as a downloadable PDF and is
-              not included with a Curatorial Intelligence subscription.
+             Seasonal Forecasts are available as separate premium purchases. Each forecast includes complete seasonal direction and downloadable PDF access.
             </p>
           </div>
         </section>
@@ -81,10 +78,10 @@ export default async function ReportsPage() {
               className="text-[11px] uppercase tracking-[0.18em] text-neutral-500"
               style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
             >
-              Available Reports
+              Available Forecasts
             </p>
 
-            <h2 className="text-xl text-neutral-900">Seasonal Downloads</h2>
+            <h2 className="text-xl text-neutral-900">Seasonal Forecasts</h2>
           </div>
 
           <div className="grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
@@ -128,7 +125,7 @@ export default async function ReportsPage() {
                     className="pt-1 text-[11px] uppercase tracking-[0.14em] text-neutral-900"
                     style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
                   >
-                    ${report.price} · Purchase + Download
+                    ${report.price} · Forecast Access + PDF
                   </p>
                 </div>
               </Link>

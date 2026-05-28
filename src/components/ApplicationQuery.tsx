@@ -176,7 +176,7 @@ export default function ApplicationQuery({
             {preview && (
               <div className="pt-10 space-y-4">
                 <div>
-                  To access the full application insight, upgrade to a paid subscription.
+                  To access the full application insight, unlock Curatorial Intelligence.
                 </div>
 
                 <div className="flex gap-4 pt-2">
@@ -184,7 +184,7 @@ export default function ApplicationQuery({
                     href="/about"
                     className="text-neutral-600 underline text-xs uppercase tracking-wide"
                   >
-                    View subscription details
+                    View Intelligence Access
                   </a>
 
                   <a

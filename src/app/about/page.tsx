@@ -25,7 +25,7 @@ export default function AboutPage() {
                 fontFamily: "var(--font-libre), Libre Baskerville, serif",
               }}
             >
-              General information including membership/ subscription and payment information
+              General information including access, billing, and payment information
             </p>
           </div>
         </section>
@@ -195,7 +195,7 @@ CI organizes those signals into a visual research system built around moodboards
     color, print, and cultural context.
   </p>
   <p>
-    • Open an individual board to access subscriber-only color direction, trend signals, curatorial context, and applied insight.
+    • Open an individual board to access Curatorial Intelligence color direction, trend signals, curatorial context, and applied insight..
   </p>
   <p>
     • Use Applied Insight to translate visual direction into product,
@@ -252,11 +252,11 @@ CI organizes those signals into a visual research system built around moodboards
             className="text-[15px] font-bold uppercase tracking-wide"
             style={{ color: BRAND_GREY }}
           >
-            Subscription Information
+            Curatorial Intelligence Access Information
           </h2>
 
           <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
-            CI allows public access to seasonal direction and moodboard browsing. Subscriber access unlocks additional color direction, trend signals, curatorial context, and applied insight.
+             CI allows public access to seasonal direction and moodboard browsing. Curatorial Intelligence unlocks additional color direction, trend signals, curatorial context, and applied insight.
           </p>
 
           <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>

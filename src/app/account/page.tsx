@@ -9,6 +9,7 @@ type PurchasedReport = {
   slug: string;
   purchased_at: string;
   download_url: string | null;
+  view_url: string | null;
 };
 
 export default function AccountPage() {
@@ -157,7 +158,7 @@ export default function AccountPage() {
               </p>
             ) : (
               <p className="mt-3 text-sm text-neutral-500">
-                Enter the email used at checkout to access purchased reports.
+                Enter the email used at checkout to access purchased forecasts.
               </p>
             )}
           </div>
@@ -181,7 +182,7 @@ export default function AccountPage() {
                 disabled={loadingReports}
                 className="h-11 border border-neutral-900 bg-neutral-900 px-6 text-sm text-white disabled:opacity-60"
               >
-                {loadingReports ? "Checking…" : "Find Reports"}
+                {loadingReports ? "Checking…" : "Find Forecasts"}
               </button>
             </div>
 
@@ -200,15 +201,15 @@ export default function AccountPage() {
         <section className="border border-neutral-200 bg-white">
           <div className="border-b border-neutral-200 px-6 py-5">
             <p className="text-xs uppercase tracking-[0.18em] text-neutral-500">
-              Purchased Reports
+              My Forecasts
             </p>
 
             <h2 className="mt-2 text-xl text-neutral-900">
-              Report Downloads
+              Forecast Access
             </h2>
 
             <p className="mt-3 text-sm leading-6 text-neutral-600">
-              If you purchased a Pattern Curator report, your available downloads will appear here.
+              If you purchased a Seasonal Forecast, your available forecast access and downloads will appear here.
             </p>
           </div>
 
@@ -237,24 +238,35 @@ export default function AccountPage() {
                       ) : null}
                     </div>
 
-                    {report.download_url ? (
-                      <a
-                        href={report.download_url}
-                        className="inline-block border border-neutral-900 px-4 py-3 text-center text-[11px] uppercase tracking-[0.18em] text-neutral-900 hover:bg-neutral-900 hover:text-white"
-                      >
-                        Download
-                      </a>
-                    ) : (
-                      <p className="text-xs text-red-600">
-                        Download unavailable
-                      </p>
-                    )}
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+  {report.view_url ? (
+    <a
+      href={`${report.view_url}?email=${encodeURIComponent(manualEmail || email)}`}
+      className="inline-block border border-neutral-900 bg-neutral-900 px-4 py-3 text-center text-[11px] uppercase tracking-[0.18em] text-white hover:opacity-80"
+    >
+      View Forecast
+    </a>
+  ) : null}
+
+  {report.download_url ? (
+    <a
+      href={report.download_url}
+      className="inline-block border border-neutral-900 px-4 py-3 text-center text-[11px] uppercase tracking-[0.18em] text-neutral-900 hover:bg-neutral-900 hover:text-white"
+    >
+      Download PDF
+    </a>
+  ) : (
+    <p className="text-xs text-red-600">
+      Download unavailable
+    </p>
+  )}
+</div>
                   </div>
                 ))}
               </div>
             ) : (
               <p className="text-sm leading-6 text-neutral-500">
-                No purchased reports were found for this email.
+                No purchased forecasts were found for this email.
               </p>
             )}
           </div>
@@ -263,11 +275,11 @@ export default function AccountPage() {
         <section className="border border-neutral-200 bg-white">
           <div className="border-b border-neutral-200 px-6 py-5">
             <p className="text-xs uppercase tracking-[0.18em] text-neutral-500">
-              CI Subscription
+              Curatorial Intelligence
             </p>
 
             <h2 className="mt-2 text-xl text-neutral-900">
-              Subscription Management
+              Manage Intelligence Access
             </h2>
 
             <p className="mt-3 text-sm leading-6 text-neutral-600">
@@ -282,7 +294,7 @@ export default function AccountPage() {
               disabled={loadingPortal}
               className="h-11 border border-neutral-900 bg-neutral-900 px-6 text-sm text-white disabled:opacity-60"
             >
-              {loadingPortal ? "Opening…" : "Manage Subscription"}
+              {loadingPortal ? "Opening…" : "Manage Access"}
             </button>
 
             {error ? (

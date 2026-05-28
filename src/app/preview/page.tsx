@@ -161,15 +161,13 @@ export default async function PreviewPage() {
 
           <div className="max-w-4xl space-y-4">
             <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
-              This preview offers a focused look at how CI moves through cultural
+              This preview offers a focused look at how Curatorial Intelligence moves through cultural
               behavior, concept, color, print and pattern, and editorial
               interpretation.
             </p>
 
             <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
-              Full membership includes access to complete boards, Curatorial
-              Intelligence notes, extracted palette information, and Application
-              Query across the platform.
+              Curatorial Intelligence unlocks complete context, palette information, and Application Query across the platform.
             </p>
           </div>
         </section>
@@ -330,7 +328,7 @@ export default async function PreviewPage() {
               </p>
               <h2 className="text-xl text-zinc-800">Curatorial Intelligence</h2>
               <p className="max-w-3xl text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
-                CI pairs visual direction with interpretation and application,
+                Intelligence pairs visual direction with interpretation and application,
                 helping translate research into clearer design thinking.
               </p>
             </div>
@@ -369,7 +367,7 @@ export default async function PreviewPage() {
     </p>
 
     <p className="text-sm leading-7 text-neutral-400">
-      Full interpretation available with membership.
+      Full interpretation available with Curatorial Intelligence.
     </p>
   </div>
 
@@ -417,12 +415,11 @@ export default async function PreviewPage() {
               className="text-[15px] font-bold uppercase tracking-wide"
               style={{ color: BRAND_GREY }}
             >
-              Full Access
+              Curatorial Intelligence Access
             </h2>
 
             <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
-              Subscribe to access full boards, complete Curatorial Intelligence
-              notes, palette information, and Application Query throughout CI.
+              Unlock Curatorial Intelligence to access complete context, palette information, and Application Query throughout CI.
             </p>
           </div>
 
@@ -431,7 +428,7 @@ export default async function PreviewPage() {
     href="/pricing"
     className="inline-flex h-12 min-w-[180px] items-center justify-center border border-neutral-900 bg-neutral-900 px-8 text-[15px] text-white"
   >
-    Subscribe
+    Unlock Intelligence
   </Link>
 
   <Link

@@ -1,6 +1,7 @@
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import Stripe from "stripe";
 import { getReportDownloadUrl } from "@/lib/reports";
+import Link from "next/link";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -95,19 +96,25 @@ export default async function ReportSuccessPage({
         </p>
 
         <h1 className="text-[22px] uppercase tracking-[0.24em] text-neutral-900">
-          Your Report Is Ready
+          Your Forecast Is Ready
         </h1>
 
         <p className="max-w-2xl text-[12px] leading-[1.7] text-neutral-700">
-          Thank you for your purchase. Use the button below to download your report.
+          Thank you for your purchase. You can download your Seasonal Forecast now, or return to your account to view it online.
         </p>
 
         <a
           href={downloadUrl}
           className="inline-block border border-neutral-900 px-5 py-3 text-[11px] uppercase tracking-[0.18em] text-neutral-900 hover:bg-neutral-900 hover:text-white"
         >
-          Download Report
+          Download Forecast
         </a>
+        <Link
+  href="/account"
+  className="ml-3 inline-block border border-neutral-300 px-5 py-3 text-[11px] uppercase tracking-[0.18em] text-neutral-900 hover:border-neutral-900"
+>
+  View in Account
+</Link>
       </div>
     </main>
   );

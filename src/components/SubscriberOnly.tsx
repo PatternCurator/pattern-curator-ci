@@ -72,11 +72,11 @@ if (!email) {
             className="mt-3 text-[24px] font-normal text-neutral-900"
             style={{ fontFamily: "var(--font-libre), Libre Baskerville, serif" }}
           >
-            Subscriber Access
+            Curatorial Intelligence
           </h2>
 
           <p className="mx-auto mt-4 max-w-xl text-[14px] leading-7 text-neutral-600">
-            Subscribers can access color interpretation, supporting direction, and applied insight.
+            Curatorial Intelligence unlocks color interpretation, supporting direction, and applied insight.
           </p>
 
           <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
@@ -84,7 +84,7 @@ if (!email) {
               href="/pricing"
               className="border border-neutral-900 bg-neutral-900 px-5 py-3 text-[11px] uppercase tracking-[0.14em] text-white hover:opacity-80"
             >
-              Subscribe
+              Unlock Intelligence
             </Link>
 
             <Link

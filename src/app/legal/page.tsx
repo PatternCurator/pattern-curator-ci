@@ -127,7 +127,7 @@ export default function LegalPage() {
 
           <h3>6. Subscription Terms</h3>
           <p>
-            Subscription fees are billed in advance and may renew automatically unless canceled.
+            Access fees are billed in advance and may renew automatically unless canceled.
             Fees are non-refundable except where required by law. We may change pricing and features
             with reasonable notice.
           </p>
@@ -396,7 +396,7 @@ export default function LegalPage() {
         <div className="prose prose-neutral mt-6 max-w-none prose-headings:tracking-tight prose-a:underline prose-a:underline-offset-4">
           <p>
             This Enterprise Terms Addendum supplements the Terms and Conditions and applies to
-            enterprise or multi-seat subscribers.
+            enterprise or multi-seat access holders.
           </p>
 
           <h3>1. Scope of Enterprise License</h3>

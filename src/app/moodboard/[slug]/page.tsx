@@ -197,7 +197,7 @@ export default async function MoodboardDetailPage({
     className="text-[22px] uppercase tracking-[0.24em] text-neutral-900"
     style={{ fontFamily: "Arial, Helvetica, sans-serif", fontWeight: 300 }}
   >
-    Subscriber Access
+    Curatorial Intelligence
   </h2>
 </div>
 

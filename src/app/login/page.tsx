@@ -16,12 +16,11 @@ export default function LoginPage() {
             className="mt-3 text-[24px] font-normal text-neutral-900"
             style={{ fontFamily: "var(--font-libre), Libre Baskerville, serif" }}
           >
-            Subscriber Log In
+            Curatorial Intelligence Access
           </h1>
 
           <p className="mx-auto mt-4 max-w-md text-sm leading-7 text-neutral-600">
-            Log in with your subscription email to access subscriber context,
-            account tools, and applied insight.
+            Enter the email associated with your Curatorial Intelligence access to continue to contextual insight, inquiry, and account tools.
           </p>
 
           <div className="mt-6">
@@ -29,7 +28,7 @@ export default function LoginPage() {
               href="/account"
               className="text-xs uppercase tracking-[0.12em] text-neutral-500 underline underline-offset-4"
             >
-              Continue to Account
+              Go to Account Access
             </Link>
           </div>
         </div>

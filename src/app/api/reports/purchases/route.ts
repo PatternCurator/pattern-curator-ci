@@ -77,12 +77,13 @@ export async function POST(req: NextRequest) {
         const downloadUrl = await getReportDownloadUrl(report.pdf_path);
 
         return {
-          id: purchase.id,
-          title: report.title ?? purchase.report_slug,
-          slug: purchase.report_slug,
-          purchased_at: purchase.created_at,
-          download_url: downloadUrl,
-        };
+  id: purchase.id,
+  title: report.title ?? purchase.report_slug,
+  slug: purchase.report_slug,
+  purchased_at: purchase.created_at,
+  download_url: downloadUrl,
+  view_url: `/reports/${purchase.report_slug}/view`,
+};
       })
     );
 

@@ -56,23 +56,22 @@ export default function PricingClient() {
     <main className="mx-auto max-w-3xl px-6 pt-20 pb-16">
       <header className="text-center">
         <h1 className="text-3xl tracking-[0.12em] uppercase text-neutral-900">
-          Subscribe to CI
+          Curatorial Intelligence
         </h1>
 
         <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-neutral-600">
-          Curatorial Intelligence for print, color, surface, and product direction.
+          Contextual interpretation, inquiry, and applied insight layered onto curated visual research.
         </p>
       </header>
 
       <section className="mt-10 border border-neutral-200 bg-white">
         <div className="border-b border-neutral-200 px-6 py-5">
           <p className="text-xs tracking-[0.18em] uppercase text-neutral-900">
-            CI Membership
+            Curatorial Intelligence
           </p>
 
           <p className="mt-2 text-sm text-neutral-600">
-            Ongoing access to curated moodboards, applied insight, color direction,
-            and Curatorial Intelligence features.
+            Unlock contextual interpretation, inquiry, and applied direction for color, print, pattern, and product development.
           </p>
         </div>
 
@@ -117,7 +116,7 @@ export default function PricingClient() {
                 <span className="mt-4 block text-sm">
                   {status === "loading" && plan === "monthly"
                     ? "Redirecting…"
-                    : "Subscribe monthly"}
+                    : "Unlock monthly"}
                 </span>
               </button>
 
@@ -137,7 +136,7 @@ export default function PricingClient() {
                 <span className="mt-4 block text-sm">
                   {status === "loading" && plan === "annual"
                     ? "Redirecting…"
-                    : "Subscribe annually"}
+                    : "Unlock annually"}
                 </span>
               </button>
             </div>
@@ -157,8 +156,7 @@ export default function PricingClient() {
             </p>
 
             <ul className="list-disc space-y-1 pl-5">
-              <li>Full access to CI moodboards</li>
-              <li>Curatorial context and applied design insight</li>
+              <li>Curatorial context layered onto moodboards</li>
               <li>Color direction with hex codes</li>
               <li>Print, pattern, product, and category interpretation</li>
               <li>New references added continuously</li>
@@ -169,12 +167,11 @@ export default function PricingClient() {
 
       <section className="mt-6 border border-neutral-200 bg-white px-6 py-5 text-center">
         <p className="text-xs tracking-[0.18em] uppercase text-neutral-900">
-          Looking for Seasonal Reports?
+          Looking for Seasonal Forecasts?
         </p>
 
         <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-neutral-600">
-          Seasonal Trend Reports are separate one-time downloads and are closer to
-          the former Trend Service format.
+          Seasonal Forecasts are separate premium purchases with complete seasonal direction and downloadable PDF access.
         </p>
       </section>
 
