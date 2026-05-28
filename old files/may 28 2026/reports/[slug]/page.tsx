@@ -165,17 +165,6 @@ export default async function ReportSlugPage({
   Digital PDF download delivered immediately after purchase.
 </p>
 
-<p className="text-[11px] leading-[1.6] text-neutral-500">
-  Already purchased? Visit your account to view or download your forecast.
-</p>
-
-<a
-  href="/account"
-  className="inline-block text-[11px] uppercase tracking-[0.14em] text-neutral-900 underline underline-offset-4"
->
-  Go to Account
-</a>
-
               <p className="text-[11px] leading-[1.6] text-neutral-500">
                 Student and freelancer rates available by request.
               </p>
