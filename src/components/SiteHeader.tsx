@@ -1,5 +1,6 @@
 import Link from "next/link";
 import AccountNavLink from "@/components/AccountNavLink";
+import CIAccessNavLink from "@/components/CIAccessNavLink";
 
 export default function SiteHeader() {
   return (
@@ -69,12 +70,7 @@ export default function SiteHeader() {
               Library
             </Link>
 
-            <Link
-              href="/pricing"
-              className="text-[12px] sm:text-[13px] underline underline-offset-4 decoration-[0.5px] hover:opacity-70"
-            >
-              CI Access
-            </Link>
+            <CIAccessNavLink />
 
             <AccountNavLink />
           </nav>

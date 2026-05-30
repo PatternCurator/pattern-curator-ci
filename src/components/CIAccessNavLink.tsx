@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 const STORAGE_KEY = "pc_ci_email";
+const PENDING_EMAIL_KEY = "pc_ci_pending_email";
+const LAST_Q_KEY = "pc_ci_last_q";
+const LAST_VIEW_KEY = "pc_ci_last_view";
 
 function hasStoredAccess() {
   try {
@@ -14,7 +17,7 @@ function hasStoredAccess() {
   }
 }
 
-export default function AccountNavLink() {
+export default function CIAccessNavLink() {
   const [hasAccess, setHasAccess] = useState(false);
   const [ready, setReady] = useState(false);
 
@@ -35,16 +38,40 @@ export default function AccountNavLink() {
     };
   }, []);
 
+  function handleLogOff() {
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+      window.localStorage.removeItem(PENDING_EMAIL_KEY);
+      window.localStorage.removeItem(LAST_Q_KEY);
+      window.localStorage.removeItem(LAST_VIEW_KEY);
+      window.dispatchEvent(new Event("pc-ci-auth-change"));
+    } catch {
+      // ignore
+    }
+
+    window.location.href = "/";
+  }
+
   if (!ready) return null;
 
-  if (hasAccess) return null;
+  if (hasAccess) {
+    return (
+      <button
+        type="button"
+        onClick={handleLogOff}
+        className="text-[12px] sm:text-[13px] uppercase underline underline-offset-4 decoration-[0.5px] hover:opacity-70"
+      >
+        LOG OFF
+      </button>
+    );
+  }
 
   return (
     <Link
-      href="/account"
+      href="/pricing"
       className="text-[12px] sm:text-[13px] underline underline-offset-4 decoration-[0.5px] hover:opacity-70"
     >
-      Log In
+      CI Access
     </Link>
   );
 }

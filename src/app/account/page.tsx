@@ -103,29 +103,44 @@ export default function AccountPage() {
   }
 
   async function checkCIAccess(emailToCheck: string) {
-    try {
-      const res = await fetch("/api/usage", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        cache: "no-store",
-        body: JSON.stringify({
-          email: emailToCheck,
-          action: "status",
-        }),
-      });
+  try {
+    const res = await fetch("/api/usage", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+      body: JSON.stringify({
+        email: emailToCheck,
+        action: "status",
+      }),
+    });
 
-      const data = await res.json();
+    const data = await res.json();
 
-      setCiAccess({
-        active: data?.is_unlocked === true,
-        isAdmin: data?.is_admin === true,
-      });
-    } catch {
-      setCiAccess(null);
+    const hasAccess = data?.is_unlocked === true;
+    const isAdmin = data?.is_admin === true;
+
+    setCiAccess({
+      active: hasAccess,
+      isAdmin,
+    });
+
+    if (hasAccess) {
+      try {
+        window.localStorage.setItem(
+          "pc_ci_email",
+          emailToCheck.trim().toLowerCase()
+        );
+        window.dispatchEvent(new Event("pc-ci-auth-change"));
+      } catch {
+        // ignore
+      }
     }
+  } catch {
+    setCiAccess(null);
   }
+}
 
   async function handleAccessLookup() {
     const clean = manualEmail.trim().toLowerCase();
