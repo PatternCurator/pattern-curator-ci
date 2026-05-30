@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { supabaseServer } from "@/lib/supabaseServer";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import SeasonSupportingSection from "@/components/SeasonSupportingSection";
 import SeasonMoodboardSection from "@/components/SeasonMoodboardSection";
 
@@ -55,15 +56,17 @@ export default async function SeasonPage({
   const decodedSeason = decodeURIComponent(season);
 
   const supabase = await supabaseServer();
+  const supabaseAdmin = getSupabaseAdmin();
 
-  const { data: seasons } = await supabase
-    .from("moodboard_supporting_boards")
-    .select("season")
-    .not("season", "is", null);
+  const { data: seasons } = await supabaseAdmin
+  .from("seasons")
+  .select("season")
+  .eq("is_active", true)
+  .order("sort_order", { ascending: true });
 
-  const uniqueSeasons = Array.from(
-    new Set((seasons ?? []).map((s) => s.season).filter(Boolean))
-  ) as string[];
+  const uniqueSeasons = (seasons ?? [])
+    .map((s) => s.season)
+    .filter(Boolean) as string[];
 
   const { data: boards } = await supabase
     .from("moodboard_supporting_boards")

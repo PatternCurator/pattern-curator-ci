@@ -22,8 +22,7 @@ export default function RouteEmailGate({
     pathname.startsWith("/library/") ||
     pathname === "/pricing" ||
     pathname === "/account" ||
-    pathname.startsWith("/legal") ||
-    pathname.startsWith("/season/");
+    pathname.startsWith("/legal");
 
   if (isPublicRoute) {
     return <>{children}</>;
