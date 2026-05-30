@@ -68,14 +68,9 @@ export default async function LibraryPage() {
             </p>
 
             <p
-              className="max-w-3xl text-[13px] leading-[1.8]"
-              style={{
-                fontWeight: 500,
-              }}
+          
             >
-              Complete seasonal reports
-              are now offered as downloadable pdf reports rather than
-              through a live subscription site.
+           
             </p>
           </div>
         </section>

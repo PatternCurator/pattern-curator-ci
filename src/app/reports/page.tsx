@@ -64,15 +64,15 @@ export default async function ReportsPage() {
                 fontFamily: "var(--font-libre), Libre Baskerville, serif",
               }}
             >
-              Complete seasonal direction for concept development, color, print, pattern, and product application.
+              Curated direction for color, print, pattern, and concept development.
             </p>
 
             <p className="max-w-3xl text-[12px] leading-[1.7] text-neutral-700">
-             Seasonal Forecasts are available as separate premium purchases. Each forecast includes complete seasonal direction and downloadable PDF access.
+             
             </p>
           </div>
         </section>
-        
+
           <section className="space-y-8">
   <div className="grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3"></div>
         
