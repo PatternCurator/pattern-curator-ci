@@ -27,21 +27,21 @@ function getReportAssetUrl(path: string | null) {
   return `${supabaseUrl}/storage/v1/object/public/paid-report-images/${cleanPath}`;
 }
 
-export default async function ReportsPage() {
+export default async function LibraryPage() {
   const supabase = getSupabaseAdmin();
 
   const { data: reports, error } = await supabase
     .from("reports")
     .select("slug, title, season_label, description, price, cover_image")
     .eq("is_active", true)
-    .eq("report_type", "current")
+    .eq("report_type", "archive")
     .order("sort_order", { ascending: true });
 
   if (error) {
-    console.error("reports page error", error);
+    console.error("library page error", error);
   }
 
-  const activeReports = (reports ?? []) as Report[];
+  const archiveReports = (reports ?? []) as Report[];
 
   return (
     <main className="mx-auto max-w-[1400px] px-6 pt-12 pb-16">
@@ -55,7 +55,7 @@ export default async function ReportsPage() {
                 fontWeight: 300,
               }}
             >
-              Seasonal Forecasts
+              Pattern Curator Library
             </h1>
 
             <p
@@ -64,21 +64,30 @@ export default async function ReportsPage() {
                 fontFamily: "var(--font-libre), Libre Baskerville, serif",
               }}
             >
-              Complete seasonal direction for concept development, color, print, pattern, and product application.
+              A curated archive of previous trend reports designed to inspire color, print, pattern, and concept development.
             </p>
 
-            <p className="max-w-3xl text-[12px] leading-[1.7] text-neutral-700">
-             Seasonal Forecasts are available as separate premium purchases. Each forecast includes complete seasonal direction and downloadable PDF access.
+            <p
+              className="max-w-3xl text-[13px] leading-[1.8]"
+              style={{
+                fontWeight: 500,
+              }}
+            >
+              Complete seasonal reports
+              are now offered as downloadable pdf reports rather than
+              through a live subscription site.
             </p>
           </div>
         </section>
-        
-          <section className="space-y-8">
-  <div className="grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3"></div>
+
+        <section className="space-y-8">
+          <div className="space-y-2">
         
 
+          </div>
+
           <div className="grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
-            {activeReports.map((report) => (
+            {archiveReports.map((report) => (
               <Link
                 key={report.slug}
                 href={`/reports/${report.slug}`}

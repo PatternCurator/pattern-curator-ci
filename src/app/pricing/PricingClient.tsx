@@ -172,6 +172,7 @@ export default function PricingClient() {
               <ul className="mt-2 space-y-1">
                 <li>— Seasonal Forecasts</li>
                 <li>— Downloadable PDF reports</li>
+                <li>— Pattern Curator Library purchases</li>
                 <li>— Historical Trend Service content</li>
               </ul>
             </div>
