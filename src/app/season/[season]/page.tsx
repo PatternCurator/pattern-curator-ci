@@ -121,15 +121,19 @@ export default async function SeasonPage({
               className="text-[22px] uppercase tracking-[0.24em] text-neutral-900"
               style={{ fontFamily: "Arial, Helvetica, sans-serif", fontWeight: 300 }}
             >
-              Seasonal Trend Research
+              Trend Direction
             </h1>
 
             <p
-              className="text-[13px] italic text-neutral-500"
-              style={{ fontFamily: "var(--font-libre), Libre Baskerville, serif" }}
-            >
-              Trend-forward insights and signals that support curatorial intelligence for design.
-            </p>
+  className="text-[24px] italic"
+  style={{
+    fontFamily: "var(--font-libre), Libre Baskerville, serif",
+    color: "#8a8a8a",
+    fontWeight: 400,
+  }}
+>
+  {formatSeasonLabel(decodedSeason)}
+</p>
 
             <p className="max-w-3xl text-[12px] leading-[1.7] text-neutral-700">
               A visual interpretation of cultural behaviors, color combinations, global color palette and print stories
@@ -258,7 +262,9 @@ export default async function SeasonPage({
           </section>
         ) : null}
 
-        <SeasonMoodboardSection boards={moodboards} />
+                <SeasonMoodboardSection boards={moodboards} />
+
+        
       </div>
     </main>
   );

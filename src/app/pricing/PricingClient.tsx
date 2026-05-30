@@ -150,29 +150,43 @@ export default function PricingClient() {
             You will complete payment securely through Stripe.
           </p>
 
-          <div className="space-y-2 border border-neutral-200 p-5 text-sm text-neutral-700">
-            <p className="text-xs tracking-[0.18em] uppercase text-neutral-900">
-              Included
-            </p>
+          <div className="space-y-6 border border-neutral-200 p-5 text-sm text-neutral-700">
+            <div>
+              <p className="text-xs tracking-[0.18em] uppercase text-neutral-900">
+                Included
+              </p>
 
-            <ul className="list-disc space-y-1 pl-5">
-              <li>Curatorial context layered onto moodboards</li>
-              <li>Color direction with hex codes</li>
-              <li>Print, pattern, product, and category interpretation</li>
-              <li>New references added continuously</li>
-            </ul>
+              <ul className="mt-2 space-y-1">
+                <li>— Curatorial context layered onto moodboards</li>
+                <li>— Color direction with hex codes</li>
+                <li>— Print, pattern, product, and category interpretation</li>
+                <li>— New references added continuously</li>
+              </ul>
+            </div>
+
+            <div>
+              <p className="text-xs tracking-[0.18em] uppercase text-neutral-900">
+                Not Included
+              </p>
+
+              <ul className="mt-2 space-y-1">
+                <li>— Seasonal Forecasts</li>
+                <li>— Downloadable PDF reports</li>
+                <li>— Historical Trend Service content</li>
+              </ul>
+            </div>
+
+            <p
+              className="text-sm italic"
+              style={{
+                color: "#4f8f8b",
+                fontWeight: 500,
+              }}
+            >
+              For previous Trend Service subscribers: complete seasonal reports are now offered as downloadable Seasonal Forecasts rather than through a live subscription site.
+            </p>
           </div>
         </div>
-      </section>
-
-      <section className="mt-6 border border-neutral-200 bg-white px-6 py-5 text-center">
-        <p className="text-xs tracking-[0.18em] uppercase text-neutral-900">
-          Looking for Seasonal Forecasts?
-        </p>
-
-        <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-neutral-600">
-          Seasonal Forecasts are separate premium purchases with complete seasonal direction and downloadable PDF access.
-        </p>
       </section>
 
       <section className="mt-6 border border-neutral-200 bg-white px-6 py-5 text-center">

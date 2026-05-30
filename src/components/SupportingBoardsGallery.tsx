@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 type SupportingBoard = {
   id: string;
@@ -35,6 +36,7 @@ export default function SupportingBoardsGallery({
 }: {
   boards: SupportingBoard[];
 }) {
+  const router = useRouter();
   const [activeBoard, setActiveBoard] = useState<SupportingBoard | null>(null);
 
   if (!boards.length) return null;
@@ -67,16 +69,23 @@ export default function SupportingBoardsGallery({
 
                   {supportingImg ? (
                     <button
-                      type="button"
-                      onClick={() => setActiveBoard(board)}
-                      className="block w-full text-left"
-                    >
-                      <img
-                        src={supportingImg}
-                        alt={formatBoardTypeLabel(board.board_type)}
-                        className="block w-full border border-zinc-200 transition-opacity duration-200 hover:opacity-80 cursor-pointer"
-                      />
-                    </button>
+  type="button"
+  onClick={() => {
+    if (board.season) {
+      router.push(`/season/${encodeURIComponent(board.season)}`);
+      return;
+    }
+
+    setActiveBoard(board);
+  }}
+  className="block w-full text-left"
+>
+  <img
+    src={supportingImg}
+    alt={formatBoardTypeLabel(board.board_type)}
+    className="block w-full border border-zinc-200 transition-opacity duration-200 hover:opacity-80 cursor-pointer"
+  />
+</button>
                   ) : null}
 
                   {contextLine ? (

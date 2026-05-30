@@ -275,21 +275,28 @@ export default async function MoodboardDetailPage({
   </div>
 
   {data.season ? (
-    <div className="pt-16 text-left">
-      <p
-        className="text-[11px] uppercase tracking-[0.12em] text-zinc-400"
-        style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
-      >
-        Season
-      </p>
-      <Link
-        href={`/season/${encodeURIComponent(data.season)}`}
-        className="inline-block pt-1 text-sm text-neutral-600 underline underline-offset-4 hover:opacity-80"
-      >
-        {data.season}
-      </Link>
-    </div>
-  ) : null}
+  <div className="mt-16 border-t border-neutral-200 pt-10 text-left">
+    <p
+      className="mb-3 text-[11px] uppercase tracking-[0.16em] text-zinc-500"
+      style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+    >
+      Trend Direction
+    </p>
+
+    <Link
+      href={`/season/${encodeURIComponent(data.season)}`}
+      className="inline-flex h-10 items-center justify-center px-8 text-xs uppercase tracking-[0.18em]"
+      style={{
+        fontFamily: "Arial, Helvetica, sans-serif",
+        color: "#707376ff",
+        background: "#f4f4f4",
+        border: "1px solid #B8B9B6",
+      }}
+    >
+      {data.season}
+    </Link>
+  </div>
+) : null}
 
   <p className="pt-16 text-xs text-neutral-400">
     Mood board and color palette shown for editorial and educational purposes. Colors are approximate and may not exactly match the original source. Reference imagery used only for visual analysis; editorial research context, commentary and color direction.
