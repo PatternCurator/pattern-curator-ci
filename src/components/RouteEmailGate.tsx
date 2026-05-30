@@ -18,6 +18,8 @@ export default function RouteEmailGate({
     pathname.startsWith("/moodboard/") ||
     pathname === "/reports" ||
     pathname.startsWith("/reports/") ||
+    pathname === "/library" ||
+    pathname.startsWith("/library/") ||
     pathname === "/pricing" ||
     pathname === "/account" ||
     pathname.startsWith("/legal") ||
