@@ -12,6 +12,10 @@ function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
+function toIsoFromUnixSeconds(sec: unknown) {
+  return typeof sec === "number" ? new Date(sec * 1000).toISOString() : null;
+}
+
 function isValidPlan(plan: string): plan is Plan {
   return plan === "monthly" || plan === "annual";
 }
@@ -185,20 +189,50 @@ export async function POST(req: Request) {
       limit: 10,
     });
 
-    const hasBlockedSub = subs.data.some((sub) =>
-      BLOCKED_SUB_STATUSES.has(sub.status)
-    );
+    const blockedSub = subs.data.find((sub) =>
+  BLOCKED_SUB_STATUSES.has(sub.status)
+);
 
-    if (hasBlockedSub) {
-      return NextResponse.json(
-        {
-          error:
-            "You already have a subscription or active trial for this email. Please manage your subscription instead.",
-          code: "already_subscribed",
-        },
-        { status: 409 }
-      );
-    }
+if (blockedSub) {
+  const subPriceId =
+    (blockedSub.items?.data?.[0] as any)?.price?.id ??
+    (blockedSub.items?.data?.[0] as any)?.plan?.id ??
+    priceId;
+
+  const planInterval =
+    subPriceId === process.env.STRIPE_PRICE_ID_ANNUAL ? "annual" : "monthly";
+
+  await supabaseAdmin.from("ci_billing").upsert(
+    {
+      email: email_normalized,
+      email_normalized,
+      stripe_customer_id: stripeCustomerId,
+      stripe_subscription_id: blockedSub.id,
+      stripe_price_id: subPriceId,
+      status: blockedSub.status,
+      plan_interval: planInterval,
+      cancel_at_period_end: !!blockedSub.cancel_at_period_end,
+      current_period_end: toIsoFromUnixSeconds(
+        (blockedSub as any).current_period_end ?? null
+      ),
+      updated_at: now,
+      meta: {
+        source: "checkout_existing_subscription_repair",
+        plan,
+      },
+    },
+    { onConflict: "email_normalized" }
+  );
+
+  return NextResponse.json(
+    {
+      error:
+        "You already have an active subscription or trial for this email. Please log in instead.",
+      code: "already_subscribed",
+    },
+    { status: 409 }
+  );
+}
 
     // 4) Create Checkout Session
     const session = await stripe.checkout.sessions.create({
