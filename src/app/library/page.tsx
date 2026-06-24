@@ -74,6 +74,37 @@ export default async function LibraryPage() {
             </p>
           </div>
         </section>
+<Link href="/image-library" className="group block">
+  <div className="grid overflow-hidden border border-neutral-200 md:grid-cols-[1.2fr_1fr]">
+    <div className="aspect-[16/7] bg-neutral-100 md:aspect-auto">
+      <img
+        src="/image-library-cover.jpg"
+        alt="Image Library"
+        className="h-full w-full object-cover transition-opacity group-hover:opacity-80"
+      />
+    </div>
+
+    <div className="flex flex-col justify-center p-8">
+      <p className="text-[11px] uppercase tracking-[0.18em] text-neutral-400">
+        Included with CI Access
+      </p>
+
+      <h2 className="mt-3 text-[22px] font-normal text-neutral-950">
+        Image Library
+      </h2>
+
+      <p className="mt-3 max-w-md text-[13px] leading-[1.8] text-neutral-600">
+        Curated image references for color, print, pattern, surface, and
+        material inspiration.
+      </p>
+
+      <p className="mt-5 text-[11px] uppercase tracking-[0.16em] text-neutral-900">
+        View Image Library
+      </p>
+    </div>
+  </div>
+</Link>
+
 
         <section className="space-y-8">
           <div className="space-y-2">
