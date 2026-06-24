@@ -327,6 +327,56 @@ export default async function CiLandingPage() {
           </div>
         </section>
 
+        <section className="mt-20 border-t border-neutral-200 pt-12">
+        <div className="mx-auto max-w-4xl">
+          <Link href="/image-library" className="group block">
+            <div className="relative overflow-hidden">
+            <div className="relative h-[150px] overflow-hidden">
+     <Image
+        src="/image-library-cover.jpg"
+        alt="Image Library"
+        fill
+        className="object-cover"
+      />
+
+      <div className="absolute inset-0 bg-black/25" />
+
+  {/* text overlay */}
+</div>
+
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+          <p
+            className="text-[11px] uppercase tracking-[0.18em] text-white"
+            style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+          >
+            Included with CI Access
+          </p>
+
+          <h2
+            className="mt-3 text-[28px] uppercase tracking-[0.18em] text-white"
+            style={{
+              fontFamily: "Arial, Helvetica, sans-serif",
+              fontWeight: 300,
+            }}
+          >
+            Image Library
+          </h2>
+
+          <p
+            className="mt-3 text-[18px] italic text-white"
+            style={{
+              fontFamily:
+                "var(--font-libre), Libre Baskerville, serif",
+            }}
+          >
+            Curated Inspiration
+          </p>
+        </div>
+      </div>
+    </Link>
+  </div>
+</section>
+
         {/* Advisory bridge */}
         <section className="mt-20 border-t border-neutral-200 pt-10">
           <div className="max-w-3xl space-y-4">

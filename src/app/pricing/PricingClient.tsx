@@ -160,6 +160,7 @@ export default function PricingClient() {
                 <li>— Curatorial context layered onto moodboards</li>
                 <li>— Color direction with hex codes</li>
                 <li>— Print, pattern, product, and category interpretation</li>
+                <li>— Subscriber-only Image Library with curated CC0 visual references</li>
                 <li>— New references added continuously</li>
               </ul>
             </div>
