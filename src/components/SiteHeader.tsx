@@ -70,9 +70,10 @@ export default function SiteHeader() {
               Library
             </Link>
 
+            <AccountNavLink />
+
             <CIAccessNavLink />
 
-            <AccountNavLink />
           </nav>
         </div>
       </div>

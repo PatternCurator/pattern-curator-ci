@@ -37,14 +37,12 @@ export default function AccountNavLink() {
 
   if (!ready) return null;
 
-  if (hasAccess) return null;
-
   return (
     <Link
       href="/account"
       className="text-[12px] sm:text-[13px] underline underline-offset-4 decoration-[0.5px] hover:opacity-70"
     >
-      Log In
+      {hasAccess ? "Account" : "Log In"}
     </Link>
   );
 }
