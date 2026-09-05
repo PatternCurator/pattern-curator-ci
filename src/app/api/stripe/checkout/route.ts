@@ -36,6 +36,15 @@ const BLOCKED_SUB_STATUSES = new Set([
 ]);
 
 export async function POST(req: Request) {
+  // Standalone CI subscriptions are closed.
+  // Existing Stripe subscriptions and webhook processing remain unaffected.
+  if (process.env.CI_NEW_SUBSCRIPTIONS_OPEN !== "true") {
+    return NextResponse.json(
+      { error: "New CI subscriptions are closed." },
+      { status: 410 }
+    );
+  }
+
   try {
     const body = await req.json().catch(() => ({}));
 
