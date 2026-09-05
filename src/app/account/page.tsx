@@ -351,10 +351,10 @@ export default function AccountPage() {
 
                 {!ciAccess?.active ? (
                   <a
-                    href="/pricing"
+                    href="https://www.patterncurator.com"
                     className="inline-block border border-neutral-900 bg-neutral-900 px-5 py-3 text-[11px] uppercase tracking-[0.16em] text-white"
                   >
-                    Unlock CI Access
+                    Explore Pattern Curator
                   </a>
                 ) : null}
 

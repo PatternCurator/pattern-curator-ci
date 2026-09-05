@@ -55,9 +55,6 @@ export default function EmailGate({
 
   const [remaining, setRemaining] = useState<number | null>(null);
 
-  const [plan, setPlan] = useState<"monthly" | "annual">("monthly");
-  const [checkoutStatus, setCheckoutStatus] = useState<"idle" | "loading" | "error">("idle");
-  const [checkoutError, setCheckoutError] = useState<string>("");
 
   const [authChecked, setAuthChecked] = useState<boolean>(true);
   const [gateReady, setGateReady] = useState<boolean>(false);
@@ -118,8 +115,6 @@ export default function EmailGate({
     setRemaining(null);
     setStatus("idle");
     setError("");
-    setCheckoutStatus("idle");
-    setCheckoutError("");
     setShowEmailPrompt(false);
 
     window.location.href = "/";
@@ -139,16 +134,12 @@ export default function EmailGate({
     setRemaining(null);
     setStatus("idle");
     setError("");
-    setCheckoutStatus("idle");
-    setCheckoutError("");
   }
 
   function closeEmailPrompt() {
     setShowEmailPrompt(false);
     setStatus("idle");
     setError("");
-    setCheckoutStatus("idle");
-    setCheckoutError("");
 
     if (pathname === "/pricing" && searchParams?.get("verify") === "1") {
       window.history.replaceState({}, "", "/pricing");
@@ -284,40 +275,6 @@ export default function EmailGate({
     }
   }
 
-  async function startCheckout() {
-    try {
-      setCheckoutStatus("loading");
-      setCheckoutError("");
-
-      const checkoutEmail = email || normalizeEmail(input);
-
-      if (!checkoutEmail || !checkoutEmail.includes("@")) {
-        setShowEmailPrompt(true);
-        setCheckoutStatus("idle");
-        setCheckoutError("");
-        return;
-      }
-
-      const res = await fetch("/api/stripe/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: checkoutEmail, plan }),
-      });
-
-      const data = (await res.json()) as { url?: string; error?: string };
-
-      if (!res.ok || !data.url) {
-        setCheckoutStatus("error");
-        setCheckoutError(data.error || "Could not start checkout.");
-        return;
-      }
-
-      window.location.href = data.url;
-    } catch {
-      setCheckoutStatus("error");
-      setCheckoutError("Network error. Please try again.");
-    }
-  }
 
   useEffect(() => {
     if (!email) return;
@@ -525,51 +482,20 @@ export default function EmailGate({
                 </p>
 
                 <div className="mt-6 space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setPlan("monthly")}
-                      className={`border px-4 py-3 text-[15px] ${
-                        plan === "monthly"
-                          ? "border-neutral-900 bg-neutral-900 text-white"
-                          : "border-neutral-300 bg-white text-neutral-800"
-                      }`}
-                    >
-                      Monthly
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setPlan("annual")}
-                      className={`border px-4 py-3 text-[15px] ${
-                        plan === "annual"
-                          ? "border-neutral-900 bg-neutral-900 text-white"
-                          : "border-neutral-300 bg-white text-neutral-800"
-                      }`}
-                    >
-                      Annual
-                    </button>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={startCheckout}
-                    disabled={checkoutStatus === "loading"}
-                    className="w-full bg-neutral-900 px-4 py-3 text-[15px] font-medium text-white disabled:opacity-60"
-                  >
-                    {checkoutStatus === "loading" ? "Redirecting…" : "Unlock Intelligence"}
-                  </button>
-
-                  {checkoutStatus === "error" ? <p className="text-sm text-red-600">{checkoutError}</p> : null}
-
-                  <p className="text-center text-sm text-neutral-500">
-                    {plan === "monthly" ? "$29/month" : "$290/year"}
+                  <p className="text-[15px] leading-7 text-neutral-600">
+                    New CI subscriptions are now closed. Curatorial Intelligence
+                    is moving to Pattern Curator and will be included as part of
+                    the Pattern Curator membership.
                   </p>
 
+                  <a
+                    href="https://www.patterncurator.com"
+                    className="flex w-full items-center justify-center bg-neutral-900 px-4 py-3 text-[15px] font-medium text-white"
+                  >
+                    Explore Pattern Curator
+                  </a>
+
                   <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 pt-1 text-sm text-neutral-600">
-                    <Link href="/preview" className="underline hover:opacity-70">
-                      View Preview
-                    </Link>
                     <Link href="/ci" className="underline hover:opacity-70">
                       Back to CI Home
                     </Link>

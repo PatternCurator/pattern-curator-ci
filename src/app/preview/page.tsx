@@ -419,17 +419,17 @@ export default async function PreviewPage() {
             </h2>
 
             <p className="text-sm leading-relaxed" style={{ color: BRAND_GREY }}>
-              Unlock Curatorial Intelligence to access complete context, palette information, and Application Query throughout CI.
+              CI is moving to Pattern Curator, bringing research, seasonal direction and visual work together in one place.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-4">
-  <Link
-    href="/pricing"
+  <a
+    href="https://www.patterncurator.com"
     className="inline-flex h-12 min-w-[180px] items-center justify-center border border-neutral-900 bg-neutral-900 px-8 text-[15px] text-white"
   >
-    Unlock Intelligence
-  </Link>
+    Explore Pattern Curator
+  </a>
 
   <Link
     href="/ci"

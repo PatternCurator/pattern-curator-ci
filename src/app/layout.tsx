@@ -24,6 +24,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-dvh flex flex-col bg-white text-black"
         style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
       >
+        <div className="w-full bg-neutral-900 px-4 py-2 text-center text-[11px] uppercase tracking-[0.14em] text-white sm:text-[12px]">
+          CI is moving home to{" "}
+          <a
+            href="https://www.patterncurator.com"
+            className="underline underline-offset-4 hover:opacity-80"
+          >
+            PatternCurator.com
+          </a>
+          . Current subscribers: please check your email for transition updates.
+        </div>
+
         <SiteHeader />
 
         {/* Reserve the vertical space so footer doesn't jump */}

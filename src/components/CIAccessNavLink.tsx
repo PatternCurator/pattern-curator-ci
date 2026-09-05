@@ -68,10 +68,10 @@ export default function CIAccessNavLink() {
 
   return (
     <Link
-      href="/pricing"
+      href="/login"
       className="text-[12px] sm:text-[13px] underline underline-offset-4 decoration-[0.5px] hover:opacity-70"
     >
-      CI Access
+      Current Member Access
     </Link>
   );
 }

@@ -80,18 +80,18 @@ if (!email) {
           </p>
 
           <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
-            <Link
-              href="/pricing"
+            <a
+              href="https://www.patterncurator.com"
               className="border border-neutral-900 bg-neutral-900 px-5 py-3 text-[11px] uppercase tracking-[0.14em] text-white hover:opacity-80"
             >
-              Unlock Intelligence
-            </Link>
+              Explore Pattern Curator
+            </a>
 
             <Link
-              href="/pricing?verify=1"
+              href="/login"
               className="border border-neutral-300 px-5 py-3 text-[11px] uppercase tracking-[0.14em] text-neutral-700 hover:opacity-80"
             >
-              Log In
+              Current Member Access
             </Link>
           </div>
         </div>
